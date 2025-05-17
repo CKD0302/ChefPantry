@@ -13,6 +13,12 @@ import Dashboard from "@/pages/Dashboard";
 import CreateProfile from "@/pages/profile/CreateProfile";
 import AdminDashboard from "@/pages/admin/Dashboard";
 
+// Gig Management Pages
+import CreateGig from "@/pages/gigs/Create";
+import ManageGigs from "@/pages/gigs/Manage";
+import BrowseGigs from "@/pages/gigs/Browse";
+import ViewGig from "@/pages/gigs/View";
+
 function Router() {
   return (
     <Switch>
@@ -22,6 +28,13 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile/create" component={CreateProfile} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      
+      {/* Gig Management Routes */}
+      <Route path="/gigs/create" component={CreateGig} />
+      <Route path="/gigs/manage" component={ManageGigs} />
+      <Route path="/gigs/browse" component={BrowseGigs} />
+      <Route path="/gigs/view/:id" component={ViewGig} />
+      
       <Route component={NotFound} />
     </Switch>
   );
