@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/utils/supabaseClient";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -104,10 +105,18 @@ export default function BrowseGigs() {
     // Check if chef profile exists
     const checkProfileExists = async () => {
       try {
-        const response = await fetch(`/api/profiles/chef/${user.id}`);
-        if (response.ok) {
+        // Check via Supabase directly to avoid API issues
+        const { data, error } = await supabase
+          .from("chef_profiles")
+          .select("id")
+          .eq("id", user.id)
+          .single();
+        
+        if (data) {
+          console.log("Chef profile found:", data);
           setProfileExists(true);
         } else {
+          console.log("Chef profile not found, error:", error);
           setProfileExists(false);
         }
       } catch (error) {
