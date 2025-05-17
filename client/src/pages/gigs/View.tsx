@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/utils/supabaseClient";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -110,17 +111,47 @@ export default function ViewGig() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/gigs/${gigId}`);
+      // Fetch gig directly from Supabase instead of using the API
+      const { data, error } = await supabase
+        .from("gigs")
+        .select("*")
+        .eq("id", gigId)
+        .single();
       
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error("Gig not found");
-        }
-        throw new Error("Failed to fetch gig details");
+      if (error) {
+        console.error("Supabase error fetching gig:", error);
+        throw new Error("Gig not found");
       }
       
-      const data = await response.json();
-      setGig(data.data);
+      if (!data) {
+        throw new Error("Gig not found");
+      }
+      
+      console.log("Gig details fetched successfully:", data);
+      
+      // Transform the data from snake_case to camelCase to match the component expectations
+      const formattedGig = {
+        id: data.id,
+        title: data.title,
+        gigDate: data.date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        location: data.location,
+        payRate: data.pay_rate,
+        role: data.role,
+        venueType: data.venue_type,
+        dressCode: data.dress_code,
+        serviceExpectations: data.service_expectations,
+        kitchenDetails: data.kitchen_details,
+        equipmentProvided: data.equipment_provided || [],
+        benefits: data.benefits || [],
+        tipsAvailable: data.tips_available,
+        isActive: data.is_active,
+        createdAt: data.created_at,
+        createdBy: data.created_by
+      };
+      
+      setGig(formattedGig);
     } catch (error) {
       console.error("Error fetching gig:", error);
       setError("Failed to load gig details. The gig may not exist or has been removed.");
@@ -135,18 +166,25 @@ export default function ViewGig() {
   };
 
   const checkIfApplied = async () => {
+    if (!user?.id || !gigId) return;
+    
     try {
-      const response = await fetch(`/api/applications/mine?chefId=${user?.id}`);
+      // Fetch applications directly from Supabase
+      const { data, error } = await supabase
+        .from("gig_applications")
+        .select("*")
+        .eq("chef_id", user.id);
       
-      if (!response.ok) {
+      if (error) {
+        console.error("Error checking application status:", error);
         return;
       }
       
-      const data = await response.json();
-      const applications = data.data || [];
-      
       // Check if user has already applied to this gig
-      const hasAppliedToThisGig = applications.some((app: Application) => app.gigId === gigId);
+      const applications = data || [];
+      console.log("Applications fetched successfully:", applications);
+      
+      const hasAppliedToThisGig = applications.some(app => app.gig_id === gigId);
       setHasApplied(hasAppliedToThisGig);
     } catch (error) {
       console.error("Error checking application status:", error);
@@ -169,25 +207,25 @@ export default function ViewGig() {
     setIsApplying(true);
 
     try {
-      const applicationData = {
-        gigId: gig.id,
-        chefId: user.id,
-        status: "applied",
-        message: applicationMessage,
-      };
-
-      const response = await fetch("/api/gigs/apply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(applicationData),
-      });
-
-      if (!response.ok) {
+      // Insert application directly to Supabase
+      const { data, error } = await supabase
+        .from("gig_applications")
+        .insert({
+          gig_id: gig.id,
+          chef_id: user.id,
+          status: "applied",
+          message: applicationMessage,
+          applied_at: new Date().toISOString()
+        })
+        .select();
+      
+      if (error) {
+        console.error("Supabase error applying for gig:", error);
         throw new Error("Failed to submit application");
       }
-
+      
+      console.log("Application submitted successfully:", data);
+      
       setHasApplied(true);
       setIsDialogOpen(false);
       
