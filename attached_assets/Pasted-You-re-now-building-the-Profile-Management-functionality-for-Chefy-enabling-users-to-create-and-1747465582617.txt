@@ -1,0 +1,115 @@
+You're now building the "Profile Management" functionality for "Chefy," enabling users to create and edit profiles based on their role (Chef or Hospitality Business).
+
+🔨 Step-by-step Requirements:
+1. Database Tables (Supabase)
+
+Create two new tables in Supabase (via Supabase dashboard or migration scripts):
+
+chef_profiles
+
+id (uuid, primary key, references auth.users.id)
+
+full_name (text)
+
+bio (text)
+
+skills (text[])
+
+experience_years (integer)
+
+location (text)
+
+travel_radius_km (integer)
+
+profile_image_url (text, nullable)
+
+dish_photos_urls (text[], nullable)
+
+intro_video_url (text, nullable)
+
+instagram_url, linkedin_url, portfolio_url (text, nullable)
+
+business_profiles
+
+id (uuid, primary key, references auth.users.id)
+
+business_name (text)
+
+description (text)
+
+location (text)
+
+profile_image_url (text, nullable)
+
+website_url, instagram_url, linkedin_url (text, nullable)
+
+2. API Routes (Next.js API Routes)
+
+Create API routes under /pages/api/profiles/ for handling CRUD operations:
+
+POST (/api/profiles/create) → Create chef/business profile.
+
+GET (/api/profiles/[id]) → Fetch chef/business profile by user ID.
+
+PUT (/api/profiles/[id]) → Update existing profile.
+
+3. Frontend Profile Management
+
+Create UI pages under /pages/profile/:
+
+create.js → Form to create initial profile.
+
+edit.js → Form to edit existing profile.
+
+view.js → View user's profile publicly.
+
+Conditional rendering based on user role (Chef or Business), using the Supabase user metadata.
+
+🔎 Example: Chef Profile Creation Form (/pages/profile/create.js):
+jsx
+Copy
+Edit
+import { useState } from 'react'
+import { supabase } from '../../utils/supabaseClient'
+import useUser from '../../hooks/useUser'
+
+export default function CreateProfile() {
+  const { user } = useUser()
+  const [fullName, setFullName] = useState('')
+  const [bio, setBio] = useState('')
+  const [location, setLocation] = useState('')
+  const [skills, setSkills] = useState('')
+  const [experienceYears, setExperienceYears] = useState(0)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    const { data, error } = await supabase
+      .from('chef_profiles')
+      .insert([
+        {
+          id: user.id,
+          full_name: fullName,
+          bio,
+          location,
+          skills: skills.split(','),
+          experience_years: experienceYears,
+        },
+      ])
+
+    if (error) alert(error.message)
+    else alert('Profile created successfully!')
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input placeholder="Full Name" onChange={(e)=>setFullName(e.target.value)} required />
+      <textarea placeholder="Bio" onChange={(e)=>setBio(e.target.value)} required />
+      <input placeholder="Location" onChange={(e)=>setLocation(e.target.value)} required />
+      <input placeholder="Skills (comma-separated)" onChange={(e)=>setSkills(e.target.value)} required />
+      <input type="number" placeholder="Years of Experience" onChange={(e)=>setExperienceYears(e.target.value)} required />
+      <button type="submit">Create Profile</button>
+    </form>
+  )
+}
+Use similar logic for the business profile creation form.

@@ -13,7 +13,13 @@ import {
   type InsertBooking,
   contactMessages,
   type ContactMessage,
-  type InsertContactMessage
+  type InsertContactMessage,
+  chefProfiles,
+  type ChefProfile,
+  type InsertChefProfile,
+  businessProfiles,
+  type BusinessProfile,
+  type InsertBusinessProfile
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -43,6 +49,16 @@ export interface IStorage {
   // Contact message methods
   getContactMessage(id: number): Promise<ContactMessage | undefined>;
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  
+  // Chef Profiles methods (Supabase)
+  getChefProfile(id: string): Promise<ChefProfile | undefined>;
+  createChefProfile(profile: InsertChefProfile): Promise<ChefProfile>;
+  updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined>;
+  
+  // Business Profiles methods (Supabase)
+  getBusinessProfile(id: string): Promise<BusinessProfile | undefined>;
+  createBusinessProfile(profile: InsertBusinessProfile): Promise<BusinessProfile>;
+  updateBusinessProfile(id: string, profile: Partial<InsertBusinessProfile>): Promise<BusinessProfile | undefined>;
 }
 
 export class DBStorage implements IStorage {
@@ -147,6 +163,86 @@ export class DBStorage implements IStorage {
   
   async createContactMessage(insertContactMessage: InsertContactMessage): Promise<ContactMessage> {
     const result = await db.insert(contactMessages).values(insertContactMessage).returning();
+    return result[0];
+  }
+  
+  // Chef Profiles methods (Supabase)
+  async getChefProfile(id: string): Promise<ChefProfile | undefined> {
+    const result = await db.select().from(chefProfiles).where(eq(chefProfiles.id, id));
+    return result[0];
+  }
+  
+  async createChefProfile(profile: InsertChefProfile): Promise<ChefProfile> {
+    // Ensure arrays are properly handled
+    const chefProfile = {
+      ...profile,
+      skills: profile.skills || [],
+      dishPhotosUrls: profile.dishPhotosUrls || [],
+      profileImageUrl: profile.profileImageUrl || null,
+      introVideoUrl: profile.introVideoUrl || null,
+      travelRadiusKm: profile.travelRadiusKm || null,
+      instagramUrl: profile.instagramUrl || null,
+      linkedinUrl: profile.linkedinUrl || null,
+      portfolioUrl: profile.portfolioUrl || null,
+    };
+    
+    const result = await db.insert(chefProfiles).values(chefProfile).returning();
+    return result[0];
+  }
+  
+  async updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined> {
+    // First check if profile exists
+    const existingProfile = await this.getChefProfile(id);
+    if (!existingProfile) {
+      return undefined;
+    }
+    
+    const result = await db.update(chefProfiles)
+      .set({
+        ...profile,
+        updatedAt: new Date()
+      })
+      .where(eq(chefProfiles.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  // Business Profiles methods (Supabase)
+  async getBusinessProfile(id: string): Promise<BusinessProfile | undefined> {
+    const result = await db.select().from(businessProfiles).where(eq(businessProfiles.id, id));
+    return result[0];
+  }
+  
+  async createBusinessProfile(profile: InsertBusinessProfile): Promise<BusinessProfile> {
+    // Handle nullable fields
+    const businessProfile = {
+      ...profile,
+      profileImageUrl: profile.profileImageUrl || null,
+      websiteUrl: profile.websiteUrl || null,
+      instagramUrl: profile.instagramUrl || null,
+      linkedinUrl: profile.linkedinUrl || null,
+    };
+    
+    const result = await db.insert(businessProfiles).values(businessProfile).returning();
+    return result[0];
+  }
+  
+  async updateBusinessProfile(id: string, profile: Partial<InsertBusinessProfile>): Promise<BusinessProfile | undefined> {
+    // First check if profile exists
+    const existingProfile = await this.getBusinessProfile(id);
+    if (!existingProfile) {
+      return undefined;
+    }
+    
+    const result = await db.update(businessProfiles)
+      .set({
+        ...profile,
+        updatedAt: new Date()
+      })
+      .where(eq(businessProfiles.id, id))
+      .returning();
+    
     return result[0];
   }
 }

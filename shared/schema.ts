@@ -60,6 +60,39 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Chef Profiles table (Supabase integration)
+export const chefProfiles = pgTable("chef_profiles", {
+  id: text("id").primaryKey(), // UUID from Supabase auth
+  fullName: text("full_name").notNull(),
+  bio: text("bio").notNull(),
+  skills: text("skills").array().notNull(),
+  experienceYears: integer("experience_years").notNull(),
+  location: text("location").notNull(),
+  travelRadiusKm: integer("travel_radius_km"),
+  profileImageUrl: text("profile_image_url"),
+  dishPhotosUrls: text("dish_photos_urls").array(),
+  introVideoUrl: text("intro_video_url"),
+  instagramUrl: text("instagram_url"),
+  linkedinUrl: text("linkedin_url"),
+  portfolioUrl: text("portfolio_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Business Profiles table (Supabase integration)
+export const businessProfiles = pgTable("business_profiles", {
+  id: text("id").primaryKey(), // UUID from Supabase auth
+  businessName: text("business_name").notNull(),
+  description: text("description").notNull(),
+  location: text("location").notNull(),
+  profileImageUrl: text("profile_image_url"),
+  websiteUrl: text("website_url"),
+  instagramUrl: text("instagram_url"),
+  linkedinUrl: text("linkedin_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -84,6 +117,16 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
   createdAt: true,
 });
 
+export const insertChefProfileSchema = createInsertSchema(chefProfiles).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBusinessProfileSchema = createInsertSchema(businessProfiles).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -98,3 +141,9 @@ export type Booking = typeof bookings.$inferSelect;
 
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+
+export type InsertChefProfile = z.infer<typeof insertChefProfileSchema>;
+export type ChefProfile = typeof chefProfiles.$inferSelect;
+
+export type InsertBusinessProfile = z.infer<typeof insertBusinessProfileSchema>;
+export type BusinessProfile = typeof businessProfiles.$inferSelect;
