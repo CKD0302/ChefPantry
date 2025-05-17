@@ -85,7 +85,25 @@ export default function Dashboard() {
               <div className="bg-neutral-100 p-4 rounded">
                 <p className="text-center">Complete your chef profile to start receiving booking requests.</p>
                 <div className="flex justify-center mt-4">
-                  <Button className="gradient-bg">
+                  <Button 
+                    className="bg-primary hover:bg-primary-dark text-white"
+                    onClick={() => navigate("/profile/create")}
+                  >
+                    Complete Your Profile
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : userRole === "business" ? (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Your Business Profile</h2>
+              <div className="bg-neutral-100 p-4 rounded">
+                <p className="text-center">Complete your business profile to start finding chefs.</p>
+                <div className="flex justify-center mt-4">
+                  <Button 
+                    className="bg-primary hover:bg-primary-dark text-white"
+                    onClick={() => navigate("/profile/create")}
+                  >
                     Complete Your Profile
                   </Button>
                 </div>
@@ -93,12 +111,15 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Your Business Profile</h2>
+              <h2 className="text-xl font-semibold mb-4">Create Your Profile</h2>
               <div className="bg-neutral-100 p-4 rounded">
-                <p className="text-center">Complete your business profile to start finding chefs.</p>
-                <div className="flex justify-center mt-4">
-                  <Button className="bg-secondary hover:bg-secondary-dark text-white">
-                    Complete Your Profile
+                <p className="text-center">Choose what type of profile you want to create - Chef or Business.</p>
+                <div className="flex justify-center gap-4 mt-4">
+                  <Button 
+                    className="bg-primary hover:bg-primary-dark text-white"
+                    onClick={() => navigate("/profile/create")}
+                  >
+                    Create Profile
                   </Button>
                 </div>
               </div>

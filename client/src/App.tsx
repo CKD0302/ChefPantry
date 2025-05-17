@@ -10,6 +10,7 @@ import NotFound from "@/pages/not-found";
 import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import Dashboard from "@/pages/Dashboard";
+import CreateProfile from "@/pages/profile/CreateProfile";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/auth/signin" component={SignIn} />
       <Route path="/auth/signup" component={SignUp} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/profile/create" component={CreateProfile} />
       <Route component={NotFound} />
     </Switch>
   );

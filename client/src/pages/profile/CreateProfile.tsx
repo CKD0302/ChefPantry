@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { supabase } from "@/utils/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,7 +60,7 @@ export default function CreateProfile() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("chef");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, navigate] = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   // Initialize chef profile form
@@ -123,8 +123,11 @@ export default function CreateProfile() {
       };
 
       // Call API to create profile
-      const response = await apiRequest("/api/profiles/chef", {
+      const response = await fetch("/api/profiles/chef", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(profileData),
       });
 
@@ -176,8 +179,11 @@ export default function CreateProfile() {
       };
 
       // Call API to create profile
-      const response = await apiRequest("/api/profiles/business", {
+      const response = await fetch("/api/profiles/business", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(profileData),
       });
 
