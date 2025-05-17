@@ -79,7 +79,7 @@ export default function Navbar() {
                   <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <DropdownMenuItem onClick={() => navigate("/profile/view")}>
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -171,7 +171,7 @@ export default function Navbar() {
                 </a>
                 <a 
                   className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                  onClick={() => handleNavigation("/profile")}
+                  onClick={() => handleNavigation("/profile/view")}
                 >
                   Profile
                 </a>
