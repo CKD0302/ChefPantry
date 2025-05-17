@@ -208,8 +208,8 @@ export default function ViewGig() {
   };
 
   // Helper functions for displaying data
-  const formatDateTime = (date: string, time: string) => {
-    if (!date) return "N/A";
+  const formatDateTime = (date: string, time: string): { date: string; time: string } => {
+    if (!date) return { date: "N/A", time: "" };
     try {
       const formattedDate = format(new Date(date), "EEEE, MMMM d, yyyy");
       const formattedTime = time || "";

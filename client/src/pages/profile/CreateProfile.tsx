@@ -131,17 +131,31 @@ export default function CreateProfile() {
         body: JSON.stringify(profileData),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create chef profile");
+      }
+
+      console.log("Chef profile created successfully");
+
       // Update user metadata in Supabase to track user type
-      await supabase.auth.updateUser({
+      const { error: metadataError } = await supabase.auth.updateUser({
         data: { role: "chef" }
       });
+
+      if (metadataError) {
+        console.error("Error updating user metadata:", metadataError);
+      }
 
       toast({
         title: "Profile Created",
         description: "Your chef profile has been created successfully!",
       });
 
-      navigate("/dashboard");
+      // Add a short delay to ensure data is persisted before redirecting
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
     } catch (error) {
       console.error("Error creating chef profile:", error);
       toast({
@@ -187,17 +201,31 @@ export default function CreateProfile() {
         body: JSON.stringify(profileData),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create business profile");
+      }
+
+      console.log("Business profile created successfully");
+
       // Update user metadata in Supabase to track user type
-      await supabase.auth.updateUser({
+      const { error: metadataError } = await supabase.auth.updateUser({
         data: { role: "business" }
       });
+
+      if (metadataError) {
+        console.error("Error updating user metadata:", metadataError);
+      }
 
       toast({
         title: "Profile Created",
         description: "Your business profile has been created successfully!",
       });
 
-      navigate("/dashboard");
+      // Add a short delay to ensure data is persisted before redirecting
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
     } catch (error) {
       console.error("Error creating business profile:", error);
       toast({
