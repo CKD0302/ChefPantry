@@ -339,15 +339,45 @@ export default function CreateGig() {
                     <FormField
                       control={form.control}
                       name="payRate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pay Rate ($ per hour)</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="0" step="0.01" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        // Custom handler for pay rate input
+                        const handlePayRateBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+                          const raw = e.target.value;
+                          // Remove all non-numeric characters except decimal point
+                          const cleaned = parseFloat(raw.replace(/[^0-9.]/g, ''));
+                          
+                          if (!isNaN(cleaned)) {
+                            // Format to 2 decimal places
+                            const formattedValue = cleaned.toFixed(2);
+                            e.target.value = formattedValue;
+                            field.onChange(cleaned); // Update the form value with the numeric value
+                          } else {
+                            e.target.value = '';
+                            field.onChange(0); // Update with default value if invalid
+                          }
+                        };
+                        
+                        return (
+                          <FormItem>
+                            <FormLabel>Pay Rate ($ per hour)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="text" 
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                {...field}
+                                onBlur={(e) => {
+                                  handlePayRateBlur(e);
+                                  field.onBlur(); // Call the original onBlur handler
+                                }}
+                                // Format the display value but keep the raw value for the form
+                                value={typeof field.value === 'number' ? field.value.toFixed(2) : field.value}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   </div>
 
