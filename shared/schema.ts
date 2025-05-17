@@ -75,6 +75,7 @@ export const chefProfiles = pgTable("chef_profiles", {
   instagramUrl: text("instagram_url"),
   linkedinUrl: text("linkedin_url"),
   portfolioUrl: text("portfolio_url"),
+  isApproved: boolean("is_approved").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

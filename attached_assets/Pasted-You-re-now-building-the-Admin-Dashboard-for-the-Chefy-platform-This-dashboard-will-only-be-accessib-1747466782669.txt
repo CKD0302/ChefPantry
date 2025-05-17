@@ -1,0 +1,92 @@
+You're now building the Admin Dashboard for the Chefy platform. This dashboard will only be accessible by users with the role = Admin, which is set manually in Supabase metadata.
+
+The goal is to give Chefy platform admins the ability to:
+
+Review and approve/reject chef applications
+
+View and manage users
+
+Suspend/unsuspend accounts
+
+Hide or edit reviews
+
+Manage rewards & export reports (Phase 2+)
+
+🛠️ Step-by-step Build Instructions:
+1. Supabase Admin Role Setup
+Confirm that the auth.users table contains a metadata field called role.
+
+Admin accounts must have: role: "Admin".
+
+2. Create Protected Admin Route
+Create a new page: /pages/admin/dashboard.js
+
+Add a simple access gate:
+
+Only allow access if user is authenticated and has role === Admin.
+
+Example logic:
+
+jsx
+Copy
+Edit
+import { useEffect, useState } from 'react'
+import { supabase } from '../../utils/supabaseClient'
+import useUser from '../../hooks/useUser'
+import { useRouter } from 'next/router'
+
+export default function AdminDashboard() {
+  const { user } = useUser()
+  const [isAdmin, setIsAdmin] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/signin')
+    } else {
+      const checkRole = async () => {
+        const { data } = await supabase.auth.getUser()
+        const role = data?.user?.user_metadata?.role
+        if (role === 'Admin') setIsAdmin(true)
+        else router.push('/')
+      }
+      checkRole()
+    }
+  }, [user])
+
+  if (!isAdmin) return <p>Loading...</p>
+
+  return (
+    <div>
+      <h1>Admin Dashboard</h1>
+      <p>Welcome Admin!</p>
+      {/* Sections will go here */}
+    </div>
+  )
+}
+3. Create Dashboard Sections
+📋 Section A: Pending Chef Applications
+Query chef_profiles where a new boolean column is_approved = false
+
+Show a list of chef names, bio snippet, and a review button
+
+Add "Approve" and "Reject" buttons for each entry
+
+Approving sets is_approved = true
+
+Supabase Schema Update:
+Add column is_approved (boolean, default = false) to chef_profiles
+
+👤 Section B: User Management
+Display all users from auth.users
+
+Include: email, role, status
+
+Add Suspend / Unsuspend buttons:
+
+Use Supabase admin API to update a metadata field suspended = true/false
+
+⭐ Section C: Review Moderation
+(Optional for now — basic table of all reviews if already implemented)
+
+Admin can click "Hide" to set is_hidden = true
