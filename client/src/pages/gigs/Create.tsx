@@ -137,7 +137,7 @@ export default function CreateGig() {
         startTime: data.startTime,
         endTime: data.endTime,
         location: data.location,
-        payRate: parseFloat(data.payRate.toString()), // Ensure it's a number
+        payRate: data.payRate.toString(), // Send as string to match validation expectation
         role: data.role,
         venueType: data.venueType,
         dressCode: data.dressCode || null,
@@ -163,6 +163,12 @@ export default function CreateGig() {
       if (!response.ok) {
         // Log the full response data for better debugging
         console.error("Server validation error (full):", responseData);
+        
+        // Log detailed error information from the errors array if available
+        if (responseData.errors) {
+          console.error("Validation errors detail:", responseData.errors);
+        }
+        
         throw new Error(responseData.message || "Failed to create gig");
       }
 
@@ -179,6 +185,12 @@ export default function CreateGig() {
     } catch (error) {
       // Log the full error object for comprehensive debugging
       console.error("Gig submission error:", error);
+      
+      // Check for and log validation errors array if available
+      const errorObj = error as any;
+      if (errorObj?.errors) {
+        console.error("Supabase validation errors:", errorObj.errors);
+      }
       
       // Improved error display with more detailed information
       let errorMessage = "Failed to create gig";
