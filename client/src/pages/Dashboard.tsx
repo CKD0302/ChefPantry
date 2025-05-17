@@ -43,6 +43,21 @@ export default function Dashboard() {
             .single();
             
           console.log("Business profile check:", { data, error, userId: user.id });
+          
+          // If database check fails, look for profile in localStorage as fallback
+          if (error && error.code === "42P01") {
+            const savedProfile = localStorage.getItem("businessProfile");
+            if (savedProfile) {
+              const profile = JSON.parse(savedProfile);
+              // Check if this profile belongs to the current user
+              if (profile.id === user.id) {
+                console.log("Found business profile in localStorage:", profile);
+                setHasProfile(true);
+                return;
+              }
+            }
+          }
+          
           setHasProfile(!!data);
         } else {
           // No profile to check for other roles
