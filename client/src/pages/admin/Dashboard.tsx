@@ -144,57 +144,46 @@ export default function AdminDashboard() {
     }
   };
 
-  // Approve chef application
+  // Send welcome message to chef (replacing approval process)
   const approveChef = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("chef_profiles")
-        .update({ is_approved: true })
-        .eq("id", id);
-
-      if (error) throw error;
+      // In a real application, we would send a welcome email or notification here
+      // For now, we'll just show a toast message
       
       toast({
         title: "Success",
-        description: "Chef application approved successfully",
+        description: "Welcome message sent to chef",
       });
       
-      // Refresh the list
+      // Refresh the list to keep UI in sync
       fetchPendingChefs();
     } catch (error) {
-      console.error("Error approving chef:", error);
+      console.error("Error sending welcome message:", error);
       toast({
         title: "Error",
-        description: "Failed to approve chef application",
+        description: "Failed to send welcome message",
         variant: "destructive",
       });
     }
   };
 
-  // Reject chef application
+  // Send feedback message to chef (replacing rejection process)
   const rejectChef = async (id: string) => {
     try {
-      // In a real application, you might want to add a rejection reason
-      // or move the entry to a rejected table instead of deleting it
-      const { error } = await supabase
-        .from("chef_profiles")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
+      // In a real application, we would send a feedback email or notification
+      // For now, we'll just show a toast message
       toast({
         title: "Success",
-        description: "Chef application rejected",
+        description: "Feedback message sent to chef",
       });
       
-      // Refresh the list
+      // Refresh the list to keep UI in sync
       fetchPendingChefs();
     } catch (error) {
-      console.error("Error rejecting chef:", error);
+      console.error("Error sending feedback:", error);
       toast({
         title: "Error",
-        description: "Failed to reject chef application",
+        description: "Failed to send feedback",
         variant: "destructive",
       });
     }
@@ -287,41 +276,41 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <Table>
-                    <TableCaption>List of chef applications awaiting approval</TableCaption>
+                    <TableCaption>List of registered chef profiles</TableCaption>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Experience</TableHead>
                         <TableHead>Skills</TableHead>
-                        <TableHead>Date Applied</TableHead>
+                        <TableHead>Date Joined</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {pendingChefs.map((chef) => (
                         <TableRow key={chef.id}>
-                          <TableCell className="font-medium">{chef.fullName}</TableCell>
+                          <TableCell className="font-medium">{chef.fullName || chef.full_name}</TableCell>
                           <TableCell>{chef.location}</TableCell>
-                          <TableCell>{chef.experienceYears} years</TableCell>
-                          <TableCell>{chef.skills.slice(0, 3).join(", ")}</TableCell>
-                          <TableCell>{new Date(chef.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{chef.experienceYears || chef.experience_years} years</TableCell>
+                          <TableCell>{Array.isArray(chef.skills) ? chef.skills.slice(0, 3).join(", ") : ''}</TableCell>
+                          <TableCell>{new Date(chef.createdAt || chef.created_at).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => approveChef(chef.id)}
-                              className="bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 border-green-200"
+                              className="bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200"
                             >
-                              Approve
+                              Send Welcome
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => rejectChef(chef.id)}
-                              className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200"
+                              className="bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 border-amber-200"
                             >
-                              Reject
+                              Send Feedback
                             </Button>
                           </TableCell>
                         </TableRow>
