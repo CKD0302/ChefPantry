@@ -236,7 +236,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new gig (for businesses)
   apiRouter.post("/gigs/create", async (req: Request, res: Response) => {
     try {
+      console.log("Received gig data:", req.body);
       const validatedData = insertGigSchema.parse(req.body);
+      console.log("Validated gig data after parsing:", validatedData);
       const gig = await storage.createGig(validatedData);
       
       res.status(201).json({

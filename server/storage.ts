@@ -288,15 +288,24 @@ export class DBStorage implements IStorage {
   }
   
   async createGig(insertGig: InsertGig): Promise<Gig> {
-    // Handle array fields
-    const gigData = {
-      ...insertGig,
-      equipmentProvided: insertGig.equipmentProvided || [],
-      benefits: insertGig.benefits || []
-    };
-    
-    const result = await db.insert(gigs).values(gigData).returning();
-    return result[0];
+    try {
+      // Handle array fields
+      const gigData = {
+        ...insertGig,
+        equipmentProvided: insertGig.equipmentProvided || [],
+        benefits: insertGig.benefits || []
+      };
+      
+      // Log the exact data being sent to the database
+      console.log("Sending gig data to database:", JSON.stringify(gigData, null, 2));
+      
+      const result = await db.insert(gigs).values(gigData).returning();
+      console.log("Database insert result:", result);
+      return result[0];
+    } catch (error) {
+      console.error("Database error during gig creation:", error);
+      throw error;
+    }
   }
   
   async updateGig(id: string, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
