@@ -43,20 +43,6 @@ export default function Dashboard() {
             .single();
             
           console.log("Business profile check:", { data, error, userId: user.id });
-          
-          // Always check localStorage for a profile, regardless of error
-          const savedProfile = localStorage.getItem(`businessProfile_${user.id}`);
-          if (savedProfile) {
-            try {
-              const profile = JSON.parse(savedProfile);
-              console.log("Found business profile in localStorage:", profile);
-              setHasProfile(true);
-              return;
-            } catch (e) {
-              console.error("Error parsing localStorage profile:", e);
-            }
-          }
-          
           setHasProfile(!!data);
         } else {
           // No profile to check for other roles

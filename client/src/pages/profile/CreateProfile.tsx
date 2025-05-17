@@ -192,32 +192,18 @@ export default function CreateProfile() {
         linkedinUrl: data.linkedinUrl || null,
       };
 
-      // Store the profile data in localStorage regardless of API outcome
-      // This ensures we have a backup of the profile data
-      localStorage.setItem(`businessProfile_${user.id}`, JSON.stringify(profileData));
-      
-      try {
-        // First try to create business profile through API
-        const response = await fetch("/api/profiles/business", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(profileData),
-        });
+      // Call API to create profile
+      const response = await fetch("/api/profiles/business", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(profileData),
+      });
 
-        if (!response.ok) {
-          // We've already saved to localStorage, so it's not a critical failure
-          console.warn("API failed to save profile, but backup saved to localStorage");
-          // Don't throw an error, as we want the profile creation to be considered successful
-        } else {
-          console.log("Profile successfully saved via API");
-        }
-        
-        // Consider the operation successful since we have the localStorage backup
-      } catch (insertError) {
-        console.warn("API request failed, but profile is saved in localStorage:", insertError);
-        // Still consider it a success since the localStorage backup is in place
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create business profile");
       }
 
       console.log("Business profile created successfully");
