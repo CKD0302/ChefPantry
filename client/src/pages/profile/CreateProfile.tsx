@@ -58,7 +58,9 @@ type BusinessProfileFormValues = z.infer<typeof businessProfileSchema>;
 
 export default function CreateProfile() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("chef");
+  // Set the default tab based on the user's role from metadata
+  const userRole = user?.user_metadata?.role || "chef";
+  const [activeTab, setActiveTab] = useState<string>(userRole);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
