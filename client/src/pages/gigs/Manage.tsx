@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/utils/supabaseClient";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -84,18 +85,40 @@ export default function ManageGigs() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/gigs/mine?businessId=${user?.id}`);
+      // Fetch gigs directly from Supabase where created_by matches the current user ID
+      const { data, error } = await supabase
+        .from("gigs")
+        .select("*")
+        .eq("created_by", user?.id)
+        .order("created_at", { ascending: false });
       
-      if (!response.ok) {
+      if (error) {
+        console.error("Supabase error fetching gigs:", error);
         throw new Error("Failed to fetch gigs");
       }
       
-      const data = await response.json();
-      setGigs(data.data || []);
+      console.log("Business gigs fetched successfully:", data);
+      
+      // Transform data from snake_case to camelCase for component compatibility
+      const formattedGigs = data.map(gig => ({
+        id: gig.id,
+        title: gig.title,
+        gigDate: gig.date,
+        startTime: gig.start_time,
+        endTime: gig.end_time,
+        location: gig.location,
+        payRate: gig.pay_rate,
+        role: gig.role,
+        venueType: gig.venue_type,
+        isActive: gig.is_active,
+        createdAt: gig.created_at
+      }));
+      
+      setGigs(formattedGigs || []);
       
       // For each gig, fetch the application count
-      if (data.data && data.data.length > 0) {
-        await Promise.all(data.data.map(fetchApplicationCount));
+      if (formattedGigs && formattedGigs.length > 0) {
+        await Promise.all(formattedGigs.map(fetchApplicationCount));
       }
     } catch (error) {
       console.error("Error fetching gigs:", error);
@@ -112,16 +135,22 @@ export default function ManageGigs() {
 
   const fetchApplicationCount = async (gig: Gig) => {
     try {
-      const response = await fetch(`/api/gigs/${gig.id}/applications`);
+      // Fetch applications directly from Supabase
+      const { data, error } = await supabase
+        .from("gig_applications")
+        .select("*")
+        .eq("gig_id", gig.id);
       
-      if (!response.ok) {
+      if (error) {
+        console.error(`Supabase error fetching applications for gig ${gig.id}:`, error);
         throw new Error(`Failed to fetch applications for gig ${gig.id}`);
       }
       
-      const data = await response.json();
+      console.log(`Applications for gig ${gig.id} fetched successfully:`, data);
+      
       setApplications(prev => ({
         ...prev,
-        [gig.id]: data.data?.length || 0
+        [gig.id]: data?.length || 0
       }));
     } catch (error) {
       console.error(`Error fetching applications for gig ${gig.id}:`, error);
@@ -130,17 +159,19 @@ export default function ManageGigs() {
 
   const toggleGigStatus = async (gigId: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/gigs/${gigId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
+      // Update gig status directly in Supabase
+      const { data, error } = await supabase
+        .from("gigs")
+        .update({ is_active: !currentStatus })
+        .eq("id", gigId)
+        .select();
       
-      if (!response.ok) {
+      if (error) {
+        console.error("Supabase error updating gig status:", error);
         throw new Error("Failed to update gig status");
       }
+      
+      console.log("Gig status updated successfully:", data);
       
       // Update the local gigs state
       setGigs(prev => 
