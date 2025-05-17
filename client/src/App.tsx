@@ -40,6 +40,7 @@ function Router() {
       <Route path="/gigs/manage" component={ManageGigs} />
       <Route path="/gigs/browse" component={BrowseGigs} />
       <Route path="/gigs/view/:id" component={ViewGig} />
+      <Route path="/gigs/applications/:gigId" component={() => import("@/pages/gigs/applications/[gigId]")} />
       
       <Route component={NotFound} />
     </Switch>

@@ -197,7 +197,7 @@ export default function ManageGigs() {
   };
 
   const viewApplications = (gigId: string) => {
-    navigate(`/gigs/${gigId}/applications`);
+    navigate(`/gigs/applications/${gigId}`);
   };
 
   const editGig = (gigId: string) => {
