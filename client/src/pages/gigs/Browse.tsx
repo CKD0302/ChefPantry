@@ -49,7 +49,7 @@ interface Gig {
 
 // Role and venue type options for filtering
 const roleOptions = [
-  { value: "", label: "All Roles" },
+  { value: "all_roles", label: "All Roles" },
   { value: "head_chef", label: "Head Chef" },
   { value: "sous_chef", label: "Sous Chef" },
   { value: "pastry_chef", label: "Pastry Chef" },
@@ -65,7 +65,7 @@ const roleOptions = [
 ];
 
 const venueTypeOptions = [
-  { value: "", label: "All Venues" },
+  { value: "all_venues", label: "All Venues" },
   { value: "fine_dining", label: "Fine Dining" },
   { value: "casual_dining", label: "Casual Dining" },
   { value: "cafe", label: "Café" },
@@ -149,12 +149,12 @@ export default function BrowseGigs() {
     }
 
     // Filter by role
-    if (roleFilter) {
+    if (roleFilter && roleFilter !== 'all_roles') {
       filtered = filtered.filter(gig => gig.role === roleFilter);
     }
 
     // Filter by venue type
-    if (venueFilter) {
+    if (venueFilter && venueFilter !== 'all_venues') {
       filtered = filtered.filter(gig => gig.venueType === venueFilter);
     }
 
