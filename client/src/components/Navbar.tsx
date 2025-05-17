@@ -15,10 +15,10 @@ export default function Navbar() {
           <div className="flex items-center">
             {/* Logo */}
             <Link href="/">
-              <a className="flex-shrink-0 flex items-center cursor-pointer">
+              <div className="flex-shrink-0 flex items-center cursor-pointer">
                 <span className="text-primary font-poppins font-bold text-2xl">Chefy</span>
                 <UtensilsIcon className="ml-2 text-primary h-5 w-5" />
-              </a>
+              </div>
             </Link>
           </div>
           
