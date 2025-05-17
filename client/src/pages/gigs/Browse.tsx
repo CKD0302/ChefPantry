@@ -183,15 +183,42 @@ export default function BrowseGigs() {
     setError(null);
 
     try {
-      const response = await fetch("/api/gigs/all");
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch gigs");
+      // Fetch gigs directly from Supabase instead of using API
+      const { data, error } = await supabase
+        .from("gigs")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+        
+      if (error) {
+        throw error;
       }
       
-      const data = await response.json();
-      setGigs(data.data || []);
-      setFilteredGigs(data.data || []);
+      console.log("Gigs fetched successfully:", data);
+      
+      // Transform the data from snake_case to camelCase
+      const formattedGigs = data.map(gig => ({
+        id: gig.id,
+        title: gig.title,
+        gigDate: gig.date,
+        startTime: gig.start_time,
+        endTime: gig.end_time,
+        location: gig.location,
+        payRate: gig.pay_rate,
+        role: gig.role,
+        venueType: gig.venue_type,
+        dressCode: gig.dress_code,
+        serviceExpectations: gig.service_expectations,
+        kitchenDetails: gig.kitchen_details,
+        equipmentProvided: gig.equipment_provided || [],
+        benefits: gig.benefits || [],
+        tipsAvailable: gig.tips_available,
+        createdAt: gig.created_at,
+        createdBy: gig.created_by
+      }));
+      
+      setGigs(formattedGigs || []);
+      setFilteredGigs(formattedGigs || []);
     } catch (error) {
       console.error("Error fetching gigs:", error);
       setError("Failed to load available gigs. Please try again later.");
