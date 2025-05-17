@@ -73,7 +73,7 @@ export default function GigApplications() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const { toast } = useToast();
 
-  // Get gig ID from URL
+  // Get gig ID from URL params
   const location = window.location.pathname;
   const gigId = location.split("/").pop() || "";
 
