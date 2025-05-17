@@ -11,6 +11,8 @@ import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import Dashboard from "@/pages/Dashboard";
 import CreateProfile from "@/pages/profile/CreateProfile";
+import ViewProfile from "@/pages/profile/View";
+import EditProfile from "@/pages/profile/Edit";
 import AdminDashboard from "@/pages/admin/Dashboard";
 
 // Gig Management Pages
@@ -26,7 +28,11 @@ function Router() {
       <Route path="/auth/signin" component={SignIn} />
       <Route path="/auth/signup" component={SignUp} />
       <Route path="/dashboard" component={Dashboard} />
+      
+      {/* Profile Management Routes */}
       <Route path="/profile/create" component={CreateProfile} />
+      <Route path="/profile/view" component={ViewProfile} />
+      <Route path="/profile/edit" component={EditProfile} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       
       {/* Gig Management Routes */}
