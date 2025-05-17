@@ -131,7 +131,7 @@ export default function CreateGig() {
     try {
       // Format the data for the API
       const gigData = {
-        createdBy: user.id,
+        created_by: user.id, // Changed to match the database schema field name
         title: data.title,
         gigDate: data.gigDate,
         startTime: data.startTime,
@@ -171,7 +171,7 @@ export default function CreateGig() {
       // Redirect to the gig management page
       navigate("/gigs/manage");
     } catch (error) {
-      console.error("Error creating gig:", error);
+      console.error("Error creating gig:", error instanceof Error ? error.message || error : error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create gig",
