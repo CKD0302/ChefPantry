@@ -30,16 +30,20 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-// Chef application interface
+// Chef profile interface with support for both camelCase and snake_case
 interface ChefApplication {
   id: string;
-  fullName: string;
+  fullName?: string;
+  full_name?: string;
   bio: string;
   skills: string[];
-  experienceYears: number;
+  experienceYears?: number;
+  experience_years?: number;
   location: string;
-  isApproved: boolean;
-  createdAt: string;
+  travelRadiusKm?: number;
+  travel_radius_km?: number;
+  createdAt?: string;
+  created_at?: string;
 }
 
 // User interface for admin view
@@ -290,11 +294,23 @@ export default function AdminDashboard() {
                     <TableBody>
                       {pendingChefs.map((chef) => (
                         <TableRow key={chef.id}>
-                          <TableCell className="font-medium">{chef.fullName || chef.full_name}</TableCell>
-                          <TableCell>{chef.location}</TableCell>
-                          <TableCell>{chef.experienceYears || chef.experience_years} years</TableCell>
-                          <TableCell>{Array.isArray(chef.skills) ? chef.skills.slice(0, 3).join(", ") : ''}</TableCell>
-                          <TableCell>{new Date(chef.createdAt || chef.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell className="font-medium">
+                            {chef.fullName || chef.full_name || ""}
+                          </TableCell>
+                          <TableCell>{chef.location || ""}</TableCell>
+                          <TableCell>
+                            {(chef.experienceYears || chef.experience_years || 0)} years
+                          </TableCell>
+                          <TableCell>
+                            {Array.isArray(chef.skills) 
+                              ? chef.skills.slice(0, 3).join(", ") 
+                              : ''}
+                          </TableCell>
+                          <TableCell>
+                            {(chef.createdAt || chef.created_at) 
+                              ? new Date(chef.createdAt || chef.created_at).toLocaleDateString() 
+                              : new Date().toLocaleDateString()}
+                          </TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button 
                               variant="outline" 
