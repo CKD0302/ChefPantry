@@ -129,24 +129,24 @@ export default function CreateGig() {
     setIsSubmitting(true);
 
     try {
-      // Format the data for the API with snake_case field names to match the database schema
+      // Format the data for the API using camelCase field names that match the schema
       const gigData = {
-        created_by: user.id,
+        createdBy: user.id,
         title: data.title,
-        date: data.gigDate, // Changed from gigDate to date
-        start_time: data.startTime, // Changed from startTime to start_time
-        end_time: data.endTime, // Changed from endTime to end_time
+        gigDate: data.gigDate,
+        startTime: data.startTime,
+        endTime: data.endTime,
         location: data.location,
-        pay_rate: parseFloat(data.payRate.toString()), // Changed from payRate to pay_rate, ensure it's a number
+        payRate: parseFloat(data.payRate.toString()), // Ensure it's a number
         role: data.role,
-        venue_type: data.venueType, // Changed from venueType to venue_type
-        dress_code: data.dressCode || null, // Changed from dressCode to dress_code
-        service_expectations: data.serviceExpectations || null, // Changed from serviceExpectations to service_expectations
-        kitchen_details: data.kitchenDetails || null, // Changed from kitchenDetails to kitchen_details
-        equipment_provided: data.equipmentProvided ? data.equipmentProvided.split(',').map(item => item.trim()) : [], // Changed from equipmentProvided to equipment_provided
+        venueType: data.venueType,
+        dressCode: data.dressCode || null,
+        serviceExpectations: data.serviceExpectations || null,
+        kitchenDetails: data.kitchenDetails || null,
+        equipmentProvided: data.equipmentProvided ? data.equipmentProvided.split(',').map(item => item.trim()) : [],
         benefits: data.benefits ? data.benefits.split(',').map(item => item.trim()) : [],
-        tips_available: data.tipsAvailable === true, // Changed from tipsAvailable to tips_available, ensure it's a boolean
-        is_active: true, // Changed from isActive to is_active
+        tipsAvailable: data.tipsAvailable === true,
+        isActive: true
       };
 
       // Send the request to the API
@@ -161,7 +161,8 @@ export default function CreateGig() {
       const responseData = await response.json();
       
       if (!response.ok) {
-        console.error("Server validation error:", responseData);
+        // Log the full response data for better debugging
+        console.error("Server validation error (full):", responseData);
         throw new Error(responseData.message || "Failed to create gig");
       }
 
@@ -176,19 +177,16 @@ export default function CreateGig() {
       // Redirect to the gig management page
       navigate("/gigs/manage");
     } catch (error) {
-      console.error("Error creating gig:", error instanceof Error ? error.message || error : error);
+      // Log the full error object for comprehensive debugging
+      console.error("Gig submission error:", error);
       
       // Improved error display with more detailed information
       let errorMessage = "Failed to create gig";
       if (error instanceof Error) {
         errorMessage = error.message;
-        // Check if there's validation details in the error object
-        const errorObj = error as any;
-        if (errorObj.details) {
-          console.error("Validation details:", errorObj.details);
-        }
       }
       
+      // Display the error to the user
       toast({
         title: "Error",
         description: errorMessage,
