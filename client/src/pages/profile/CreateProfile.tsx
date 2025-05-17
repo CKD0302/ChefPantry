@@ -182,6 +182,7 @@ export default function CreateProfile() {
     setIsSubmitting(true);
 
     try {
+      // Prepare the profile data
       const profileData = {
         id: user.id,
         businessName: data.businessName,
@@ -192,21 +193,63 @@ export default function CreateProfile() {
         linkedinUrl: data.linkedinUrl || null,
       };
 
-      // Call API to create profile
-      const response = await fetch("/api/profiles/business", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(profileData),
-      });
+      let profileCreated = false;
+      let apiError = null;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create business profile");
+      // Try the API first
+      try {
+        // Call API to create profile
+        const response = await fetch("/api/profiles/business", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(profileData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          apiError = new Error(errorData.message || "Failed to create business profile");
+          console.warn("API failed, attempting direct Supabase insert as fallback");
+        } else {
+          console.log("Business profile created successfully via API");
+          profileCreated = true;
+        }
+      } catch (error) {
+        apiError = error;
+        console.warn("API failed, attempting direct Supabase insert as fallback");
       }
 
-      console.log("Business profile created successfully");
+      // If API failed, try direct Supabase insert as fallback
+      if (!profileCreated) {
+        try {
+          // Convert to Supabase field naming convention (snake_case)
+          const { error } = await supabase.from("business_profiles").insert({
+            id: user.id,
+            business_name: data.businessName,
+            description: data.description,
+            location: data.location,
+            website_url: data.websiteUrl || null,
+            instagram_url: data.instagramUrl || null,
+            linkedin_url: data.linkedinUrl || null
+          });
+
+          if (error) {
+            console.error("Supabase insert error:", error.message || error);
+            throw error;
+          }
+          
+          console.log("Business profile created successfully via Supabase direct insert");
+          profileCreated = true;
+        } catch (supabaseError) {
+          console.error("Supabase insert error:", supabaseError);
+          if (apiError) {
+            console.error("All profile creation methods failed:", apiError);
+            throw apiError;
+          }
+          throw supabaseError;
+        }
+      }
 
       // Update user metadata in Supabase to track user type
       const { error: metadataError } = await supabase.auth.updateUser({
@@ -214,7 +257,7 @@ export default function CreateProfile() {
       });
 
       if (metadataError) {
-        console.error("Error updating user metadata:", metadataError);
+        console.error("Error updating user metadata:", metadataError.message || metadataError);
       }
 
       toast({
@@ -225,7 +268,7 @@ export default function CreateProfile() {
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Error creating business profile:", error);
       toast({
