@@ -122,21 +122,70 @@ export default function CreateProfile() {
         portfolioUrl: data.portfolioUrl || null,
       };
 
-      // Call API to create profile
-      const response = await fetch("/api/profiles/chef", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(profileData),
-      });
+      let profileCreated = false;
+      let apiError = null;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create chef profile");
+      // Try the API first
+      try {
+        // Call API to create profile
+        const response = await fetch("/api/profiles/chef", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(profileData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          apiError = new Error(errorData.message || "Failed to create chef profile");
+          console.warn("API failed, attempting direct Supabase insert as fallback");
+        } else {
+          console.log("Chef profile created successfully via API");
+          profileCreated = true;
+        }
+      } catch (error) {
+        apiError = error;
+        console.warn("API failed, attempting direct Supabase insert as fallback");
       }
 
-      console.log("Chef profile created successfully");
+      // If API failed, try direct Supabase insert as fallback
+      if (!profileCreated) {
+        try {
+          // Convert to Supabase field naming convention (snake_case)
+          const { error } = await supabase.from("chef_profiles").insert({
+            id: user.id,
+            full_name: data.fullName,
+            bio: data.bio,
+            skills: skillsArray,
+            experience_years: data.experienceYears,
+            location: data.location,
+            travel_radius_km: data.travelRadiusKm || 50,
+            profile_image_url: null,
+            dish_photos_urls: [],
+            intro_video_url: null,
+            instagram_url: data.instagramUrl || null,
+            linkedin_url: data.linkedinUrl || null,
+            portfolio_url: data.portfolioUrl || null,
+            is_approved: false
+          });
+
+          if (error) {
+            console.error("Supabase insert error:", error.message || error);
+            throw error;
+          }
+          
+          console.log("Chef profile created successfully via Supabase direct insert");
+          profileCreated = true;
+        } catch (supabaseError) {
+          console.error("Supabase insert error:", supabaseError);
+          if (apiError) {
+            console.error("All profile creation methods failed:", apiError);
+            throw apiError;
+          }
+          throw supabaseError;
+        }
+      }
 
       // Update user metadata in Supabase to track user type
       const { error: metadataError } = await supabase.auth.updateUser({
@@ -144,7 +193,7 @@ export default function CreateProfile() {
       });
 
       if (metadataError) {
-        console.error("Error updating user metadata:", metadataError);
+        console.error("Error updating user metadata:", metadataError.message || metadataError);
       }
 
       toast({
@@ -155,7 +204,7 @@ export default function CreateProfile() {
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Error creating chef profile:", error);
       toast({
