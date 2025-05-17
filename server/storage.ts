@@ -19,10 +19,16 @@ import {
   type InsertChefProfile,
   businessProfiles,
   type BusinessProfile,
-  type InsertBusinessProfile
+  type InsertBusinessProfile,
+  gigs,
+  type Gig,
+  type InsertGig,
+  gigApplications,
+  type GigApplication,
+  type InsertGigApplication
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -59,6 +65,21 @@ export interface IStorage {
   getBusinessProfile(id: string): Promise<BusinessProfile | undefined>;
   createBusinessProfile(profile: InsertBusinessProfile): Promise<BusinessProfile>;
   updateBusinessProfile(id: string, profile: Partial<InsertBusinessProfile>): Promise<BusinessProfile | undefined>;
+  
+  // Gig methods
+  getGig(id: string): Promise<Gig | undefined>;
+  getAllActiveGigs(): Promise<Gig[]>;
+  getGigsByBusinessId(businessId: string): Promise<Gig[]>;
+  createGig(gig: InsertGig): Promise<Gig>;
+  updateGig(id: string, gig: Partial<InsertGig>): Promise<Gig | undefined>;
+  setGigStatus(id: string, isActive: boolean): Promise<Gig | undefined>;
+  
+  // Gig Application methods
+  getGigApplication(id: string): Promise<GigApplication | undefined>;
+  getGigApplicationsByGigId(gigId: string): Promise<GigApplication[]>;
+  getGigApplicationsByChefId(chefId: string): Promise<GigApplication[]>;
+  createGigApplication(application: InsertGigApplication): Promise<GigApplication>;
+  updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined>;
 }
 
 export class DBStorage implements IStorage {
@@ -241,6 +262,100 @@ export class DBStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(businessProfiles.id, id))
+      .returning();
+    
+    return result[0];
+  }
+
+  // Gig methods
+  async getGig(id: string): Promise<Gig | undefined> {
+    const result = await db.select().from(gigs).where(eq(gigs.id, id));
+    return result[0];
+  }
+  
+  async getAllActiveGigs(): Promise<Gig[]> {
+    return db.select()
+      .from(gigs)
+      .where(eq(gigs.isActive, true))
+      .orderBy(desc(gigs.createdAt));
+  }
+  
+  async getGigsByBusinessId(businessId: string): Promise<Gig[]> {
+    return db.select()
+      .from(gigs)
+      .where(eq(gigs.createdBy, businessId))
+      .orderBy(desc(gigs.createdAt));
+  }
+  
+  async createGig(insertGig: InsertGig): Promise<Gig> {
+    // Handle array fields
+    const gigData = {
+      ...insertGig,
+      equipmentProvided: insertGig.equipmentProvided || [],
+      benefits: insertGig.benefits || []
+    };
+    
+    const result = await db.insert(gigs).values(gigData).returning();
+    return result[0];
+  }
+  
+  async updateGig(id: string, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
+    // First check if gig exists
+    const existingGig = await this.getGig(id);
+    if (!existingGig) {
+      return undefined;
+    }
+    
+    const result = await db.update(gigs)
+      .set(updateData)
+      .where(eq(gigs.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async setGigStatus(id: string, isActive: boolean): Promise<Gig | undefined> {
+    return this.updateGig(id, { isActive });
+  }
+  
+  // Gig Application methods
+  async getGigApplication(id: string): Promise<GigApplication | undefined> {
+    const result = await db.select().from(gigApplications).where(eq(gigApplications.id, id));
+    return result[0];
+  }
+  
+  async getGigApplicationsByGigId(gigId: string): Promise<GigApplication[]> {
+    return db.select()
+      .from(gigApplications)
+      .where(eq(gigApplications.gigId, gigId))
+      .orderBy(desc(gigApplications.appliedAt));
+  }
+  
+  async getGigApplicationsByChefId(chefId: string): Promise<GigApplication[]> {
+    return db.select()
+      .from(gigApplications)
+      .where(eq(gigApplications.chefId, chefId))
+      .orderBy(desc(gigApplications.appliedAt));
+  }
+  
+  async createGigApplication(insertApplication: InsertGigApplication): Promise<GigApplication> {
+    const result = await db.insert(gigApplications).values(insertApplication).returning();
+    return result[0];
+  }
+  
+  async updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined> {
+    // First check if application exists
+    const existingApplication = await this.getGigApplication(id);
+    if (!existingApplication) {
+      return undefined;
+    }
+    
+    const result = await db.update(gigApplications)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(gigApplications.id, id))
       .returning();
     
     return result[0];

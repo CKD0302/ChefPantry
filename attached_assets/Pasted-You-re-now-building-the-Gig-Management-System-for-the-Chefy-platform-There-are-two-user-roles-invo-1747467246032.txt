@@ -1,0 +1,128 @@
+You're now building the Gig Management System for the Chefy platform.
+
+There are two user roles involved:
+
+Hospitality Businesses: Post and manage gigs.
+
+Chefs: Browse and apply for gigs.
+
+🛠️ Step-by-Step Instructions:
+1. Create a Supabase Table: gigs
+Schema:
+
+id (uuid, primary key)
+
+created_by (uuid, references auth.users.id)
+
+title (text)
+
+date (date)
+
+start_time (time)
+
+end_time (time)
+
+location (text)
+
+pay_rate (numeric)
+
+role (text) – e.g. Sous Chef, KP
+
+venue_type (text) – e.g. gastropub, fine dining
+
+dress_code (text)
+
+service_expectations (text)
+
+kitchen_details (text)
+
+equipment_provided (text[])
+
+benefits (text[])
+
+tips_available (boolean)
+
+is_active (boolean, default true)
+
+2. Create gig_applications Table
+Schema:
+
+id (uuid, primary key)
+
+gig_id (uuid, references gigs.id)
+
+chef_id (uuid, references auth.users.id)
+
+status (text) – default: applied, options: applied, shortlisted, rejected, accepted
+
+message (text, optional)
+
+3. API Endpoints (Next.js or Express style)
+Businesses:
+
+POST /api/gigs/create → create a gig
+
+GET /api/gigs/mine → get all gigs posted by the logged-in business
+
+PUT /api/gigs/:id → edit a gig
+
+Chefs:
+
+GET /api/gigs/all → list all active gigs
+
+POST /api/gigs/apply → submit application to a gig
+
+4. Frontend Pages
+Create pages under /pages/gigs/:
+
+For Businesses:
+create.js → gig creation form
+
+manage.js → view and edit gigs they’ve posted
+
+For Chefs:
+browse.js → browse all gigs
+
+view/[gigId].js → detailed gig view with "Apply" button
+
+For Applications (optional in Phase 1):
+my-applications.js → show gigs the chef has applied to
+
+5. Example: Business Gig Creation Form
+jsx
+Copy
+Edit
+import { useState } from 'react'
+import { supabase } from '../../utils/supabaseClient'
+import useUser from '../../hooks/useUser'
+
+export default function CreateGig() {
+  const { user } = useUser()
+  const [form, setForm] = useState({
+    title: '', date: '', start_time: '', end_time: '',
+    location: '', pay_rate: '', role: '', venue_type: '',
+    dress_code: '', service_expectations: '', kitchen_details: '',
+    equipment_provided: '', benefits: '', tips_available: false
+  })
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const { error } = await supabase.from('gigs').insert([{ 
+      ...form, 
+      created_by: user.id,
+      equipment_provided: form.equipment_provided.split(','),
+      benefits: form.benefits.split(','),
+    }])
+    if (error) alert(error.message)
+    else alert("Gig posted successfully!")
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input placeholder="Title" onChange={e => setForm({...form, title: e.target.value})} />
+      <input type="date" onChange={e => setForm({...form, date: e.target.value})} />
+      {/* Repeat for other fields */}
+      <button type="submit">Post Gig</button>
+    </form>
+  )
+}

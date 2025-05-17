@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uuid, time, date, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -94,6 +94,39 @@ export const businessProfiles = pgTable("business_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Gigs table for job postings
+export const gigs = pgTable("gigs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdBy: text("created_by").notNull(), // UUID from Supabase auth
+  title: text("title").notNull(),
+  gigDate: date("date").notNull(),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  location: text("location").notNull(),
+  payRate: numeric("pay_rate").notNull(),
+  role: text("role").notNull(),
+  venueType: text("venue_type").notNull(),
+  dressCode: text("dress_code"),
+  serviceExpectations: text("service_expectations"),
+  kitchenDetails: text("kitchen_details"),
+  equipmentProvided: text("equipment_provided").array(),
+  benefits: text("benefits").array(),
+  tipsAvailable: boolean("tips_available").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Gig Applications table for chef applications
+export const gigApplications = pgTable("gig_applications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gigId: uuid("gig_id").notNull().references(() => gigs.id),
+  chefId: text("chef_id").notNull(), // UUID from Supabase auth
+  status: text("status").notNull().default("applied"),
+  message: text("message"),
+  appliedAt: timestamp("applied_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -128,6 +161,17 @@ export const insertBusinessProfileSchema = createInsertSchema(businessProfiles).
   updatedAt: true,
 });
 
+export const insertGigSchema = createInsertSchema(gigs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGigApplicationSchema = createInsertSchema(gigApplications).omit({
+  id: true,
+  appliedAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -148,3 +192,9 @@ export type ChefProfile = typeof chefProfiles.$inferSelect;
 
 export type InsertBusinessProfile = z.infer<typeof insertBusinessProfileSchema>;
 export type BusinessProfile = typeof businessProfiles.$inferSelect;
+
+export type InsertGig = z.infer<typeof insertGigSchema>;
+export type Gig = typeof gigs.$inferSelect;
+
+export type InsertGigApplication = z.infer<typeof insertGigApplicationSchema>;
+export type GigApplication = typeof gigApplications.$inferSelect;
