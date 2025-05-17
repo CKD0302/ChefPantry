@@ -166,8 +166,7 @@ export default function CreateProfile() {
             intro_video_url: null,
             instagram_url: data.instagramUrl || null,
             linkedin_url: data.linkedinUrl || null,
-            portfolio_url: data.portfolioUrl || null,
-            is_approved: false
+            portfolio_url: data.portfolioUrl || null
           });
 
           if (error) {

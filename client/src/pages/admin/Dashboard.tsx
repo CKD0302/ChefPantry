@@ -95,22 +95,21 @@ export default function AdminDashboard() {
     checkAdminStatus();
   }, [user, navigate, toast]);
 
-  // Fetch pending chef applications
+  // Fetch all chef profiles
   const fetchPendingChefs = async () => {
     try {
       const { data, error } = await supabase
         .from("chef_profiles")
-        .select("*")
-        .eq("is_approved", false);
+        .select("*");
 
       if (error) throw error;
       
       setPendingChefs(data || []);
     } catch (error) {
-      console.error("Error fetching pending chefs:", error);
+      console.error("Error fetching chefs:", error);
       toast({
         title: "Error",
-        description: "Failed to load pending chef applications",
+        description: "Failed to load chef profiles",
         variant: "destructive",
       });
     }
