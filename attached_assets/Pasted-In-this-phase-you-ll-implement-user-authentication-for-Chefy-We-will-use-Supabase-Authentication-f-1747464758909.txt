@@ -1,0 +1,166 @@
+In this phase, you'll implement user authentication for Chefy. We will use Supabase Authentication for simplicity, reliability, and built-in security.
+
+Roles to set up:
+
+Chefs
+
+Hospitality Businesses
+
+Platform Admins (admins will initially be set manually via Supabase dashboard)
+
+🎯 Step-by-step Instructions
+1. Supabase Authentication Integration:
+
+Use Supabase’s authentication features to provide user registration (sign-up), login (sign-in), and logout capabilities.
+
+Ensure you have these environment variables already in .env:
+
+ini
+Copy
+Edit
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+Initialize Supabase client (if not already done) in /utils/supabaseClient.js:
+
+jsx
+Copy
+Edit
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+2. Create Sign-up & Sign-in Pages:
+
+Create a new folder: /pages/auth
+
+Add two pages:
+
+signup.js: allows users to register (email/password & select role: Chef or Business)
+
+signin.js: allows users to log in (email/password)
+
+3. Basic UI & Forms:
+
+Use simple React forms for input fields:
+
+Email
+
+Password
+
+Dropdown for role selection (only on signup)
+
+Include basic validation & error handling.
+
+Example signup page (/pages/auth/signup.js):
+
+jsx
+Copy
+Edit
+import { useState } from 'react'
+import { supabase } from '../../utils/supabaseClient'
+
+export default function Signup() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [role, setRole] = useState('Chef')
+
+  const handleSignup = async (e) => {
+    e.preventDefault()
+    const { user, error } = await supabase.auth.signUp({
+      email,
+      password,
+    }, {
+      data: { role }
+    })
+    if (error) alert(error.message)
+    else alert('Signup successful, check your email!')
+  }
+
+  return (
+    <form onSubmit={handleSignup}>
+      <input type="email" placeholder="Email" required onChange={(e)=>setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" required onChange={(e)=>setPassword(e.target.value)} />
+      <select onChange={(e)=>setRole(e.target.value)}>
+        <option value="Chef">Chef</option>
+        <option value="Business">Hospitality Business</option>
+      </select>
+      <button type="submit">Sign Up</button>
+    </form>
+  )
+}
+Example signin page (/pages/auth/signin.js):
+
+jsx
+Copy
+Edit
+import { useState } from 'react'
+import { supabase } from '../../utils/supabaseClient'
+
+export default function Signin() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  const handleSignin = async (e) => {
+    e.preventDefault()
+    const { user, error } = await supabase.auth.signIn({ email, password })
+    if (error) alert(error.message)
+    else alert('Signin successful!')
+  }
+
+  return (
+    <form onSubmit={handleSignin}>
+      <input type="email" placeholder="Email" required onChange={(e)=>setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" required onChange={(e)=>setPassword(e.target.value)} />
+      <button type="submit">Sign In</button>
+    </form>
+  )
+}
+4. Session Management:
+
+Set up basic user session management:
+
+Add a context or simple hook to check auth state.
+
+Example /hooks/useUser.js:
+
+jsx
+Copy
+Edit
+import { useState, useEffect } from 'react'
+import { supabase } from '../utils/supabaseClient'
+
+export default function useUser() {
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const session = supabase.auth.session()
+    setUser(session?.user ?? null)
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => listener.unsubscribe()
+  }, [])
+
+  return { user }
+}
+5. Protect Routes Based on Authentication:
+
+Set up protected routes example: authenticated users only can see.
+
+Example: /pages/dashboard.js
+
+jsx
+Copy
+Edit
+import useUser from '../hooks/useUser'
+
+export default function Dashboard() {
+  const { user } = useUser()
+  if (!user) return <div>Please sign in to access your dashboard</div>
+
+  return <div>Welcome {user.email}, this is your Chefy dashboard!</div>
+}
