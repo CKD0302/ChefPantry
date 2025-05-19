@@ -414,14 +414,16 @@ export default function ViewProfile() {
             <Card>
               <CardHeader className="pb-3">
                 {chefProfile?.profile_image_url ? (
-                  <div className="w-48 h-48 mx-auto mb-4 bg-neutral-100 shadow-md relative">
-                    <div 
-                      className="w-full h-full rounded-full" 
+                  <div className="w-48 h-48 mx-auto mb-4 overflow-hidden rounded-full bg-neutral-100 shadow-md">
+                    {/* Direct image element with optimized CSS for quality */}
+                    <img
+                      src={chefProfile.profile_image_url}
+                      alt={chefProfile.full_name}
+                      className="w-full h-full object-cover"
                       style={{
-                        backgroundImage: `url(${chefProfile.profile_image_url})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center center',
-                        backgroundRepeat: 'no-repeat'
+                        transform: 'scale(1.01)', /* Slight scale to prevent edge artifacts */
+                        imageRendering: 'auto',
+                        maxWidth: '100%'
                       }}
                     />
                   </div>
