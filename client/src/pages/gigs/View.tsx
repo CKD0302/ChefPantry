@@ -409,7 +409,7 @@ export default function ViewGig() {
                   <Clock className="h-5 w-5 text-neutral-500 mr-2" />
                   <div>
                     <p className="text-sm text-neutral-500">Time</p>
-                    <p className="font-medium">{gig.startTime} - {gig.endTime}</p>
+                    <p className="font-medium">{gig.startTime.substring(0, 5)} - {gig.endTime.substring(0, 5)}</p>
                   </div>
                 </div>
                 <div className="flex items-center">

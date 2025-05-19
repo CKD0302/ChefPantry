@@ -208,7 +208,8 @@ export default function ManageGigs() {
     if (!date) return "N/A";
     try {
       const formattedDate = format(new Date(date), "MMM d, yyyy");
-      const formattedTime = time ? ` at ${time}` : "";
+      // Convert time from HH:MM:SS to HH:MM format
+      const formattedTime = time ? ` at ${time.substring(0, 5)}` : "";
       return `${formattedDate}${formattedTime}`;
     } catch (error) {
       return "Invalid date";
