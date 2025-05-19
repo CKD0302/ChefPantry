@@ -126,20 +126,29 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="relative">
-        <Avatar className="w-32 h-32 border-2 border-primary">
-          {previewUrl ? (
-            <AvatarImage 
+        {previewUrl ? (
+          <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-primary">
+            <img 
               src={previewUrl} 
               alt="Profile" 
-              className="object-cover" 
-              style={{ imageRendering: 'auto' }}
+              className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              style={{ 
+                imageRendering: 'auto',
+                objectPosition: 'center',
+                transform: 'scale(1.01)', /* Prevents edge artifacts */
+                backfaceVisibility: 'hidden' /* Prevents rendering issues */
+              }}
             />
-          ) : (
+          </div>
+        ) : (
+          <Avatar className="w-32 h-32 border-2 border-primary">
             <AvatarFallback className="bg-primary/10 text-primary text-xl">
               {getInitials(userId)}
             </AvatarFallback>
-          )}
-        </Avatar>
+          </Avatar>
+        )}
 
         {previewUrl && (
           <Button 
