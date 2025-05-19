@@ -238,6 +238,7 @@ export default function EditProfile() {
         experience_years: data.experienceYears,
         location: data.location,
         travel_radius_km: data.travelRadiusKm || 50,
+        profile_image_url: data.profileImageUrl || null,
         instagram_url: data.instagramUrl || null,
         linkedin_url: data.linkedinUrl || null,
         portfolio_url: data.portfolioUrl || null,
@@ -359,6 +360,17 @@ export default function EditProfile() {
               <CardContent>
                 <Form {...chefForm}>
                   <form onSubmit={chefForm.handleSubmit(onChefSubmit)} className="space-y-6">
+                    <div className="flex flex-col items-center mb-6">
+                      <h3 className="text-lg font-medium mb-4">Profile Photo</h3>
+                      {user && (
+                        <ImageUpload 
+                          userId={user.id}
+                          onUploadComplete={(url) => chefForm.setValue("profileImageUrl", url)}
+                          existingImageUrl={chefForm.getValues().profileImageUrl}
+                        />
+                      )}
+                    </div>
+
                     <FormField
                       control={chefForm.control}
                       name="fullName"
