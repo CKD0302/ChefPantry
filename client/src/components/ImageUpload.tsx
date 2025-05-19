@@ -52,19 +52,20 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
       // Log image details for debugging
       console.log(`Uploading image: ${file.name}, type: ${file.type}, size: ${(file.size / 1024).toFixed(2)} KB`);
 
-      // Upload to Supabase Storage with improved quality settings
-      // First, let's check if we can optimize the file before upload
-      let fileToUpload = file;
+      // Try a different approach for uploading that might preserve quality better
+      // Use a Blob with explicit type to prevent quality loss during upload
+      const fileArrayBuffer = await file.arrayBuffer();
+      const blob = new Blob([fileArrayBuffer], { type: file.type });
       
-      // For large images, we'll use the original file to maintain quality
-      // This will help prevent Supabase from applying excessive compression
+      // Set specific options to prevent compression
       const { data, error: uploadError } = await supabase
         .storage
         .from('chef-avatars')
-        .upload(fileName, fileToUpload, {
+        .upload(fileName, blob, {
           cacheControl: '3600',
-          upsert: true, // Allow replacing existing files
-          contentType: file.type // Preserve the original content type
+          upsert: true,
+          contentType: file.type,
+          duplex: 'half'  // Additional option that might help with data transfer
         });
 
       if (uploadError) {
