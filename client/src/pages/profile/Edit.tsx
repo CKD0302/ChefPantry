@@ -32,7 +32,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ImageUpload from "@/components/ImageUpload";
 import DishPhotoUpload from "@/components/DishPhotoUpload";
-import { TagInput } from "@/components/TagInput";
+import { ChefTags } from "@/components/ChefTags";
 
 // Chef profile schema
 const chefProfileSchema = z.object({
@@ -453,7 +453,7 @@ export default function EditProfile() {
                           <FormItem>
                             <FormLabel>Skills & Specialties</FormLabel>
                             <FormControl>
-                              <TagInput 
+                              <ChefTags 
                                 value={skills}
                                 onChange={setSkills}
                                 placeholder="Add a skill (e.g., Italian cuisine)"
@@ -522,7 +522,7 @@ export default function EditProfile() {
                           <FormItem>
                             <FormLabel>Languages Spoken</FormLabel>
                             <FormControl>
-                              <TagInput 
+                              <ChefTags 
                                 value={languages}
                                 onChange={setLanguages}
                                 placeholder="Add a language (e.g., English)"
@@ -544,7 +544,7 @@ export default function EditProfile() {
                           <FormItem>
                             <FormLabel>Certifications</FormLabel>
                             <FormControl>
-                              <TagInput 
+                              <ChefTags 
                                 value={certifications}
                                 onChange={setCertifications}
                                 placeholder="Add a certification (e.g., Food Hygiene Level 2)"
