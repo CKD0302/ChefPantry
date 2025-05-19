@@ -12,6 +12,7 @@ import SignUp from "@/pages/auth/SignUp";
 import Dashboard from "@/pages/Dashboard";
 import CreateProfile from "@/pages/profile/CreateProfile";
 import ViewProfile from "@/pages/profile/View";
+import ViewChefProfile from "@/pages/profile/ViewChefProfile";
 import EditProfile from "@/pages/profile/Edit";
 import AdminDashboard from "@/pages/admin/Dashboard";
 
@@ -33,6 +34,7 @@ function Router() {
       {/* Profile Management Routes */}
       <Route path="/profile/create" component={CreateProfile} />
       <Route path="/profile/view" component={ViewProfile} />
+      <Route path="/profile/chef/:id" component={ViewChefProfile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       
