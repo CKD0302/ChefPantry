@@ -48,6 +48,9 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
       // Generate a unique filename using UUID to avoid overwrites
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${uuidv4()}.${fileExt}`;
+      
+      // Log image details for debugging
+      console.log(`Uploading image: ${file.name}, type: ${file.type}, size: ${(file.size / 1024).toFixed(2)} KB`);
 
       // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase
@@ -123,7 +126,7 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
               src={previewUrl} 
               alt="Profile" 
               className="object-cover" 
-              style={{ imageRendering: 'high-quality' }}
+              style={{ imageRendering: 'auto' }}
             />
           ) : (
             <AvatarFallback className="bg-primary/10 text-primary text-xl">
