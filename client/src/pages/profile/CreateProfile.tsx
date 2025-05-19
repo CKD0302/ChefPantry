@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -163,6 +164,15 @@ export default function CreateProfile() {
       // If API failed, try direct Supabase insert as fallback
       if (!profileCreated) {
         try {
+          // Parse languages and certifications into arrays if provided
+          const languagesArray = data.languages 
+            ? data.languages.split(",").map(lang => lang.trim()) 
+            : [];
+          
+          const certificationsArray = data.certifications 
+            ? data.certifications.split(",").map(cert => cert.trim()) 
+            : [];
+
           // Convert to Supabase field naming convention (snake_case)
           const { error } = await supabase.from("chef_profiles").insert({
             id: user.id,
@@ -177,7 +187,11 @@ export default function CreateProfile() {
             intro_video_url: null,
             instagram_url: data.instagramUrl || null,
             linkedin_url: data.linkedinUrl || null,
-            portfolio_url: data.portfolioUrl || null
+            portfolio_url: data.portfolioUrl || null,
+            // New fields
+            languages: languagesArray,
+            certifications: certificationsArray,
+            is_available: data.isAvailable
           });
 
           if (error) {
@@ -479,6 +493,65 @@ export default function CreateProfile() {
                     )}
                   />
                 </div>
+
+                {/* New fields: Languages and Certifications */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <FormField
+                    control={chefForm.control}
+                    name="languages"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Languages Spoken</FormLabel>
+                        <FormControl>
+                          <Input placeholder="English, Spanish, French, etc. (comma-separated)" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Enter languages you speak, separated by commas
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={chefForm.control}
+                    name="certifications"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Certifications</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Food Hygiene Level 2, First Aid, etc. (comma-separated)" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          List your professional certifications, separated by commas
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Availability toggle */}
+                <FormField
+                  control={chefForm.control}
+                  name="isAvailable"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 my-6">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Available for Work</FormLabel>
+                        <FormDescription>
+                          Toggle on if you are currently available for new opportunities
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
                 
                 <h3 className="text-lg font-medium pt-4">Social Media & Portfolio</h3>
                 <p className="text-sm text-gray-500 mb-4">Optional links to your online presence</p>
