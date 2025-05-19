@@ -23,6 +23,7 @@ import {
   Star,
   User,
   Utensils,
+  Image,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -536,6 +537,35 @@ export default function ViewProfile() {
                     </div>
                   )}
                 </div>
+
+                {/* Dish Photos Gallery */}
+                {chefProfile?.dish_photos_urls && chefProfile.dish_photos_urls.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium mb-4">Signature Dishes</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {chefProfile.dish_photos_urls.map((photoUrl, index) => (
+                        <div key={index} className="group relative rounded-md overflow-hidden bg-neutral-100 aspect-square">
+                          <img
+                            src={photoUrl}
+                            alt={`Dish by ${chefProfile.full_name} #${index + 1}`}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy"
+                            decoding="async"
+                            style={{ imageRendering: 'auto' }}
+                          />
+                          {/* Image overlay effect on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <span className="text-white text-sm font-medium">
+                                {`Signature Dish ${index + 1}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Social media and portfolio links */}
                 {(chefProfile?.portfolio_url || chefProfile?.instagram_url || chefProfile?.linkedin_url) && (
