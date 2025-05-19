@@ -504,6 +504,65 @@ export default function EditProfile() {
                         )}
                       />
                     </div>
+
+                    {/* New fields: Languages and Certifications */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <FormField
+                        control={chefForm.control}
+                        name="languages"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Languages Spoken</FormLabel>
+                            <FormControl>
+                              <Input placeholder="English, Spanish, French, etc." {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Enter languages you speak, separated by commas
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={chefForm.control}
+                        name="certifications"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Certifications</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Food Hygiene Level 2, First Aid, etc." {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              List your professional certifications, separated by commas
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Availability toggle */}
+                    <FormField
+                      control={chefForm.control}
+                      name="isAvailable"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 my-6">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Available for Work</FormLabel>
+                            <FormDescription>
+                              Toggle on if you are currently available for new opportunities
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                     
                     <h3 className="text-lg font-medium">Social Media & Portfolio</h3>
                     

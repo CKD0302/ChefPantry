@@ -58,6 +58,10 @@ interface ChefProfile {
   instagram_url?: string;
   linkedin_url?: string;
   portfolio_url?: string;
+  // New fields
+  languages?: string[];
+  certifications?: string[];
+  is_available?: boolean;
   created_at: string;
 }
 
@@ -483,6 +487,54 @@ export default function ViewProfile() {
                   <p className="text-neutral-700 whitespace-pre-line">
                     {chefProfile?.bio}
                   </p>
+                </div>
+
+                {/* Availability status */}
+                <div className="mb-6">
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+                    chefProfile?.is_available 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    <span className={`mr-1.5 h-2 w-2 rounded-full ${
+                      chefProfile?.is_available ? "bg-green-600" : "bg-amber-600"
+                    }`}></span>
+                    {chefProfile?.is_available 
+                      ? "Available for Work" 
+                      : "Currently Unavailable"
+                    }
+                  </div>
+                </div>
+
+                {/* Languages and Certifications */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  {/* Languages */}
+                  {chefProfile?.languages && chefProfile.languages.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Languages</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {chefProfile.languages.map((language, index) => (
+                          <Badge key={index} variant="outline" className="bg-purple-50 text-purple-700">
+                            {language}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Certifications */}
+                  {chefProfile?.certifications && chefProfile.certifications.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Certifications</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {chefProfile.certifications.map((cert, index) => (
+                          <Badge key={index} variant="outline" className="bg-green-50 text-green-700">
+                            {cert}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Social media and portfolio links */}
