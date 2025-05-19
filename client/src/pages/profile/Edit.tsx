@@ -32,6 +32,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ImageUpload from "@/components/ImageUpload";
 import DishPhotoUpload from "@/components/DishPhotoUpload";
+import { TagInput } from "@/components/TagInput";
 
 // Chef profile schema
 const chefProfileSchema = z.object({
@@ -71,6 +72,9 @@ export default function EditProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dishPhotos, setDishPhotos] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [certifications, setCertifications] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Create forms with empty default values
@@ -147,20 +151,20 @@ export default function EditProfile() {
       }
 
       if (data) {
-        // Convert arrays to comma-separated strings
-        const skillsString = Array.isArray(data.skills) 
-          ? data.skills.join(", ") 
-          : "";
+        // Load skills as array
+        if (Array.isArray(data.skills)) {
+          setSkills(data.skills);
+        }
         
-        // Convert languages array to string if exists
-        const languagesString = Array.isArray(data.languages) 
-          ? data.languages.join(", ") 
-          : "";
+        // Load languages as array if exists
+        if (Array.isArray(data.languages)) {
+          setLanguages(data.languages);
+        }
         
-        // Convert certifications array to string if exists
-        const certificationsString = Array.isArray(data.certifications) 
-          ? data.certifications.join(", ") 
-          : "";
+        // Load certifications as array if exists
+        if (Array.isArray(data.certifications)) {
+          setCertifications(data.certifications);
+        }
         
         // Load dish photos if they exist
         if (Array.isArray(data.dish_photos_urls)) {
@@ -171,7 +175,7 @@ export default function EditProfile() {
         chefForm.reset({
           fullName: data.full_name,
           bio: data.bio,
-          skills: skillsString,
+          skills: "", // We'll handle skills with TagInput component
           experienceYears: data.experience_years,
           location: data.location,
           travelRadiusKm: data.travel_radius_km || 50,
@@ -180,8 +184,8 @@ export default function EditProfile() {
           linkedinUrl: data.linkedin_url || "",
           portfolioUrl: data.portfolio_url || "",
           // New fields
-          languages: languagesString,
-          certifications: certificationsString,
+          languages: "", // We'll handle languages with TagInput component
+          certifications: "", // We'll handle certifications with TagInput component
           isAvailable: data.is_available !== false, // Default to true if not set
         });
       } else {
