@@ -52,11 +52,12 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
         .from('chef-avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Changed to true to allow replacing existing files
         });
 
       if (uploadError) {
-        throw uploadError;
+        console.error('Upload error:', uploadError);
+        throw new Error(`Image upload failed: ${uploadError.message}`);
       }
 
       // Get the public URL
