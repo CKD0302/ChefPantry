@@ -2,8 +2,6 @@ import { useState, useRef, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Upload, X } from "lucide-react";
-import { supabase } from "@/utils/supabaseClient";
-import { v4 as uuidv4 } from 'uuid';
 
 interface ImageUploadProps {
   onUploadComplete: (url: string) => void;
@@ -37,58 +35,42 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
       return;
     }
 
-    setError(null);
     setIsUploading(true);
 
     try {
-      // Create a preview
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
-
-      // Generate a unique filename using UUID to avoid overwrites
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}-${uuidv4()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase
-        .storage
-        .from('chef-avatars')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true // Changed to true to allow replacing existing files
-        });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Image upload failed: ${uploadError.message}`);
-      }
-
-      // Get the public URL
-      const { data: { publicUrl } } = supabase
-        .storage
-        .from('chef-avatars')
-        .getPublicUrl(filePath);
-
-      // Pass the URL to parent component
-      onUploadComplete(publicUrl);
+      // Create a data URL from the file (works without server storage)
+      const reader = new FileReader();
+      
+      // Create a promise to handle the asynchronous file reading
+      const dataUrlPromise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file'));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+      });
+      
+      // Start reading the file as a data URL
+      reader.readAsDataURL(file);
+      
+      // Wait for the file to be read
+      const dataUrl = await dataUrlPromise;
+      
+      // Create a local preview
+      setPreviewUrl(dataUrl);
+      
+      // Pass the data URL to parent component
+      onUploadComplete(dataUrl);
+      
+      console.log("Image processed successfully");
     } catch (err: any) {
-      console.error('Error uploading image:', err);
+      console.error('Error processing image:', err);
+      setError('Failed to process image. Please try again.');
       
-      // Provide more specific error messages based on error type
-      let errorMessage = 'Failed to upload image. Please try again.';
-      
-      if (err.message?.includes('bucket') || err.message?.includes('storage')) {
-        errorMessage = 'Storage service unavailable. The administrator needs to create the "chef-avatars" bucket in Supabase.';
-      } else if (err.message?.includes('permission') || err.message?.includes('access')) {
-        errorMessage = 'Permission denied. You may not have access to upload files.';
-      } else if (err.message?.includes('network') || err.message?.includes('connection')) {
-        errorMessage = 'Network error. Please check your internet connection.';
-      }
-      
-      setError(errorMessage);
-      
-      // Reset the preview if upload fails
+      // Reset the preview if processing fails
       if (existingImageUrl) {
         setPreviewUrl(existingImageUrl);
       } else {
@@ -107,6 +89,7 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
     }
   };
 
+  // Generate initials for avatar fallback
   const getInitials = (userId: string) => {
     return "CH";
   };
@@ -157,7 +140,7 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading...
+              Processing...
             </>
           ) : (
             <>
