@@ -74,6 +74,7 @@ export default function CreateProfile() {
       experienceYears: 0,
       location: "",
       travelRadiusKm: 50,
+      profileImageUrl: "",
       instagramUrl: "",
       linkedinUrl: "",
       portfolioUrl: "",
@@ -118,6 +119,7 @@ export default function CreateProfile() {
         experienceYears: data.experienceYears,
         location: data.location,
         travelRadiusKm: data.travelRadiusKm || 50,
+        profileImageUrl: data.profileImageUrl || null,
         instagramUrl: data.instagramUrl || null,
         linkedinUrl: data.linkedinUrl || null,
         portfolioUrl: data.portfolioUrl || null,
@@ -162,7 +164,7 @@ export default function CreateProfile() {
             experience_years: data.experienceYears,
             location: data.location,
             travel_radius_km: data.travelRadiusKm || 50,
-            profile_image_url: null,
+            profile_image_url: data.profileImageUrl || null,
             dish_photos_urls: [],
             intro_video_url: null,
             instagram_url: data.instagramUrl || null,
@@ -330,6 +332,11 @@ export default function CreateProfile() {
     }
   };
 
+  // Handler for chef profile image upload
+  const handleChefProfileImageUpload = (url: string) => {
+    chefForm.setValue("profileImageUrl", url);
+  };
+
   // Redirect if user is not logged in
   useEffect(() => {
     if (!user) {
@@ -356,6 +363,17 @@ export default function CreateProfile() {
           <CardContent>
             <Form {...chefForm}>
               <form onSubmit={chefForm.handleSubmit(onChefSubmit)} className="space-y-6">
+                <div className="flex flex-col items-center mb-6">
+                  <h3 className="text-lg font-medium mb-4">Profile Photo</h3>
+                  {user && (
+                    <ImageUpload 
+                      userId={user.id}
+                      onUploadComplete={handleChefProfileImageUpload}
+                      existingImageUrl={chefForm.getValues().profileImageUrl}
+                    />
+                  )}
+                </div>
+
                 <FormField
                   control={chefForm.control}
                   name="fullName"
