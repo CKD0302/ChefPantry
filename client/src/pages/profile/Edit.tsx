@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -43,6 +44,10 @@ const chefProfileSchema = z.object({
   instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   portfolioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  // New fields
+  languages: z.string().optional(),
+  certifications: z.string().optional(),
+  isAvailable: z.boolean().default(true),
 });
 
 // Business profile schema
@@ -80,6 +85,10 @@ export default function EditProfile() {
       instagramUrl: "",
       linkedinUrl: "",
       portfolioUrl: "",
+      // New fields with default values
+      languages: "",
+      certifications: "",
+      isAvailable: true,
     },
   });
 
@@ -136,9 +145,19 @@ export default function EditProfile() {
       }
 
       if (data) {
-        // Convert array of skills to comma-separated string
+        // Convert arrays to comma-separated strings
         const skillsString = Array.isArray(data.skills) 
           ? data.skills.join(", ") 
+          : "";
+        
+        // Convert languages array to string if exists
+        const languagesString = Array.isArray(data.languages) 
+          ? data.languages.join(", ") 
+          : "";
+        
+        // Convert certifications array to string if exists
+        const certificationsString = Array.isArray(data.certifications) 
+          ? data.certifications.join(", ") 
           : "";
           
         // Update form with existing data (convert from snake_case to camelCase)
@@ -153,6 +172,10 @@ export default function EditProfile() {
           instagramUrl: data.instagram_url || "",
           linkedinUrl: data.linkedin_url || "",
           portfolioUrl: data.portfolio_url || "",
+          // New fields
+          languages: languagesString,
+          certifications: certificationsString,
+          isAvailable: data.is_available !== false, // Default to true if not set
         });
       } else {
         // No profile found, redirect to create
@@ -227,8 +250,18 @@ export default function EditProfile() {
     setIsSubmitting(true);
     
     try {
-      // Convert skills string to array
+      // Convert strings to arrays
       const skillsArray = data.skills.split(",").map(skill => skill.trim());
+      
+      // Convert languages string to array if provided
+      const languagesArray = data.languages 
+        ? data.languages.split(",").map(lang => lang.trim()) 
+        : [];
+      
+      // Convert certifications string to array if provided
+      const certificationsArray = data.certifications 
+        ? data.certifications.split(",").map(cert => cert.trim()) 
+        : [];
       
       // Convert to snake_case for Supabase
       const updateData = {
@@ -242,6 +275,10 @@ export default function EditProfile() {
         instagram_url: data.instagramUrl || null,
         linkedin_url: data.linkedinUrl || null,
         portfolio_url: data.portfolioUrl || null,
+        // New fields
+        languages: languagesArray,
+        certifications: certificationsArray,
+        is_available: data.isAvailable,
       };
       
       const { error } = await supabase
