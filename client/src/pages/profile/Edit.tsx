@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ImageUpload from "@/components/ImageUpload";
 
 // Chef profile schema
 const chefProfileSchema = z.object({
@@ -38,6 +39,7 @@ const chefProfileSchema = z.object({
   experienceYears: z.coerce.number().min(0, "Experience must be a positive number"),
   location: z.string().min(2, "Location is required"),
   travelRadiusKm: z.coerce.number().min(0, "Travel radius must be a positive number").optional(),
+  profileImageUrl: z.string().optional(),
   instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   portfolioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -74,6 +76,7 @@ export default function EditProfile() {
       experienceYears: 0,
       location: "",
       travelRadiusKm: 50,
+      profileImageUrl: "",
       instagramUrl: "",
       linkedinUrl: "",
       portfolioUrl: "",
@@ -146,6 +149,7 @@ export default function EditProfile() {
           experienceYears: data.experience_years,
           location: data.location,
           travelRadiusKm: data.travel_radius_km || 50,
+          profileImageUrl: data.profile_image_url || "",
           instagramUrl: data.instagram_url || "",
           linkedinUrl: data.linkedin_url || "",
           portfolioUrl: data.portfolio_url || "",
