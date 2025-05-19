@@ -25,6 +25,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import ImageUpload from "@/components/ImageUpload";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 // Define the chef profile schema
 const chefProfileSchema = z.object({
@@ -34,6 +37,7 @@ const chefProfileSchema = z.object({
   experienceYears: z.coerce.number().min(0, "Experience must be a positive number"),
   location: z.string().min(2, "Location is required"),
   travelRadiusKm: z.coerce.number().min(0, "Travel radius must be a positive number").optional(),
+  profileImageUrl: z.string().optional(),
   instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   portfolioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
