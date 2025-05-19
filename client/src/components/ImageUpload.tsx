@@ -41,6 +41,7 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
 
     try {
       // Create a preview of the file for immediate display
+      // Using direct object URL for preview to maintain full quality
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
 
@@ -54,7 +55,8 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
         .from('chef-avatars')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: true // Allow replacing existing files
+          upsert: true, // Allow replacing existing files
+          contentType: file.type // Preserve the original content type
         });
 
       if (uploadError) {
@@ -117,7 +119,12 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
       <div className="relative">
         <Avatar className="w-32 h-32 border-2 border-primary">
           {previewUrl ? (
-            <AvatarImage src={previewUrl} alt="Profile" />
+            <AvatarImage 
+              src={previewUrl} 
+              alt="Profile" 
+              className="object-cover" 
+              style={{ imageRendering: 'high-quality' }}
+            />
           ) : (
             <AvatarFallback className="bg-primary/10 text-primary text-xl">
               {getInitials(userId)}
