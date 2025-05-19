@@ -41,6 +41,10 @@ const chefProfileSchema = z.object({
   instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   portfolioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  // New fields
+  languages: z.string().optional(),
+  certifications: z.string().optional(),
+  isAvailable: z.boolean().default(true),
 });
 
 // Define the business profile schema
@@ -78,6 +82,10 @@ export default function CreateProfile() {
       instagramUrl: "",
       linkedinUrl: "",
       portfolioUrl: "",
+      // New fields with default values
+      languages: "",
+      certifications: "",
+      isAvailable: true,
     },
   });
 

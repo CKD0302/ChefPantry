@@ -75,6 +75,10 @@ export const chefProfiles = pgTable("chef_profiles", {
   instagramUrl: text("instagram_url"),
   linkedinUrl: text("linkedin_url"),
   portfolioUrl: text("portfolio_url"),
+  // New fields
+  languages: text("languages").array(),
+  certifications: text("certifications").array(),
+  isAvailable: boolean("is_available").default(true),
   // isApproved field removed per user request
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
