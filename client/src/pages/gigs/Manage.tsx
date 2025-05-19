@@ -345,7 +345,7 @@ export default function ManageGigs() {
                         </TableCell>
                         <TableCell>{getRoleLabel(gig.role)}</TableCell>
                         <TableCell>{getVenueTypeLabel(gig.venueType)}</TableCell>
-                        <TableCell>${gig.payRate}/hr</TableCell>
+                        <TableCell>£{gig.payRate}/hr</TableCell>
                         <TableCell>
                           <Badge
                             variant={gig.isActive ? "outline" : "secondary"}

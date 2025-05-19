@@ -241,7 +241,8 @@ export default function BrowseGigs() {
     if (!date) return "N/A";
     try {
       const formattedDate = format(new Date(date), "MMM d, yyyy");
-      const formattedTime = time ? ` at ${time}` : "";
+      // Convert time from HH:MM:SS to HH:MM format
+      const formattedTime = time ? ` at ${time.substring(0, 5)}` : "";
       return `${formattedDate}${formattedTime}`;
     } catch (error) {
       return "Invalid date";
@@ -397,7 +398,7 @@ export default function BrowseGigs() {
                   <CardHeader className="pb-3">
                     <div className="flex justify-between">
                       <CardTitle className="text-xl">{gig.title}</CardTitle>
-                      <Badge variant="outline">${gig.payRate}/hr</Badge>
+                      <Badge variant="outline">£{gig.payRate}/hr</Badge>
                     </div>
                     <CardDescription className="flex items-center gap-1 mt-1">
                       <MapPin className="h-3.5 w-3.5 text-neutral-500" />

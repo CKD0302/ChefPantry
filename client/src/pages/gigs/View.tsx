@@ -250,7 +250,8 @@ export default function ViewGig() {
     if (!date) return { date: "N/A", time: "" };
     try {
       const formattedDate = format(new Date(date), "EEEE, MMMM d, yyyy");
-      const formattedTime = time || "";
+      // Convert time from HH:MM:SS to HH:MM format
+      const formattedTime = time ? time.substring(0, 5) : "";
       return { date: formattedDate, time: formattedTime };
     } catch (error) {
       return { date: "Invalid date", time: "" };
@@ -392,7 +393,7 @@ export default function ViewGig() {
                   </div>
                 </div>
                 <Badge className="text-lg py-1.5 px-3 bg-primary text-white">
-                  ${gig.payRate}/hr
+                  £{gig.payRate}/hr
                 </Badge>
               </div>
 
