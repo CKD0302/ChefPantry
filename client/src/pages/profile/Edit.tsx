@@ -261,24 +261,14 @@ export default function EditProfile() {
     setIsSubmitting(true);
     
     try {
-      // Convert strings to arrays
-      const skillsArray = data.skills.split(",").map(skill => skill.trim());
-      
-      // Convert languages string to array if provided
-      const languagesArray = data.languages 
-        ? data.languages.split(",").map(lang => lang.trim()) 
-        : [];
-      
-      // Convert certifications string to array if provided
-      const certificationsArray = data.certifications 
-        ? data.certifications.split(",").map(cert => cert.trim()) 
-        : [];
+      // Use the tag arrays from state directly instead of converting strings
+      // This ensures we're using the data from our TagInput components
       
       // Convert to snake_case for Supabase
       const updateData = {
         full_name: data.fullName,
         bio: data.bio,
-        skills: skillsArray,
+        skills: skills,
         experience_years: data.experienceYears,
         location: data.location,
         travel_radius_km: data.travelRadiusKm || 50,
@@ -286,9 +276,9 @@ export default function EditProfile() {
         instagram_url: data.instagramUrl || null,
         linkedin_url: data.linkedinUrl || null,
         portfolio_url: data.portfolioUrl || null,
-        // New fields
-        languages: languagesArray,
-        certifications: certificationsArray,
+        // New fields - using arrays from state directly
+        languages: languages,
+        certifications: certifications,
         is_available: data.isAvailable,
         // Dish photos
         dish_photos_urls: dishPhotos,
@@ -463,10 +453,15 @@ export default function EditProfile() {
                           <FormItem>
                             <FormLabel>Skills & Specialties</FormLabel>
                             <FormControl>
-                              <Input placeholder="Italian cuisine, Pastry, Vegan, etc." {...field} />
+                              <TagInput 
+                                value={skills}
+                                onChange={setSkills}
+                                placeholder="Add a skill (e.g., Italian cuisine)"
+                                className="border-input"
+                              />
                             </FormControl>
                             <FormDescription>
-                              Enter your culinary skills separated by commas
+                              Add your culinary skills and specialties (press Enter or comma to add each one)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -527,10 +522,15 @@ export default function EditProfile() {
                           <FormItem>
                             <FormLabel>Languages Spoken</FormLabel>
                             <FormControl>
-                              <Input placeholder="English, Spanish, French, etc." {...field} />
+                              <TagInput 
+                                value={languages}
+                                onChange={setLanguages}
+                                placeholder="Add a language (e.g., English)"
+                                className="border-input"
+                              />
                             </FormControl>
                             <FormDescription>
-                              Enter languages you speak, separated by commas
+                              Add languages you speak (press Enter or comma to add each one)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -544,10 +544,15 @@ export default function EditProfile() {
                           <FormItem>
                             <FormLabel>Certifications</FormLabel>
                             <FormControl>
-                              <Input placeholder="Food Hygiene Level 2, First Aid, etc." {...field} />
+                              <TagInput 
+                                value={certifications}
+                                onChange={setCertifications}
+                                placeholder="Add a certification (e.g., Food Hygiene Level 2)"
+                                className="border-input"
+                              />
                             </FormControl>
                             <FormDescription>
-                              List your professional certifications, separated by commas
+                              Add your professional certifications (press Enter or comma to add each one)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
