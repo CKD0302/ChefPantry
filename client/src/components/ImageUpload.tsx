@@ -16,14 +16,18 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
   const [previewUrl, setPreviewUrl] = useState<string | null>(existingImageUrl || null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const acceptedFileTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Clear previous errors
+    setError(null);
+
     // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file");
+    if (!acceptedFileTypes.includes(file.type)) {
+      setError("Please upload a JPG or PNG image");
       return;
     }
 
@@ -68,9 +72,22 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
 
       // Pass the URL to parent component
       onUploadComplete(publicUrl);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error uploading image:', err);
-      setError('Failed to upload image. Please try again.');
+      
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Failed to upload image. Please try again.';
+      
+      if (err.message?.includes('bucket') || err.message?.includes('storage')) {
+        errorMessage = 'Storage service unavailable. The administrator needs to create the "chef-avatars" bucket in Supabase.';
+      } else if (err.message?.includes('permission') || err.message?.includes('access')) {
+        errorMessage = 'Permission denied. You may not have access to upload files.';
+      } else if (err.message?.includes('network') || err.message?.includes('connection')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+      
+      setError(errorMessage);
+      
       // Reset the preview if upload fails
       if (existingImageUrl) {
         setPreviewUrl(existingImageUrl);
@@ -122,7 +139,7 @@ export default function ImageUpload({ onUploadComplete, existingImageUrl, userId
       <div className="flex flex-col items-center space-y-2">
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg, image/png, image/jpg, image/webp"
           onChange={handleFileChange}
           className="hidden"
           ref={fileInputRef}
