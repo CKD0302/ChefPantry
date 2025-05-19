@@ -78,19 +78,19 @@ export function ChefTags({ value = [], onChange, placeholder = "Add tag...", cla
         <Badge 
           key={`${tag}-${index}`} 
           variant="secondary" 
-          className="px-2 py-1 gap-1 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+          className="px-2 py-1 gap-1 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
         >
           {tag}
           <Button
             size="sm"
             variant="ghost"
-            className="h-4 w-4 p-0 hover:bg-neutral-300 rounded-full"
+            className="h-4 w-4 p-0 hover:bg-primary/30 rounded-full"
             onClick={(e) => {
               e.stopPropagation();
               removeTag(index);
             }}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3 w-3 text-primary-foreground" />
           </Button>
         </Badge>
       ))}

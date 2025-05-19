@@ -449,23 +449,32 @@ export default function EditProfile() {
                       <FormField
                         control={chefForm.control}
                         name="skills"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Skills & Specialties</FormLabel>
-                            <FormControl>
-                              <ChefTags 
-                                value={skills}
-                                onChange={setSkills}
-                                placeholder="Add a skill (e.g., Italian cuisine)"
-                                className="border-input"
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Add your culinary skills and specialties (press Enter or comma to add each one)
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          // Custom field handling to satisfy form validation
+                          // This allows the form to validate even when using separate state
+                          return (
+                            <FormItem>
+                              <FormLabel>Skills & Specialties</FormLabel>
+                              <FormControl>
+                                <ChefTags 
+                                  value={skills}
+                                  onChange={(newValue) => {
+                                    setSkills(newValue);
+                                    // Update form field with a dummy value to satisfy validation
+                                    field.onChange(newValue.length > 0 ? "valid" : "");
+                                  }}
+                                  placeholder="Add a skill (e.g., Italian cuisine)"
+                                  className="border-input"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Add your culinary skills and specialties (press Enter or comma to add each one)
+                              </FormDescription>
+                              {skills.length === 0 && <p className="text-sm font-medium text-destructive">Please provide at least one skill</p>}
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                       
                       <FormField
@@ -518,45 +527,57 @@ export default function EditProfile() {
                       <FormField
                         control={chefForm.control}
                         name="languages"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Languages Spoken</FormLabel>
-                            <FormControl>
-                              <ChefTags 
-                                value={languages}
-                                onChange={setLanguages}
-                                placeholder="Add a language (e.g., English)"
-                                className="border-input"
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Add languages you speak (press Enter or comma to add each one)
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          return (
+                            <FormItem>
+                              <FormLabel>Languages Spoken</FormLabel>
+                              <FormControl>
+                                <ChefTags 
+                                  value={languages}
+                                  onChange={(newValue) => {
+                                    setLanguages(newValue);
+                                    // Update form field with a dummy value to satisfy validation
+                                    field.onChange(newValue.length > 0 ? "valid" : "");
+                                  }}
+                                  placeholder="Add a language (e.g., English)"
+                                  className="border-input"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Add languages you speak (press Enter or comma to add each one)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                       
                       <FormField
                         control={chefForm.control}
                         name="certifications"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Certifications</FormLabel>
-                            <FormControl>
-                              <ChefTags 
-                                value={certifications}
-                                onChange={setCertifications}
-                                placeholder="Add a certification (e.g., Food Hygiene Level 2)"
-                                className="border-input"
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Add your professional certifications (press Enter or comma to add each one)
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          return (
+                            <FormItem>
+                              <FormLabel>Certifications</FormLabel>
+                              <FormControl>
+                                <ChefTags 
+                                  value={certifications}
+                                  onChange={(newValue) => {
+                                    setCertifications(newValue);
+                                    // Update form field with a dummy value to satisfy validation
+                                    field.onChange(newValue.length > 0 ? "valid" : "");
+                                  }}
+                                  placeholder="Add a certification (e.g., Food Hygiene Level 2)"
+                                  className="border-input"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Add your professional certifications (press Enter or comma to add each one)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                     </div>
 
