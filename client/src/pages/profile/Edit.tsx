@@ -31,6 +31,7 @@ import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ImageUpload from "@/components/ImageUpload";
+import DishPhotoUpload from "@/components/DishPhotoUpload";
 
 // Chef profile schema
 const chefProfileSchema = z.object({
@@ -69,6 +70,7 @@ export default function EditProfile() {
   const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dishPhotos, setDishPhotos] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Create forms with empty default values
@@ -159,6 +161,11 @@ export default function EditProfile() {
         const certificationsString = Array.isArray(data.certifications) 
           ? data.certifications.join(", ") 
           : "";
+        
+        // Load dish photos if they exist
+        if (Array.isArray(data.dish_photos_urls)) {
+          setDishPhotos(data.dish_photos_urls);
+        }
           
         // Update form with existing data (convert from snake_case to camelCase)
         chefForm.reset({
@@ -279,6 +286,8 @@ export default function EditProfile() {
         languages: languagesArray,
         certifications: certificationsArray,
         is_available: data.isAvailable,
+        // Dish photos
+        dish_photos_urls: dishPhotos,
       };
       
       const { error } = await supabase
@@ -564,6 +573,17 @@ export default function EditProfile() {
                       )}
                     />
                     
+                    {/* Dish Photos Upload Section */}
+                    <div className="border rounded-lg p-6 my-6 bg-neutral-50">
+                      {user && (
+                        <DishPhotoUpload
+                          userId={user.id}
+                          existingPhotos={dishPhotos}
+                          onPhotosChange={(urls) => setDishPhotos(urls)}
+                        />
+                      )}
+                    </div>
+
                     <h3 className="text-lg font-medium">Social Media & Portfolio</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
