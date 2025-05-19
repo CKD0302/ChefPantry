@@ -120,63 +120,71 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden bg-white border-t">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {isHome ? (
-              <>
-                <a 
-                  href="#how-it-works" 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                  onClick={toggle}
-                >
-                  How It Works
-                </a>
-                <a 
-                  href="#for-chefs" 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                  onClick={toggle}
-                >
-                  For Chefs
-                </a>
-                <a 
-                  href="#for-businesses" 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                  onClick={toggle}
-                >
-                  For Businesses
-                </a>
-                <a 
-                  href="#contact" 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                  onClick={toggle}
-                >
-                  Contact
-                </a>
-              </>
-            ) : (
-              <a 
-                className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                onClick={() => handleNavigation("/")}
-              >
-                Home
-              </a>
-            )}
-            
-            {/* Auth Buttons */}
+            {/* Auth Buttons - Always at the top for authenticated users */}
             {user ? (
               <>
+                {/* Dashboard and Profile always first */}
                 <a 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-bold"
                   onClick={() => handleNavigation("/dashboard")}
                 >
                   Dashboard
                 </a>
                 <a 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-bold"
                   onClick={() => handleNavigation("/profile/view")}
                 >
                   Profile
                 </a>
+
+                {/* Separator */}
+                <div className="border-t my-2"></div>
+                
+                {/* Other navigation links */}
+                {isHome ? (
+                  <>
+                    <a 
+                      href="#how-it-works" 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={toggle}
+                    >
+                      How It Works
+                    </a>
+                    <a 
+                      href="#for-chefs" 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={toggle}
+                    >
+                      For Chefs
+                    </a>
+                    <a 
+                      href="#for-businesses" 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={toggle}
+                    >
+                      For Businesses
+                    </a>
+                    <a 
+                      href="#contact" 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={toggle}
+                    >
+                      Contact
+                    </a>
+                  </>
+                ) : (
+                  <a 
+                    className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                    onClick={() => handleNavigation("/")}
+                  >
+                    Home
+                  </a>
+                )}
+                
+                {/* Sign Out at the bottom */}
+                <div className="border-t my-2"></div>
                 <a 
-                  className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                  className="block px-3 py-2 text-red-600 hover:text-red-800 font-medium"
                   onClick={handleSignOut}
                 >
                   Sign Out
