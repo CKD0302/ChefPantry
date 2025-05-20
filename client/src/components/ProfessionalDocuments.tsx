@@ -10,7 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 interface Document {
   id: string;
-  name: string;
+  chef_id: string;
+  name: string; 
   url: string;
   file_type: string;
   file_size: number;
@@ -107,6 +108,15 @@ export default function ProfessionalDocuments() {
         });
       
       if (uploadError) {
+        // Check if the error is related to bucket not existing
+        if (uploadError.message.includes("storage/bucket-not-found") || 
+            uploadError.message.includes("does not exist") ||
+            uploadError.message.toLowerCase().includes("bucket")) {
+          throw new Error(
+            "The document storage system is not properly configured. " +
+            "Please create a 'chef-documents' bucket in your Supabase project."
+          );
+        }
         throw uploadError;
       }
       
@@ -275,6 +285,9 @@ export default function ProfessionalDocuments() {
             </div>
             <p className="text-xs text-neutral-500 mt-2">
               Accept PDF, Word, Excel, and image files up to 10MB
+            </p>
+            <p className="text-xs text-amber-600 mt-1">
+              <strong>Note:</strong> Please make sure a "chef-documents" storage bucket has been created in your Supabase project.
             </p>
           </div>
 
