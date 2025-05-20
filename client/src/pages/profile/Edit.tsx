@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import ChefDocumentUpload from "@/components/ChefDocumentUpload";
+// ChefDocumentUpload component has been removed
 import SaveChangesButton from "./SaveChangesButton";
 import {
   Select,
@@ -672,19 +672,7 @@ export default function EditProfile() {
                       )}
                     </div>
                     
-                    {/* Chef Documents Upload Section */}
-                    <div className="border rounded-lg p-6 my-6 bg-neutral-50">
-                      {user && (
-                        <ChefDocumentUpload 
-                          chefId={user.id}
-                          onComplete={() => {
-                            // Just mark the form as dirty and trigger validation
-                            // This ensures the form becomes valid again after document operations
-                            chefForm.trigger();
-                          }}
-                        />
-                      )}
-                    </div>
+                    {/* Chef Documents Upload Section has been removed */}
 
                     <h3 className="text-lg font-medium">Social Media & Portfolio</h3>
                     
