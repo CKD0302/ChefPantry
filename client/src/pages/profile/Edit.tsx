@@ -116,6 +116,8 @@ export default function EditProfile() {
       certifications: "",
       isAvailable: true,
     },
+    // This ensures the form doesn't get into a permanently invalid state
+    mode: "onChange",
   });
 
   const businessForm = useForm<BusinessProfileFormValues>({
@@ -671,7 +673,11 @@ export default function EditProfile() {
                       {user && (
                         <ChefDocumentUpload 
                           chefId={user.id}
-                          onComplete={() => chefForm.trigger()}
+                          onComplete={() => {
+                            // Just mark the form as dirty and trigger validation
+                            // This ensures the form becomes valid again after document operations
+                            chefForm.trigger();
+                          }}
                         />
                       )}
                     </div>

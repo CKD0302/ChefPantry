@@ -36,7 +36,7 @@ export async function initializeStorageBuckets() {
     }
     
     // Verify Supabase connection
-    console.log(`Connected to Supabase project: ${supabase.supabaseUrl}`);
+    console.log(`Connected to Supabase storage`);
   } catch (error) {
     console.error('Error initializing storage buckets:', error);
   }
