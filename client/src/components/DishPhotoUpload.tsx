@@ -182,15 +182,21 @@ export default function DishPhotoUpload({ existingPhotos, userId, onPhotosChange
 
   const handleDeletePhoto = async (photoUrl: string) => {
     try {
-      // Extract the file path from the URL
-      const filePathMatch = photoUrl.match(/\/chef-dishes\/(.+)$/);
+      // Get the storage path from the public URL
+      // First, get the URL path after the bucket name
+      const { pathname } = new URL(photoUrl);
       
-      if (!filePathMatch || !filePathMatch[1]) {
-        console.error("Could not extract file path from URL:", photoUrl);
+      // Extract filename - it will be the last segment of the path after chef-dishes/
+      const segments = pathname.split('/');
+      const bucketIndex = segments.findIndex(segment => segment === 'chef-dishes');
+      
+      if (bucketIndex === -1 || bucketIndex === segments.length - 1) {
+        console.error("Invalid file URL structure:", photoUrl);
         return;
       }
       
-      const filePath = decodeURIComponent(filePathMatch[1]);
+      // Everything after 'chef-dishes' in the path is our storage path
+      const filePath = segments.slice(bucketIndex + 1).join('/');
       
       // Delete from Supabase storage
       const { error } = await supabase

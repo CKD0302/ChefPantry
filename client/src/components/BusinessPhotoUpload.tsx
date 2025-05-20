@@ -184,15 +184,21 @@ export default function BusinessPhotoUpload({ existingPhotos, businessId, onPhot
 
   const handleDeletePhoto = async (photoUrl: string) => {
     try {
-      // Extract the file path from the URL
-      const filePathMatch = photoUrl.match(/\/business-media\/(.+)$/);
+      // Get the storage path from the public URL
+      // First, get the URL path after the bucket name
+      const { pathname } = new URL(photoUrl);
       
-      if (!filePathMatch || !filePathMatch[1]) {
-        console.error("Could not extract file path from URL:", photoUrl);
+      // Extract filename - it will be the last segment of the path after business-media/
+      const segments = pathname.split('/');
+      const bucketIndex = segments.findIndex(segment => segment === 'business-media');
+      
+      if (bucketIndex === -1 || bucketIndex === segments.length - 1) {
+        console.error("Invalid file URL structure:", photoUrl);
         return;
       }
       
-      const filePath = decodeURIComponent(filePathMatch[1]);
+      // Everything after 'business-media' in the path is our storage path
+      const filePath = segments.slice(bucketIndex + 1).join('/');
       
       // Delete from Supabase storage
       const { error } = await supabase
