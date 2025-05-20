@@ -334,6 +334,50 @@ export default function ViewProfile() {
                     {businessProfile?.description}
                   </p>
                 </div>
+                
+                <div className="mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {businessProfile?.venue_type && (
+                      <div>
+                        <h3 className="text-sm font-medium text-neutral-500 mb-2">Venue Type</h3>
+                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm">
+                          {businessProfile.venue_type === "restaurant" && "Restaurant"}
+                          {businessProfile.venue_type === "food_truck" && "Food Truck"}
+                          {businessProfile.venue_type === "bar" && "Bar"}
+                          {businessProfile.venue_type === "cafe" && "Café"}
+                          {businessProfile.venue_type === "hotel" && "Hotel"}
+                          {businessProfile.venue_type === "catering" && "Catering Service"}
+                          {businessProfile.venue_type === "private_events" && "Private Events Venue"}
+                          {businessProfile.venue_type === "other" && "Other"}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {businessProfile?.business_size && (
+                      <div>
+                        <h3 className="text-sm font-medium text-neutral-500 mb-2">Business Size</h3>
+                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm">
+                          {businessProfile.business_size === "1-10" && "1–10 employees"}
+                          {businessProfile.business_size === "11-50" && "11–50 employees"}
+                          {businessProfile.business_size === "51+" && "51+ employees"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {businessProfile?.cuisine_specialties && businessProfile.cuisine_specialties.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-neutral-500 mb-2">Cuisine Specialties</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {businessProfile.cuisine_specialties.map((cuisine, index) => (
+                        <div key={index} className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm">
+                          {cuisine}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {(businessProfile?.website_url || businessProfile?.instagram_url || businessProfile?.linkedin_url) && (
                   <div className="mb-6">

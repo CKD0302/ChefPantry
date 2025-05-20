@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -64,6 +71,10 @@ const businessProfileSchema = z.object({
   websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  // New fields
+  venueType: z.string().optional(),
+  cuisineSpecialties: z.string().optional(), // We'll handle the array in the component
+  businessSize: z.string().optional(),
 });
 
 type ChefProfileFormValues = z.infer<typeof chefProfileSchema>;
@@ -80,6 +91,7 @@ export default function EditProfile() {
   const [skills, setSkills] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [certifications, setCertifications] = useState<string[]>([]);
+  const [cuisineSpecialties, setCuisineSpecialties] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Create forms with empty default values
@@ -114,6 +126,10 @@ export default function EditProfile() {
       websiteUrl: "",
       instagramUrl: "",
       linkedinUrl: "",
+      // New fields
+      venueType: "",
+      cuisineSpecialties: "",
+      businessSize: "",
     },
   });
 
@@ -236,6 +252,11 @@ export default function EditProfile() {
           setGalleryPhotos(data.gallery_image_urls);
         }
         
+        // Load cuisine specialties if they exist
+        if (Array.isArray(data.cuisine_specialties)) {
+          setCuisineSpecialties(data.cuisine_specialties);
+        }
+        
         // Update form with existing data (convert from snake_case to camelCase)
         businessForm.reset({
           businessName: data.business_name,
@@ -246,6 +267,10 @@ export default function EditProfile() {
           websiteUrl: data.website_url || "",
           instagramUrl: data.instagram_url || "",
           linkedinUrl: data.linkedin_url || "",
+          // New fields
+          venueType: data.venue_type || "",
+          cuisineSpecialties: "", // We'll handle cuisine specialties with TagInput component
+          businessSize: data.business_size || "",
         });
       } else {
         // No profile found, redirect to create
@@ -342,6 +367,10 @@ export default function EditProfile() {
         website_url: data.websiteUrl || null,
         instagram_url: data.instagramUrl || null,
         linkedin_url: data.linkedinUrl || null,
+        // New fields
+        venue_type: data.venueType || null,
+        cuisine_specialties: cuisineSpecialties, // Use the cuisine specialties from state
+        business_size: data.businessSize || null,
       };
       
       const { error } = await supabase
@@ -772,6 +801,87 @@ export default function EditProfile() {
                           <FormControl>
                             <Input placeholder="City, State" {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={businessForm.control}
+                        name="venueType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Venue Type</FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select venue type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="restaurant">Restaurant</SelectItem>
+                                <SelectItem value="food_truck">Food Truck</SelectItem>
+                                <SelectItem value="bar">Bar</SelectItem>
+                                <SelectItem value="cafe">Café</SelectItem>
+                                <SelectItem value="hotel">Hotel</SelectItem>
+                                <SelectItem value="catering">Catering Service</SelectItem>
+                                <SelectItem value="private_events">Private Events Venue</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={businessForm.control}
+                        name="businessSize"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Business Size</FormLabel>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select business size" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="1-10">1–10 employees</SelectItem>
+                                <SelectItem value="11-50">11–50 employees</SelectItem>
+                                <SelectItem value="51+">51+ employees</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={businessForm.control}
+                      name="cuisineSpecialties"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cuisine Specialties</FormLabel>
+                          <FormControl>
+                            <ChefTags
+                              value={cuisineSpecialties}
+                              onChange={setCuisineSpecialties}
+                              placeholder="Add cuisine (e.g., Italian, Sushi)"
+                              className="min-h-10"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Add your cuisine specialties. Common examples: Italian, French, Japanese, Mexican, Vegan, BBQ, Seafood, Pastry
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

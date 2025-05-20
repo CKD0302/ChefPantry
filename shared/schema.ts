@@ -95,6 +95,10 @@ export const businessProfiles = pgTable("business_profiles", {
   websiteUrl: text("website_url"),
   instagramUrl: text("instagram_url"),
   linkedinUrl: text("linkedin_url"),
+  // New fields
+  venueType: text("venue_type"),
+  cuisineSpecialties: text("cuisine_specialties").array(),
+  businessSize: text("business_size"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
