@@ -38,6 +38,7 @@ interface BusinessProfile {
   description: string;
   location: string;
   profile_image_url?: string;
+  gallery_image_urls?: string[];
   website_url?: string;
   instagram_url?: string;
   linkedin_url?: string;

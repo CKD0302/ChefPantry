@@ -337,6 +337,8 @@ export default function EditProfile() {
         business_name: data.businessName,
         description: data.description,
         location: data.location,
+        profile_image_url: data.profileImageUrl || null,
+        gallery_image_urls: galleryPhotos, // Use the gallery photos from state
         website_url: data.websiteUrl || null,
         instagram_url: data.instagramUrl || null,
         linkedin_url: data.linkedinUrl || null,
@@ -752,6 +754,40 @@ export default function EditProfile() {
                         </FormItem>
                       )}
                     />
+                    
+                    <h3 className="text-lg font-medium">Business Logo</h3>
+                    <div className="flex justify-center">
+                      <FormField
+                        control={businessForm.control}
+                        name="profileImageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              {user && (
+                                <BusinessLogoUpload
+                                  businessId={user.id}
+                                  existingImageUrl={field.value}
+                                  onUploadComplete={(url) => field.onChange(url)}
+                                />
+                              )}
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    {/* Business Gallery Photos Upload Section */}
+                    <div className="border rounded-lg p-6 my-6 bg-neutral-50">
+                      <h3 className="text-lg font-medium mb-4">Business Gallery</h3>
+                      {user && (
+                        <BusinessPhotoUpload
+                          businessId={user.id}
+                          existingPhotos={galleryPhotos}
+                          onPhotosChange={(urls) => setGalleryPhotos(urls)}
+                        />
+                      )}
+                    </div>
                     
                     <h3 className="text-lg font-medium">Business Links</h3>
                     
