@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import ChefDocumentUpload from "@/components/ChefDocumentUpload";
+import SaveChangesButton from "./SaveChangesButton";
 import {
   Select,
   SelectContent,
@@ -453,7 +454,7 @@ export default function EditProfile() {
               </CardHeader>
               <CardContent>
                 <Form {...chefForm}>
-                  <form onSubmit={chefForm.handleSubmit(onChefSubmit)} className="space-y-6">
+                  <form className="space-y-6">
                     <div className="flex flex-col items-center mb-6">
                       <h3 className="text-lg font-medium mb-4">Profile Photo</h3>
                       {user && (
