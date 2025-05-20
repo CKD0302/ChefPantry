@@ -138,6 +138,17 @@ export const gigApplications = pgTable("gig_applications", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Chef Documents table for certificates, licenses, etc.
+export const chefDocuments = pgTable("chef_documents", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  chefId: text("chef_id").notNull(), // UUID from Supabase auth
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileType: text("file_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -183,6 +194,11 @@ export const insertGigApplicationSchema = createInsertSchema(gigApplications).om
   updatedAt: true,
 });
 
+export const insertChefDocumentSchema = createInsertSchema(chefDocuments).omit({
+  id: true,
+  uploadedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -209,3 +225,6 @@ export type Gig = typeof gigs.$inferSelect;
 
 export type InsertGigApplication = z.infer<typeof insertGigApplicationSchema>;
 export type GigApplication = typeof gigApplications.$inferSelect;
+
+export type InsertChefDocument = z.infer<typeof insertChefDocumentSchema>;
+export type ChefDocument = typeof chefDocuments.$inferSelect;
