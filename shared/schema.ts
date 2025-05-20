@@ -91,6 +91,7 @@ export const businessProfiles = pgTable("business_profiles", {
   description: text("description").notNull(),
   location: text("location").notNull(),
   profileImageUrl: text("profile_image_url"),
+  galleryImageUrls: text("gallery_image_urls").array(),
   websiteUrl: text("website_url"),
   instagramUrl: text("instagram_url"),
   linkedinUrl: text("linkedin_url"),
