@@ -707,6 +707,28 @@ export default function EditProfile() {
               <CardContent>
                 <Form {...businessForm}>
                   <form onSubmit={businessForm.handleSubmit(onBusinessSubmit)} className="space-y-6">
+                    <h3 className="text-lg font-medium">Business Logo or Profile Picture</h3>
+                    <div className="flex justify-center">
+                      <FormField
+                        control={businessForm.control}
+                        name="profileImageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              {user && (
+                                <BusinessLogoUpload
+                                  businessId={user.id}
+                                  existingImageUrl={field.value}
+                                  onUploadComplete={(url) => field.onChange(url)}
+                                />
+                              )}
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     <FormField
                       control={businessForm.control}
                       name="businessName"

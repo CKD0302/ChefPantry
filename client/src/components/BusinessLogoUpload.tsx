@@ -120,79 +120,79 @@ export default function BusinessLogoUpload({ onUploadComplete, existingImageUrl,
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <div className="relative">
-        {previewUrl ? (
-          <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-primary">
-            <img 
-              src={previewUrl} 
-              alt="Business Logo" 
-              className="w-full h-full object-cover"
-              loading="eager"
-              decoding="async"
-              style={{ 
-                imageRendering: 'auto',
-                objectPosition: 'center',
-                transform: 'scale(1.01)', /* Prevents edge artifacts */
-                backfaceVisibility: 'hidden' /* Prevents rendering issues */
-              }}
-            />
-          </div>
-        ) : (
-          <Avatar className="w-32 h-32 border-2 border-primary">
-            <AvatarFallback className="bg-primary/10 text-primary text-xl">
-              {getInitials(businessId)}
-            </AvatarFallback>
-          </Avatar>
-        )}
-
-        {previewUrl && (
-          <Button 
-            size="icon"
-            variant="destructive" 
-            className="absolute -top-2 -right-2 rounded-full w-6 h-6"
-            onClick={handleRemoveImage}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center space-y-2">
-        <input
-          type="file"
-          accept="image/jpeg, image/png, image/jpg, image/webp"
-          onChange={handleFileChange}
-          className="hidden"
-          ref={fileInputRef}
-          disabled={isUploading}
-        />
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex items-center"
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
+    <div className="w-full">
+      <div className="flex flex-col w-full space-y-4">
+        <div className="relative mx-auto">
+          {previewUrl ? (
+            <div className="w-24 h-24 rounded-full overflow-hidden border border-neutral-200 shadow-sm">
+              <img 
+                src={previewUrl} 
+                alt="Business Logo" 
+                className="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+                style={{ 
+                  imageRendering: 'auto',
+                  objectPosition: 'center'
+                }}
+              />
+            </div>
           ) : (
-            <>
-              <Upload className="mr-2 h-4 w-4" />
-              {previewUrl ? "Change Logo" : "Upload Logo"}
-            </>
+            <Avatar className="w-24 h-24 border border-neutral-200 shadow-sm">
+              <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                {getInitials(businessId)}
+              </AvatarFallback>
+            </Avatar>
           )}
-        </Button>
 
-        {error && <p className="text-destructive text-sm">{error}</p>}
-        <p className="text-xs text-neutral-500">
-          Upload a business logo (JPG or PNG, max 5MB)
-        </p>
+          {previewUrl && (
+            <Button 
+              size="icon"
+              variant="destructive" 
+              className="absolute -top-2 -right-2 rounded-full w-6 h-6"
+              onClick={handleRemoveImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+
+        <div className="flex flex-col items-center space-y-2">
+          <input
+            type="file"
+            accept="image/jpeg, image/png, image/jpg, image/webp"
+            onChange={handleFileChange}
+            className="hidden"
+            ref={fileInputRef}
+            disabled={isUploading}
+          />
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-2 px-3 py-1.5"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                {previewUrl ? "Change Logo" : "Upload Logo"}
+              </>
+            )}
+          </Button>
+
+          {error && <p className="text-destructive text-sm">{error}</p>}
+          <p className="text-xs text-neutral-500">
+            Upload a business logo (JPG or PNG, max 5MB)
+          </p>
+        </div>
       </div>
     </div>
   );
