@@ -883,7 +883,7 @@ export default function EditProfile() {
                     
                     {/* Business Gallery Photos Upload Section */}
                     <div className="border rounded-lg p-6 my-6 bg-neutral-50">
-                      <h3 className="text-lg font-medium mb-4">Business Gallery</h3>
+                      <h3 className="text-lg font-medium mb-4">Gallery Photos</h3>
                       {user && (
                         <BusinessPhotoUpload
                           businessId={user.id}
