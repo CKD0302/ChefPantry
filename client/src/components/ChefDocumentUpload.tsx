@@ -48,9 +48,10 @@ interface ChefDocument {
 
 interface ChefDocumentUploadProps {
   chefId: string;
+  onComplete?: () => void;
 }
 
-export default function ChefDocumentUpload({ chefId }: ChefDocumentUploadProps) {
+export default function ChefDocumentUpload({ chefId, onComplete }: ChefDocumentUploadProps) {
   const [documents, setDocuments] = useState<ChefDocument[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,8 +169,6 @@ export default function ChefDocumentUpload({ chefId }: ChefDocumentUploadProps) 
     }
     
     setIsUploading(false);
-    // Refresh document list
-    fetchDocuments();
   };
 
   const uploadDocument = async (file: File) => {
@@ -218,7 +217,7 @@ export default function ChefDocumentUpload({ chefId }: ChefDocumentUploadProps) 
       }
 
       // Insert document record into database
-      const { error: insertError } = await supabase
+      const { data: newDocument, error: insertError } = await supabase
         .from('chef_documents')
         .insert({
           chef_id: chefId,
@@ -226,10 +225,22 @@ export default function ChefDocumentUpload({ chefId }: ChefDocumentUploadProps) 
           file_url: publicUrl,
           file_type: fileType,
           file_size: file.size
-        });
+        })
+        .select('*')
+        .single();
 
       if (insertError) {
         throw new Error(`Failed to save document record: ${insertError.message}`);
+      }
+
+      // Update local state with the new document
+      if (newDocument) {
+        setDocuments(prevDocuments => [newDocument, ...prevDocuments]);
+        
+        // Notify parent component that documents have changed
+        if (onComplete) {
+          onComplete();
+        }
       }
 
       toast({
@@ -237,6 +248,7 @@ export default function ChefDocumentUpload({ chefId }: ChefDocumentUploadProps) 
         description: `${file.name} has been uploaded successfully.`,
       });
 
+      return newDocument;
     } catch (err) {
       console.error('Error in document upload:', err);
       throw err;
@@ -277,6 +289,11 @@ export default function ChefDocumentUpload({ chefId }: ChefDocumentUploadProps) 
 
       // Update local state
       setDocuments(documents.filter(doc => doc.id !== document.id));
+      
+      // Notify parent component that documents have changed
+      if (onComplete) {
+        onComplete();
+      }
       
       toast({
         title: "Document deleted",
