@@ -454,7 +454,10 @@ export default function EditProfile() {
               </CardHeader>
               <CardContent>
                 <Form {...chefForm}>
-                  <form className="space-y-6">
+                  <form className="space-y-6" onSubmit={(e) => {
+                    e.preventDefault();
+                    onChefSubmit(chefForm.getValues());
+                  }}>
                     <div className="flex flex-col items-center mb-6">
                       <h3 className="text-lg font-medium mb-4">Profile Photo</h3>
                       {user && (
