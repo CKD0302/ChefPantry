@@ -75,6 +75,8 @@ const businessProfileSchema = z.object({
   venueType: z.string().optional(),
   cuisineSpecialties: z.string().optional(), // We'll handle the array in the component
   businessSize: z.string().optional(),
+  isHiring: z.boolean().default(false),
+  availabilityNotes: z.string().optional(),
 });
 
 type ChefProfileFormValues = z.infer<typeof chefProfileSchema>;
@@ -271,6 +273,8 @@ export default function EditProfile() {
           venueType: data.venue_type || "",
           cuisineSpecialties: "", // We'll handle cuisine specialties with TagInput component
           businessSize: data.business_size || "",
+          isHiring: data.is_hiring || false,
+          availabilityNotes: data.availability_notes || "",
         });
       } else {
         // No profile found, redirect to create
@@ -371,6 +375,8 @@ export default function EditProfile() {
         venue_type: data.venueType || null,
         cuisine_specialties: cuisineSpecialties, // Use the cuisine specialties from state
         business_size: data.businessSize || null,
+        is_hiring: data.isHiring,
+        availability_notes: data.availabilityNotes || null,
       };
       
       const { error } = await supabase
@@ -801,6 +807,48 @@ export default function EditProfile() {
                           <FormControl>
                             <Input placeholder="City, State" {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={businessForm.control}
+                      name="isHiring"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Currently hiring chefs</FormLabel>
+                            <FormDescription>
+                              Turn this on if you're looking to hire chefs right now
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={businessForm.control}
+                      name="availabilityNotes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Availability Notes</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Describe your typical shift patterns or availability requirements (e.g., 'Looking for weekend evening staff' or 'Flexible shifts available')"
+                              className="min-h-[100px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            This information helps chefs understand your scheduling needs
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

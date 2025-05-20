@@ -45,6 +45,8 @@ interface BusinessProfile {
   venue_type?: string;
   cuisine_specialties?: string[];
   business_size?: string;
+  is_hiring?: boolean;
+  availability_notes?: string;
   created_at: string;
 }
 

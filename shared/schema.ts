@@ -99,6 +99,8 @@ export const businessProfiles = pgTable("business_profiles", {
   venueType: text("venue_type"),
   cuisineSpecialties: text("cuisine_specialties").array(),
   businessSize: text("business_size"),
+  isHiring: boolean("is_hiring").default(false),
+  availabilityNotes: text("availability_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
