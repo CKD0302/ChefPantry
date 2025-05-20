@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ProfessionalDocuments from "@/components/ProfessionalDocuments";
 import { supabase } from "@/utils/supabaseClient";
 
 export default function Dashboard() {
@@ -243,6 +244,13 @@ export default function Dashboard() {
               <p>You don't have any bookings yet.</p>
             </div>
           </div>
+          
+          {/* Only show Professional Documents section for chefs */}
+          {user?.user_metadata?.role === "chef" && (
+            <div className="mt-8">
+              <ProfessionalDocuments />
+            </div>
+          )}
         </div>
       </main>
       <Footer />
