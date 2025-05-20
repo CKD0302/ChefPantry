@@ -1,11 +1,10 @@
 /**
- * Formats a number with commas as thousands separators and adds a plus sign
+ * Formats a number with commas as thousands separators
  * 
  * @param num The number to format
- * @returns Formatted string (e.g., "1,234+")
+ * @returns Formatted string (e.g., "1,234")
  */
-export function formatNumberWithPlus(num: number): string {
+export function formatNumber(num: number): string {
   // Use US English locale to format with commas
-  const formatted = num.toLocaleString('en-US');
-  return `${formatted}+`;
+  return num.toLocaleString('en-US');
 }

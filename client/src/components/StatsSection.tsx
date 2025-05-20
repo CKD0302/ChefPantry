@@ -1,5 +1,5 @@
 import useStats from "@/hooks/useStats";
-import { formatNumberWithPlus } from "@/utils/formatNumber";
+import { formatNumber } from "@/utils/formatNumber";
 import { Loader2 } from "lucide-react";
 
 export default function StatsSection() {
@@ -7,15 +7,15 @@ export default function StatsSection() {
   
   const stats = [
     { 
-      count: isLoading ? null : formatNumberWithPlus(chefCount), 
+      count: isLoading ? null : formatNumber(chefCount), 
       label: "Professional Chefs" 
     },
     { 
-      count: isLoading ? null : formatNumberWithPlus(businessCount), 
+      count: isLoading ? null : formatNumber(businessCount), 
       label: "Hospitality Partners" 
     },
     { 
-      count: isLoading ? null : formatNumberWithPlus(bookingCount), 
+      count: isLoading ? null : formatNumber(bookingCount), 
       label: "Successful Bookings" 
     }
   ];
@@ -28,6 +28,7 @@ export default function StatsSection() {
   return (
     <section className="bg-white py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <p className="text-center text-neutral-400 text-xs tracking-widest uppercase mb-6">LIVE STATS</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           {stats.map((stat, index) => (
             <div className="p-6" key={index}>
