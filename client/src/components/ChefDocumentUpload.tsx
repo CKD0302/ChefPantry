@@ -257,15 +257,21 @@ export default function ChefDocumentUpload({ chefId, onComplete }: ChefDocumentU
 
   const handleDeleteDocument = async (document: ChefDocument) => {
     try {
-      // Extract the file path from the URL
-      const filePathMatch = document.file_url.match(/\/chef-documents\/(.+)$/);
+      // Get the storage path from the public URL
+      // First, get the URL path after the bucket name
+      const { pathname } = new URL(document.file_url);
       
-      if (!filePathMatch || !filePathMatch[1]) {
-        console.error("Could not extract file path from URL:", document.file_url);
+      // Extract filename - find the path after chef-documents/
+      const segments = pathname.split('/');
+      const bucketIndex = segments.findIndex(segment => segment === 'chef-documents');
+      
+      if (bucketIndex === -1 || bucketIndex === segments.length - 1) {
+        console.error("Invalid file URL structure:", document.file_url);
         return;
       }
       
-      const filePath = decodeURIComponent(filePathMatch[1]);
+      // Everything after 'chef-documents' in the path is our storage path
+      const filePath = segments.slice(bucketIndex + 1).join('/');
       
       // Delete from Supabase storage
       const { error: storageError } = await supabase
