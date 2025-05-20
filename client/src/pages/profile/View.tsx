@@ -321,12 +321,21 @@ export default function ViewProfile() {
                     <User className="h-12 w-12 text-neutral-400" />
                   </div>
                 )}
-                <CardTitle className="text-2xl text-center">
-                  {businessProfile?.business_name}
-                </CardTitle>
-                <div className="flex items-center justify-center mt-2 text-neutral-600">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  <span>{businessProfile?.location}</span>
+                <div className="text-center">
+                  <CardTitle className="text-2xl">
+                    {businessProfile?.business_name}
+                  </CardTitle>
+                  {businessProfile?.is_hiring && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Hiring Now
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-center mt-2 text-neutral-600">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    <span>{businessProfile?.location}</span>
+                  </div>
                 </div>
               </CardHeader>
 
@@ -381,6 +390,15 @@ export default function ViewProfile() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+                
+                {businessProfile?.availability_notes && (
+                  <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <h3 className="text-lg font-medium mb-2 text-blue-800">Availability Details</h3>
+                    <p className="text-blue-700 whitespace-pre-line">
+                      {businessProfile.availability_notes}
+                    </p>
                   </div>
                 )}
 
