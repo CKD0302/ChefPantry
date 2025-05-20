@@ -109,6 +109,12 @@ export default function ChefDocumentUpload({ chefId, onComplete }: ChefDocumentU
       }
       
       setDocuments(data || []);
+      
+      // If we have documents and onComplete is provided, call it
+      // This ensures the parent form knows we have successfully loaded documents
+      if (data && data.length > 0 && onComplete) {
+        onComplete();
+      }
     } catch (err: any) {
       console.error('Error fetching documents:', err);
       setError(err.message || 'Failed to load documents');

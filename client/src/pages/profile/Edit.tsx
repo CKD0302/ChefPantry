@@ -116,8 +116,8 @@ export default function EditProfile() {
       certifications: "",
       isAvailable: true,
     },
-    // This ensures the form doesn't get into a permanently invalid state
-    mode: "onChange",
+    // This allows the document upload to not interfere with form submission
+    shouldUseNativeValidation: false,
   });
 
   const businessForm = useForm<BusinessProfileFormValues>({
