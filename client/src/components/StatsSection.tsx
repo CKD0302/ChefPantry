@@ -26,20 +26,20 @@ export default function StatsSection() {
   }
   
   return (
-    <section className="bg-white py-12">
+    <section className="bg-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p className="text-center text-neutral-400 text-xs tracking-widest uppercase mb-6">LIVE STATS</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <p className="text-center text-neutral-400 text-xs tracking-widest uppercase mb-3">LIVE STATS</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
           {stats.map((stat, index) => (
-            <div className="p-6" key={index}>
+            <div className="p-3" key={index}>
               {isLoading ? (
-                <div className="flex justify-center items-center h-10 mb-2">
+                <div className="flex justify-center items-center h-8 mb-1">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
-                <p className="text-4xl font-bold text-primary mb-2">{stat.count}</p>
+                <p className="text-4xl font-bold text-primary mb-1">{stat.count}</p>
               )}
-              <p className="text-neutral-800 font-medium">{stat.label}</p>
+              <p className="text-neutral-800 font-medium text-sm">{stat.label}</p>
             </div>
           ))}
         </div>
