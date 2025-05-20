@@ -30,9 +30,11 @@ export default function useStats(): Stats {
           .from('business_profiles')
           .select('*', { count: 'exact', head: true });
         
+        // Only count successful applications
         const bookingCountPromise = supabase
           .from('gig_applications')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'applied');
         
         // Execute all queries in parallel
         const [chefResult, businessResult, bookingResult] = await Promise.all([
@@ -45,6 +47,13 @@ export default function useStats(): Stats {
         if (chefResult.error) throw new Error(`Chef count error: ${chefResult.error.message}`);
         if (businessResult.error) throw new Error(`Business count error: ${businessResult.error.message}`);
         if (bookingResult.error) throw new Error(`Booking count error: ${bookingResult.error.message}`);
+
+        // Log results for debugging
+        console.log('Stats query results:', {
+          chefs: chefResult.count,
+          businesses: businessResult.count,
+          bookings: bookingResult.count
+        });
 
         // Update the stats
         setStats({
