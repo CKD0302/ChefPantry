@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import ChefDocumentUpload from "@/components/ChefDocumentUpload";
 import {
   Select,
   SelectContent,
@@ -662,6 +663,13 @@ export default function EditProfile() {
                           existingPhotos={dishPhotos}
                           onPhotosChange={(urls) => setDishPhotos(urls)}
                         />
+                      )}
+                    </div>
+                    
+                    {/* Chef Documents Upload Section */}
+                    <div className="border rounded-lg p-6 my-6 bg-neutral-50">
+                      {user && (
+                        <ChefDocumentUpload chefId={user.id} />
                       )}
                     </div>
 
