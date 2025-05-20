@@ -42,6 +42,9 @@ interface BusinessProfile {
   website_url?: string;
   instagram_url?: string;
   linkedin_url?: string;
+  venue_type?: string;
+  cuisine_specialties?: string[];
+  business_size?: string;
   created_at: string;
 }
 
@@ -370,7 +373,7 @@ export default function ViewProfile() {
                   <div className="mb-6">
                     <h3 className="text-sm font-medium text-neutral-500 mb-2">Cuisine Specialties</h3>
                     <div className="flex flex-wrap gap-2">
-                      {businessProfile.cuisine_specialties.map((cuisine, index) => (
+                      {businessProfile.cuisine_specialties.map((cuisine: string, index: number) => (
                         <div key={index} className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm">
                           {cuisine}
                         </div>

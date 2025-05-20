@@ -813,26 +813,23 @@ export default function EditProfile() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Venue Type</FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select venue type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="restaurant">Restaurant</SelectItem>
-                                <SelectItem value="food_truck">Food Truck</SelectItem>
-                                <SelectItem value="bar">Bar</SelectItem>
-                                <SelectItem value="cafe">Café</SelectItem>
-                                <SelectItem value="hotel">Hotel</SelectItem>
-                                <SelectItem value="catering">Catering Service</SelectItem>
-                                <SelectItem value="private_events">Private Events Venue</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <select 
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                value={field.value}
+                                onChange={field.onChange}
+                              >
+                                <option value="">Select venue type</option>
+                                <option value="restaurant">Restaurant</option>
+                                <option value="food_truck">Food Truck</option>
+                                <option value="bar">Bar</option>
+                                <option value="cafe">Café</option>
+                                <option value="hotel">Hotel</option>
+                                <option value="catering">Catering Service</option>
+                                <option value="private_events">Private Events Venue</option>
+                                <option value="other">Other</option>
+                              </select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -844,21 +841,18 @@ export default function EditProfile() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Business Size</FormLabel>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select business size" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="1-10">1–10 employees</SelectItem>
-                                <SelectItem value="11-50">11–50 employees</SelectItem>
-                                <SelectItem value="51+">51+ employees</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <select 
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                value={field.value}
+                                onChange={field.onChange}
+                              >
+                                <option value="">Select business size</option>
+                                <option value="1-10">1–10 employees</option>
+                                <option value="11-50">11–50 employees</option>
+                                <option value="51+">51+ employees</option>
+                              </select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
