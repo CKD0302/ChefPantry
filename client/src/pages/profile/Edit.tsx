@@ -32,6 +32,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ImageUpload from "@/components/ImageUpload";
 import DishPhotoUpload from "@/components/DishPhotoUpload";
+import BusinessLogoUpload from "@/components/BusinessLogoUpload";
+import BusinessPhotoUpload from "@/components/BusinessPhotoUpload";
 import { ChefTags } from "@/components/ChefTags";
 
 // Chef profile schema
@@ -57,6 +59,8 @@ const businessProfileSchema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   location: z.string().min(2, "Location is required"),
+  profileImageUrl: z.string().optional(),
+  galleryImageUrls: z.string().array().optional(),
   websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -72,6 +76,7 @@ export default function EditProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dishPhotos, setDishPhotos] = useState<string[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [certifications, setCertifications] = useState<string[]>([]);
@@ -104,6 +109,8 @@ export default function EditProfile() {
       businessName: "",
       description: "",
       location: "",
+      profileImageUrl: "",
+      galleryImageUrls: [],
       websiteUrl: "",
       instagramUrl: "",
       linkedinUrl: "",
@@ -224,11 +231,18 @@ export default function EditProfile() {
       }
 
       if (data) {
+        // Load gallery photos if they exist
+        if (Array.isArray(data.gallery_image_urls)) {
+          setGalleryPhotos(data.gallery_image_urls);
+        }
+        
         // Update form with existing data (convert from snake_case to camelCase)
         businessForm.reset({
           businessName: data.business_name,
           description: data.description,
           location: data.location,
+          profileImageUrl: data.profile_image_url || "",
+          galleryImageUrls: [], // We'll handle gallery photos separately with BusinessPhotoUpload component
           websiteUrl: data.website_url || "",
           instagramUrl: data.instagram_url || "",
           linkedinUrl: data.linkedin_url || "",
