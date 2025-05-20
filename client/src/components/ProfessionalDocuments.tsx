@@ -91,6 +91,29 @@ export default function ProfessionalDocuments() {
         throw new Error("File size exceeds 10MB limit");
       }
       
+      // Check if the bucket exists first
+      try {
+        // Checking if bucket exists or is accessible
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+        
+        if (bucketsError) {
+          console.warn("Unable to check storage buckets:", bucketsError);
+        } else {
+          const chefDocumentsBucket = buckets?.find(b => b.name === 'chef-documents');
+          if (!chefDocumentsBucket) {
+            // Create a more informative error message
+            toast({
+              title: "Storage not configured",
+              description: "The document storage system isn't set up yet. Please contact support.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error checking buckets:", err);
+      }
+      
       // Generate file path in the bucket
       const filePath = `user-${user.id}/${file.name}`;
       

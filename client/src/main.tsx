@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { initializeStorageBuckets } from "./utils/setupStorage";
+import { setupStorageBuckets } from "./utils/setupStorage";
 
 const root = document.getElementById("root");
 
@@ -35,7 +35,7 @@ fontLink.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600
 document.head.appendChild(fontLink);
 
 // Initialize storage buckets
-initializeStorageBuckets().catch(err => {
+setupStorageBuckets().catch(err => {
   console.error('Failed to initialize storage buckets:', err);
 });
 
