@@ -235,7 +235,6 @@ export default function BusinessPhotoUpload({ existingPhotos, businessId, onPhot
     <div className="space-y-4 w-full">
       <div className="flex flex-col space-y-2">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">Gallery Photos</h3>
           <span className="text-sm text-neutral-500">
             {photos.length}/{MAX_PHOTOS} photos
           </span>
