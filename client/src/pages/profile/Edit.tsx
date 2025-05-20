@@ -669,7 +669,10 @@ export default function EditProfile() {
                     {/* Chef Documents Upload Section */}
                     <div className="border rounded-lg p-6 my-6 bg-neutral-50">
                       {user && (
-                        <ChefDocumentUpload chefId={user.id} />
+                        <ChefDocumentUpload 
+                          chefId={user.id}
+                          onComplete={() => form.trigger()}
+                        />
                       )}
                     </div>
 
