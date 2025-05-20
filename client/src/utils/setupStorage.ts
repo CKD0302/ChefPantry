@@ -14,28 +14,13 @@ export async function setupStorageBuckets() {
       return;
     }
     
+    // If chef-documents bucket doesn't exist, we can't create it from the client
+    // This would need to be created in Supabase dashboard
     const chefDocumentsBucket = buckets?.find(b => b.name === 'chef-documents');
     
     if (!chefDocumentsBucket) {
       console.warn("chef-documents bucket does not exist in your Supabase project");
-      // Attempt to create the bucket - this may require admin privileges
-      try {
-        const { data, error: createError } = await supabase.storage.createBucket('chef-documents', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB in bytes
-          allowedMimeTypes: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-        });
-        
-        if (createError) {
-          console.error("Failed to create chef-documents bucket:", createError);
-          console.warn("Please create this bucket manually in the Supabase dashboard with public access enabled");
-        } else {
-          console.log("Successfully created chef-documents bucket");
-        }
-      } catch (createErr) {
-        console.error("Error creating chef-documents bucket:", createErr);
-        console.warn("Please create this bucket manually in the Supabase dashboard with public access enabled");
-      }
+      console.warn("Please create this bucket manually in the Supabase dashboard with public access enabled");
     } else {
       console.log("chef-documents bucket exists");
     }

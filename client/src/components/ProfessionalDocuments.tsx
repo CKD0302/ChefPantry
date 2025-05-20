@@ -10,12 +10,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 interface Document {
   id: string;
-  chef_id: string;
-  name: string; 
+  name: string;
   url: string;
-  file_type: string;
-  file_size: number;
-  uploaded_at: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
 }
 
 export default function ProfessionalDocuments() {
@@ -92,8 +91,28 @@ export default function ProfessionalDocuments() {
         throw new Error("File size exceeds 10MB limit");
       }
       
-      // We'll proceed with the upload attempt even if we're not sure the bucket exists
-      // The upload operation will fail with a specific error if the bucket doesn't exist
+      // Check if the bucket exists first
+      try {
+        // Checking if bucket exists or is accessible
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+        
+        if (bucketsError) {
+          console.warn("Unable to check storage buckets:", bucketsError);
+        } else {
+          const chefDocumentsBucket = buckets?.find(b => b.name === 'chef-documents');
+          if (!chefDocumentsBucket) {
+            // Create a more informative error message
+            toast({
+              title: "Storage not configured",
+              description: "The document storage system isn't set up yet. Please contact support.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error checking buckets:", err);
+      }
       
       // Generate file path in the bucket
       const filePath = `user-${user.id}/${file.name}`;
@@ -108,15 +127,6 @@ export default function ProfessionalDocuments() {
         });
       
       if (uploadError) {
-        // Check if the error is related to bucket not existing
-        if (uploadError.message.includes("storage/bucket-not-found") || 
-            uploadError.message.includes("does not exist") ||
-            uploadError.message.toLowerCase().includes("bucket")) {
-          throw new Error(
-            "The document storage system is not properly configured. " +
-            "Please create a 'chef-documents' bucket in your Supabase project."
-          );
-        }
         throw uploadError;
       }
       
@@ -228,7 +238,7 @@ export default function ProfessionalDocuments() {
     }
   };
 
-  const formatFile_size = (bytes: number): string => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     
     const k = 1024;
@@ -238,16 +248,16 @@ export default function ProfessionalDocuments() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (file_type: string) => {
-    if (file_type.startsWith('image/')) {
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
-    } else if (file_type === 'application/pdf') {
+    } else if (fileType === 'application/pdf') {
       return <FileText className="h-5 w-5 text-red-500" />;
-    } else if (file_type.includes('word') || file_type.includes('document')) {
+    } else if (fileType.includes('word') || fileType.includes('document')) {
       return <FileText className="h-5 w-5 text-blue-700" />;
-    } else if (file_type.includes('spreadsheet') || file_type.includes('excel')) {
+    } else if (fileType.includes('spreadsheet') || fileType.includes('excel')) {
       return <FileText className="h-5 w-5 text-green-600" />;
-    } else if (file_type.includes('zip') || file_type.includes('compressed')) {
+    } else if (fileType.includes('zip') || fileType.includes('compressed')) {
       return <FileArchive className="h-5 w-5 text-yellow-600" />;
     }
     return <File className="h-5 w-5 text-gray-500" />;
@@ -286,9 +296,6 @@ export default function ProfessionalDocuments() {
             <p className="text-xs text-neutral-500 mt-2">
               Accept PDF, Word, Excel, and image files up to 10MB
             </p>
-            <p className="text-xs text-amber-600 mt-1">
-              <strong>Note:</strong> Please make sure a "chef-documents" storage bucket has been created in your Supabase project.
-            </p>
           </div>
 
           {/* Document list */}
@@ -309,18 +316,18 @@ export default function ProfessionalDocuments() {
                     className="p-4 flex items-center justify-between flex-wrap gap-2 hover:bg-neutral-50"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {getFileIcon(document.file_type)}
+                      {getFileIcon(document.fileType)}
                       <div className="min-w-0">
                         <h4 className="font-medium text-sm truncate" title={document.name}>
                           {document.name}
                         </h4>
                         <div className="flex gap-2 text-xs text-neutral-500">
                           <span>
-                            {formatFile_size(document.file_size)}
+                            {formatFileSize(document.fileSize)}
                           </span>
                           <span>•</span>
                           <span>
-                            {format(new Date(document.uploaded_at), 'MMM d, yyyy')}
+                            {format(new Date(document.uploadedAt), 'MMM d, yyyy')}
                           </span>
                         </div>
                       </div>
