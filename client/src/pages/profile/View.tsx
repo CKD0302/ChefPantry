@@ -334,6 +334,35 @@ export default function ViewProfile() {
                     {businessProfile?.description}
                   </p>
                 </div>
+                
+                {/* Gallery Images Section */}
+                {businessProfile?.gallery_image_urls && businessProfile.gallery_image_urls.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium mb-3">Gallery</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {businessProfile.gallery_image_urls.map((imageUrl, index) => (
+                        <div key={index} className="aspect-square relative rounded-md overflow-hidden group cursor-pointer">
+                          <img
+                            src={imageUrl}
+                            alt={`${businessProfile.business_name} gallery image #${index + 1}`}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy"
+                            decoding="async"
+                            style={{ imageRendering: 'auto' }}
+                          />
+                          {/* Image overlay effect on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <span className="text-white text-sm font-medium">
+                                {`Gallery Image ${index + 1}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {(businessProfile?.website_url || businessProfile?.instagram_url || businessProfile?.linkedin_url) && (
                   <>

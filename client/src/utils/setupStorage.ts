@@ -23,14 +23,22 @@ export async function initializeStorageBuckets() {
       return;
     }
     
-    // If we can list buckets, check if chef-avatars exists
+    // If we can list buckets, check if required buckets exist
     const chefAvatarsBucketExists = buckets?.some(bucket => bucket.name === 'chef-avatars');
+    const businessMediaBucketExists = buckets?.some(bucket => bucket.name === 'business-media');
     
     if (!chefAvatarsBucketExists) {
       console.log('Note: chef-avatars bucket not found in your Supabase project');
       console.log('Please create this bucket in the Supabase dashboard with public access enabled');
     } else {
       console.log('chef-avatars bucket found and accessible');
+    }
+    
+    if (!businessMediaBucketExists) {
+      console.log('Note: business-media bucket not found in your Supabase project');
+      console.log('Please create this bucket in the Supabase dashboard with public access enabled');
+    } else {
+      console.log('business-media bucket found and accessible');
     }
   } catch (error) {
     console.error('Error checking storage buckets:', error);
