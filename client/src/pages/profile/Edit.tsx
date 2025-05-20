@@ -671,7 +671,7 @@ export default function EditProfile() {
                       {user && (
                         <ChefDocumentUpload 
                           chefId={user.id}
-                          onComplete={() => form.trigger()}
+                          onComplete={() => chefForm.trigger()}
                         />
                       )}
                     </div>
