@@ -98,21 +98,28 @@ export default function ChefDocumentUpload({ chefId, onComplete }: ChefDocumentU
     setError(null);
     
     try {
+      // Force cache refresh with new Date() to avoid using cached data
       const { data, error } = await supabase
         .from('chef_documents')
         .select('*')
         .eq('chef_id', chefId)
-        .order('uploaded_at', { ascending: false });
+        .order('uploaded_at', { ascending: false })
+        .options({ 
+          count: 'exact',
+          head: false,
+          cache: 'no-store' 
+        });
       
       if (error) {
         throw error;
       }
       
+      console.log('Fetched documents:', data);
       setDocuments(data || []);
       
       // If we have documents and onComplete is provided, call it
       // This ensures the parent form knows we have successfully loaded documents
-      if (data && data.length > 0 && onComplete) {
+      if (data && onComplete) {
         onComplete();
       }
     } catch (err: any) {
@@ -292,18 +299,24 @@ export default function ChefDocumentUpload({ chefId, onComplete }: ChefDocumentU
         throw new Error(`Failed to delete file: ${storageError.message}`);
       }
 
-      // Delete from database
-      const { error: dbError } = await supabase
+      // Delete from database - make sure this completes successfully
+      const { error: dbError, data } = await supabase
         .from('chef_documents')
         .delete()
-        .eq('id', document.id);
+        .eq('id', document.id)
+        .select();
 
       if (dbError) {
         throw new Error(`Failed to delete document record: ${dbError.message}`);
       }
+      
+      console.log('Successfully deleted document:', document.id);
 
       // Update local state
       setDocuments(documents.filter(doc => doc.id !== document.id));
+      
+      // Force a new fetch of documents to ensure state is in sync with database
+      await fetchDocuments();
       
       // Notify parent component that documents have changed
       if (onComplete) {
