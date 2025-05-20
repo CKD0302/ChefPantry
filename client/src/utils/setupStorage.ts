@@ -6,41 +6,38 @@ import { supabase } from './supabaseClient';
  */
 export async function initializeStorageBuckets() {
   try {
-    // Note: Creating buckets should be done in the Supabase dashboard or server-side
-    // with appropriate admin privileges - this just checks if we can access storage
+    // Instead of trying to list all buckets (which requires admin rights),
+    // we'll check each bucket individually using the from().list() method
+    const requiredBuckets = [
+      'chef-avatars',
+      'business-media',
+      'chef-dishes',
+      'chef-documents'
+    ];
     
-    // Test if we can access storage buckets
-    const { data: buckets, error } = await supabase
-      .storage
-      .listBuckets();
-
-    if (error) {
-      console.log('Note: Unable to list storage buckets - this might be a permissions restriction');
-      console.log('Please ensure the "chef-avatars" bucket exists in your Supabase project');
-      
-      // Try to upload to chef-avatars anyway - it might work if bucket exists but listing is restricted
-      console.log('Will attempt uploads to chef-avatars bucket when needed');
-      return;
+    console.log('Checking Supabase storage buckets...');
+    
+    // Test access to each required bucket
+    for (const bucketName of requiredBuckets) {
+      try {
+        const { data, error } = await supabase.storage.from(bucketName).list('', {
+          limit: 1 // We only need to check access, not load all files
+        });
+        
+        if (error) {
+          console.log(`⚠️ ${bucketName} bucket issue: ${error.message}`);
+          console.log(`Please ensure the "${bucketName}" bucket exists in your Supabase project with public access`);
+        } else {
+          console.log(`✓ ${bucketName} bucket is accessible`);
+        }
+      } catch (bucketError) {
+        console.error(`Error checking ${bucketName} bucket:`, bucketError);
+      }
     }
     
-    // If we can list buckets, check if required buckets exist
-    const chefAvatarsBucketExists = buckets?.some(bucket => bucket.name === 'chef-avatars');
-    const businessMediaBucketExists = buckets?.some(bucket => bucket.name === 'business-media');
-    
-    if (!chefAvatarsBucketExists) {
-      console.log('Note: chef-avatars bucket not found in your Supabase project');
-      console.log('Please create this bucket in the Supabase dashboard with public access enabled');
-    } else {
-      console.log('chef-avatars bucket found and accessible');
-    }
-    
-    if (!businessMediaBucketExists) {
-      console.log('Note: business-media bucket not found in your Supabase project');
-      console.log('Please create this bucket in the Supabase dashboard with public access enabled');
-    } else {
-      console.log('business-media bucket found and accessible');
-    }
+    // Verify Supabase connection
+    console.log(`Connected to Supabase project: ${supabase.supabaseUrl}`);
   } catch (error) {
-    console.error('Error checking storage buckets:', error);
+    console.error('Error initializing storage buckets:', error);
   }
 }

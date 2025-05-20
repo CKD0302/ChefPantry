@@ -80,10 +80,13 @@ export default function ChefDocumentUpload({ chefId, onComplete }: ChefDocumentU
 
   async function checkBucket() {
     try {
-      const { data, error } = await supabase.storage.getBucket('chef-documents');
-      if (error && !data) {
-        console.log("Note: chef-documents bucket not found in your Supabase project");
+      // Using list method with prefix instead of getBucket (which is admin-only)
+      const { data, error } = await supabase.storage.from('chef-documents').list();
+      if (error) {
+        console.log("Note: chef-documents bucket not found or not accessible in your Supabase project");
         console.log("Please create this bucket in the Supabase dashboard with public access enabled");
+      } else {
+        console.log("chef-documents bucket is accessible");
       }
     } catch (err) {
       console.error("Error checking bucket:", err);

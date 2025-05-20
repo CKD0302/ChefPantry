@@ -34,10 +34,13 @@ export default function DishPhotoUpload({ existingPhotos, userId, onPhotosChange
   useEffect(() => {
     async function checkBucket() {
       try {
-        const { data, error } = await supabase.storage.getBucket('chef-dishes');
-        if (error && !data) {
-          console.log("Note: chef-dishes bucket not found in your Supabase project");
+        // Using list method instead of getBucket (which is admin-only)
+        const { data, error } = await supabase.storage.from('chef-dishes').list();
+        if (error) {
+          console.log("Note: chef-dishes bucket not found or not accessible in your Supabase project");
           console.log("Please create this bucket in the Supabase dashboard with public access enabled");
+        } else {
+          console.log("chef-dishes bucket is accessible");
         }
       } catch (err) {
         console.error("Error checking bucket:", err);

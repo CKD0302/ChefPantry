@@ -34,10 +34,13 @@ export default function BusinessPhotoUpload({ existingPhotos, businessId, onPhot
   useEffect(() => {
     async function checkBucket() {
       try {
-        const { data, error } = await supabase.storage.getBucket('business-media');
-        if (error && !data) {
-          console.log("Note: business-media bucket not found in your Supabase project");
+        // Using list method instead of getBucket (which is admin-only)
+        const { data, error } = await supabase.storage.from('business-media').list();
+        if (error) {
+          console.log("Note: business-media bucket not found or not accessible in your Supabase project");
           console.log("Please create this bucket in the Supabase dashboard with public access enabled");
+        } else {
+          console.log("business-media bucket is accessible");
         }
       } catch (err) {
         console.error("Error checking bucket:", err);
