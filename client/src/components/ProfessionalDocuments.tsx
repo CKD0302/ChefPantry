@@ -138,47 +138,36 @@ export default function ProfessionalDocuments() {
       // Use the fresh session user ID for the file path
       const filePath = `user-${currentUserId}/${Date.now()}-${file.name}`;
 
-      // Upload to storage with retry logic
-      let uploadAttempts = 0;
-      let uploadError = null;
-      let uploadResult = null;
-      
-      // Sometimes Supabase needs a moment for auth to propagate
-      // This retry approach helps ensure the upload succeeds
-      while (uploadAttempts < 3 && !uploadResult) {
-        uploadAttempts++;
+      // First make sure we have access to the bucket
+      try {
+        // Get a fresh auth token to ensure bucket access
+        const { data: authData } = await supabase.auth.getSession();
+        console.log("Authenticated user for storage:", authData?.session?.user?.id);
         
-        if (uploadAttempts > 1) {
-          console.log(`Retry attempt ${uploadAttempts} for file upload...`);
-          // Brief pause between retries
-          await new Promise(resolve => setTimeout(resolve, 500));
+        // Simple direct upload approach
+        console.log("Uploading to path:", filePath);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("chef-documents")
+          .upload(filePath, file, { 
+            cacheControl: "3600", 
+            upsert: true
+          });
+        
+        // Handle upload error with detailed logging
+        if (uploadError) {
+          console.error("Storage error details:", JSON.stringify(uploadError));
+          throw new Error(`Storage upload failed: ${uploadError.message}`);
         }
         
-        try {
-          const result = await supabase.storage
-            .from("chef-documents")
-            .upload(filePath, file, { 
-              cacheControl: "3600", 
-              upsert: true 
-            });
-            
-          if (result.error) {
-            console.error(`Upload attempt ${uploadAttempts} error:`, result.error);
-            uploadError = result.error;
-          } else {
-            console.log("Upload successful on attempt", uploadAttempts);
-            uploadResult = result.data;
-            break;
-          }
-        } catch (err) {
-          console.error(`Upload attempt ${uploadAttempts} exception:`, err);
-          uploadError = err;
-        }
-      }
-      
-      if (!uploadResult) {
-        console.error("All upload attempts failed:", uploadError);
-        throw new Error(`Storage error: ${uploadError?.message || "Upload failed after multiple attempts"}`);
+        console.log("Upload successful:", uploadData?.path);
+      } catch (err) {
+        console.error("Storage operation failed:", err);
+        toast({
+          title: "Storage Error",
+          description: `Could not upload to storage: ${err.message}`,
+          variant: "destructive",
+        });
+        throw err;
       }
 
       // Get the URL of the uploaded file
