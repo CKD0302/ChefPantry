@@ -26,18 +26,18 @@ export default function ProfessionalDocuments() {
   const [user, setUser] = useState<{ id: string } | null>(null);
 
   useEffect(() => {
-    // Get the current authenticated user
+    // Get the current authenticated user using session
     const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Error fetching user:", error);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      
+      if (!userId) {
+        console.error("No authenticated user found");
         return;
       }
       
-      if (data?.user) {
-        setUser({ id: data.user.id });
-        fetchDocuments(data.user.id);
-      }
+      setUser({ id: userId });
+      fetchDocuments(userId);
     };
 
     getUser();
@@ -48,6 +48,12 @@ export default function ProfessionalDocuments() {
     setError(null);
     
     try {
+      // Verify session is active before querying
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.user?.id) {
+        throw new Error("Authentication session expired");
+      }
+      
       const { data, error } = await supabase
         .from('chef_documents')
         .select('*')
@@ -73,7 +79,11 @@ export default function ProfessionalDocuments() {
   };
 
   const uploadDocument = async (file: File) => {
-    if (!user) {
+    // Get the current session first
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    
+    if (!userId) {
       toast({
         title: "Error",
         description: "You must be logged in to upload documents.",
@@ -91,33 +101,10 @@ export default function ProfessionalDocuments() {
         throw new Error("File size exceeds 10MB limit");
       }
       
-      // Check if the bucket exists first
-      try {
-        // Checking if bucket exists or is accessible
-        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-        
-        if (bucketsError) {
-          console.warn("Unable to check storage buckets:", bucketsError);
-        } else {
-          const chefDocumentsBucket = buckets?.find(b => b.name === 'chef-documents');
-          if (!chefDocumentsBucket) {
-            // Create a more informative error message
-            toast({
-              title: "Storage not configured",
-              description: "The document storage system isn't set up yet. Please contact support.",
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Error checking buckets:", err);
-      }
-      
       // Generate file path in the bucket
-      const filePath = `user-${user.id}/${file.name}`;
+      const filePath = `user-${userId}/${file.name}`;
       
-      // Upload file to storage
+      // Upload file to storage with active session
       const { data: uploadData, error: uploadError } = await supabase
         .storage
         .from('chef-documents')
@@ -127,6 +114,7 @@ export default function ProfessionalDocuments() {
         });
       
       if (uploadError) {
+        console.error("Upload error:", uploadError);
         throw uploadError;
       }
       
@@ -142,7 +130,7 @@ export default function ProfessionalDocuments() {
       const { data: documentData, error: documentError } = await supabase
         .from('chef_documents')
         .insert({
-          chef_id: user.id,
+          chef_id: userId,
           name: file.name,
           url: publicUrl,
           file_type: file.type,
@@ -160,7 +148,7 @@ export default function ProfessionalDocuments() {
       });
       
       // Refresh the documents list
-      fetchDocuments(user.id);
+      fetchDocuments(userId);
     } catch (err: any) {
       console.error('Error uploading document:', err);
       toast({
@@ -174,7 +162,18 @@ export default function ProfessionalDocuments() {
   };
 
   const deleteDocument = async (document: Document) => {
-    if (!user) return;
+    // Get the current session first
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to delete documents.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       // Get the file path from the public URL
@@ -192,7 +191,7 @@ export default function ProfessionalDocuments() {
       // Everything after 'chef-documents' in the path is our storage path
       const filePath = segments.slice(bucketIndex + 1).join('/');
       
-      // Delete from Supabase storage
+      // Delete from Supabase storage with active session
       const { error: storageError } = await supabase
         .storage
         .from('chef-documents')
