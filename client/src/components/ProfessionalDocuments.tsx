@@ -55,11 +55,21 @@ export default function ProfessionalDocuments() {
   // --- Fetch documents ---
   const fetchDocuments = async (uid: string) => {
     setIsLoading(true);
+    
+    // Ensure we have a fresh session with valid auth
+    const { data: sessionData } = await supabase.auth.getSession();
+    const authUserId = sessionData?.session?.user?.id;
+    
+    if (!authUserId) {
+      console.error("Authentication required to fetch documents");
+      setIsLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("chef_documents")
       .select("*")
-      .eq("chef_id", uid)
+      .eq("chef_id", authUserId) // Always use the authenticated user ID
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -110,8 +120,16 @@ export default function ProfessionalDocuments() {
 
       console.log("chef_id (should match auth.uid):", userId);
 
+      // Ensure we have a fresh authentication for the database insertion
+      const { data: refreshedSession } = await supabase.auth.getSession();
+      
+      if (!refreshedSession?.session?.user?.id) {
+        throw new Error("Authentication required: Session expired or invalid");
+      }
+      
+      // Make sure chef_id matches the authenticated user ID
       const { error: insertError } = await supabase.from("chef_documents").insert({
-        chef_id: userId,
+        chef_id: refreshedSession.session.user.id,
         name: file.name,
         url: publicUrl,
         file_type: file.type,
@@ -140,22 +158,35 @@ export default function ProfessionalDocuments() {
 
   // --- Delete a document ---
   const deleteDocument = async (doc: Document) => {
-    if (!userId) return;
+    // Get a fresh session to ensure proper authentication
+    const { data: sessionData } = await supabase.auth.getSession();
+    const authUserId = sessionData?.session?.user?.id;
+    
+    if (!authUserId) {
+      toast({
+        title: "Error",
+        description: "Authentication required to delete documents",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const pathParts = new URL(doc.url).pathname.split("/");
       const filePath = pathParts.slice(pathParts.indexOf("chef-documents") + 1).join("/");
 
+      // Ensure storage operations use authenticated session
       const { error: storageError } = await supabase.storage
         .from("chef-documents")
         .remove([filePath]);
 
       if (storageError) throw storageError;
 
+      // Use the authenticated user ID for database operations
       const { error: dbError } = await supabase
         .from("chef_documents")
         .delete()
-        .eq("id", doc.id);
+        .match({ id: doc.id, chef_id: authUserId });
 
       if (dbError) throw dbError;
 
