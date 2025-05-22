@@ -36,24 +36,51 @@ export default function ProfessionalDocuments() {
 
   // --- Get authenticated user once ---
   useEffect(() => {
-    const getUser = async () => {
+    // Configure auth state observer
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        const id = session?.user?.id;
+        console.log("Auth state changed:", event, "User ID:", id);
+        
+        if (id) {
+          setUserId(id);
+          fetchDocuments(id);
+        } else {
+          console.error("No authenticated user found");
+          setDocuments([]);
+        }
+      }
+    );
+
+    // Initial auth check
+    const getInitialUser = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const id = sessionData?.session?.user?.id;
 
-      if (!id) {
-        console.error("No authenticated user found");
-        return;
+      if (id) {
+        console.log("Initial user found:", id);
+        setUserId(id);
+        fetchDocuments(id);
+      } else {
+        console.error("No initial user found");
       }
-
-      setUserId(id);
-      fetchDocuments(id);
     };
 
-    getUser();
+    getInitialUser();
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // --- Fetch documents ---
-  const fetchDocuments = async (uid: string) => {
+  const fetchDocuments = async (uid: string | null) => {
+    if (!uid) {
+      console.error("Cannot fetch documents: No user ID provided");
+      return;
+    }
+    
     setIsLoading(true);
     
     // Ensure we have a fresh session with valid auth
@@ -88,9 +115,13 @@ export default function ProfessionalDocuments() {
 
   // --- Upload a document ---
   const uploadDocument = async (file: File) => {
-    if (!userId) {
+    // Get fresh user session first and abort early if not authenticated
+    const { data: freshSession } = await supabase.auth.getSession();
+    const currentUserId = freshSession?.session?.user?.id;
+    
+    if (!currentUserId) {
       toast({
-        title: "Error",
+        title: "Authentication Error",
         description: "You must be logged in to upload documents.",
         variant: "destructive",
       });
@@ -104,32 +135,32 @@ export default function ProfessionalDocuments() {
         throw new Error("File size exceeds 10MB limit");
       }
 
-      const filePath = `user-${userId}/${file.name}`;
+      // Use the fresh session user ID for the file path
+      const filePath = `user-${currentUserId}/${Date.now()}-${file.name}`;
 
+      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("chef-documents")
         .upload(filePath, file, { cacheControl: "3600", upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        throw new Error(`Storage error: ${uploadError.message}`);
+      }
 
+      // Get the URL of the uploaded file
       const { data: urlData } = supabase.storage
         .from("chef-documents")
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
 
-      console.log("chef_id (should match auth.uid):", userId);
-
-      // Ensure we have a fresh authentication for the database insertion
-      const { data: refreshedSession } = await supabase.auth.getSession();
+      // Log the key values for debugging
+      console.log("Inserting document with chef_id:", currentUserId);
       
-      if (!refreshedSession?.session?.user?.id) {
-        throw new Error("Authentication required: Session expired or invalid");
-      }
-      
-      // Make sure chef_id matches the authenticated user ID
+      // Insert into database - critically important to use the auth user ID
       const { error: insertError } = await supabase.from("chef_documents").insert({
-        chef_id: refreshedSession.session.user.id,
+        chef_id: currentUserId,
         name: file.name,
         url: publicUrl,
         file_type: file.type,
@@ -143,7 +174,9 @@ export default function ProfessionalDocuments() {
         description: "Document uploaded successfully!",
       });
 
-      fetchDocuments(userId);
+      if (userId) {
+        fetchDocuments(userId);
+      }
     } catch (err: any) {
       console.error("Upload error:", err.message);
       toast({
@@ -172,23 +205,33 @@ export default function ProfessionalDocuments() {
     }
 
     try {
+      console.log("Deleting document:", doc.id, "for user:", authUserId);
+      
       const pathParts = new URL(doc.url).pathname.split("/");
       const filePath = pathParts.slice(pathParts.indexOf("chef-documents") + 1).join("/");
+      console.log("Storage path to delete:", filePath);
 
       // Ensure storage operations use authenticated session
       const { error: storageError } = await supabase.storage
         .from("chef-documents")
         .remove([filePath]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error("Storage delete error:", storageError);
+        throw storageError;
+      }
 
       // Use the authenticated user ID for database operations
+      console.log("Deleting from database, record ID:", doc.id);
       const { error: dbError } = await supabase
         .from("chef_documents")
         .delete()
         .match({ id: doc.id, chef_id: authUserId });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database delete error:", dbError);
+        throw dbError;
+      }
 
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
 
