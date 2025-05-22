@@ -138,14 +138,47 @@ export default function ProfessionalDocuments() {
       // Use the fresh session user ID for the file path
       const filePath = `user-${currentUserId}/${Date.now()}-${file.name}`;
 
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from("chef-documents")
-        .upload(filePath, file, { cacheControl: "3600", upsert: true });
-
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        throw new Error(`Storage error: ${uploadError.message}`);
+      // Upload to storage with retry logic
+      let uploadAttempts = 0;
+      let uploadError = null;
+      let uploadResult = null;
+      
+      // Sometimes Supabase needs a moment for auth to propagate
+      // This retry approach helps ensure the upload succeeds
+      while (uploadAttempts < 3 && !uploadResult) {
+        uploadAttempts++;
+        
+        if (uploadAttempts > 1) {
+          console.log(`Retry attempt ${uploadAttempts} for file upload...`);
+          // Brief pause between retries
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        try {
+          const result = await supabase.storage
+            .from("chef-documents")
+            .upload(filePath, file, { 
+              cacheControl: "3600", 
+              upsert: true 
+            });
+            
+          if (result.error) {
+            console.error(`Upload attempt ${uploadAttempts} error:`, result.error);
+            uploadError = result.error;
+          } else {
+            console.log("Upload successful on attempt", uploadAttempts);
+            uploadResult = result.data;
+            break;
+          }
+        } catch (err) {
+          console.error(`Upload attempt ${uploadAttempts} exception:`, err);
+          uploadError = err;
+        }
+      }
+      
+      if (!uploadResult) {
+        console.error("All upload attempts failed:", uploadError);
+        throw new Error(`Storage error: ${uploadError?.message || "Upload failed after multiple attempts"}`);
       }
 
       // Get the URL of the uploaded file
