@@ -13,7 +13,7 @@ export default function FeaturedDishes() {
       description: "Unique culinary visions brought to life by passionate chefs for unforgettable dining experiences."
     },
     {
-      image: "https://pixabay.com/get/gfc4041beb81a1c65663f11305a48ecf01747fef169df7c9d41f887881f774bb91501a2081bf2b33a41e4d7610fa294d5384bc5709b2fac06823c09e05829984d_1280.jpg",
+      image: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600",
       title: "Professional Expertise",
       description: "Technical mastery and consistent excellence from seasoned culinary professionals."
     }
