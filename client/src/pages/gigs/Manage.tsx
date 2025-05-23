@@ -80,6 +80,8 @@ export default function ManageGigs() {
     setError(null);
 
     try {
+      console.log("Fetching gigs for user:", user.id);
+      
       // Fetch ALL gigs created by this business (both active and inactive)
       const { data: gigs, error: gigsError } = await supabase
         .from("gigs")
@@ -87,7 +89,10 @@ export default function ManageGigs() {
         .eq("created_by", user.id)
         .order("start_date", { ascending: false });
 
+      console.log("Gigs query result:", { gigs, error: gigsError });
+
       if (gigsError) {
+        console.error("Error fetching gigs:", gigsError);
         throw gigsError;
       }
 
