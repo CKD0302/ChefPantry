@@ -80,31 +80,12 @@ export default function ManageGigs() {
     setError(null);
 
     try {
-      console.log("Business profile check:", user);
-      console.log("Fetching gigs for user:", user.id);
-      
-      // TEMPORARY FIX: Fetch ALL gigs to debug the issue
+      // Fetch gigs for this business
       const { data: gigs, error: gigsError } = await supabase
         .from("gigs")
         .select("*")
+        .eq("created_by", user.id)
         .order("created_at", { ascending: false });
-
-      console.log("DEBUGGING - Current user ID:", user.id);
-      console.log("DEBUGGING - All gigs found:", gigs);
-      console.log("DEBUGGING - Filtering gigs for current user...");
-      
-      // Filter gigs for current user
-      const userGigs = gigs?.filter(gig => gig.created_by === user.id) || [];
-
-      console.log("Gigs query result:", { gigs, error: gigsError });
-      console.log("Number of gigs found:", gigs?.length || 0);
-      
-      // Let's also check what gigs exist for ANY user to debug
-      const { data: allGigs } = await supabase
-        .from("gigs")
-        .select("id, created_by, title")
-        .limit(10);
-      console.log("All gigs in database (sample):", allGigs);
 
       if (gigsError) {
         console.error("Error fetching gigs:", gigsError);
@@ -113,7 +94,7 @@ export default function ManageGigs() {
 
       const gigsWithApps: GigWithApplications[] = [];
 
-      for (const gig of userGigs || []) {
+      for (const gig of gigs || []) {
         // Fetch applications for each gig
         const { data: applications, error: appsError } = await supabase
           .from("gig_applications")
