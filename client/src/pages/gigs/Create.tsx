@@ -159,6 +159,8 @@ export default function CreateGig() {
         is_active: true
       };
       
+      console.log("Current user ID:", user.id);
+      console.log("Current user email:", user.email);
       console.log("Payload being sent to database:", gigData);
 
       // Insert directly into Supabase instead of using API endpoint
