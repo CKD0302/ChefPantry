@@ -150,6 +150,18 @@ export const chefDocuments = pgTable("chef_documents", {
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 });
 
+// Notifications table for system notifications
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  recipientId: text("recipient_id").notNull(), // UUID from Supabase auth
+  type: text("type").notNull(), // 'gig_confirmed', 'application_received', etc.
+  message: text("message").notNull(),
+  linkUrl: text("link_url"), // Optional link to relevant page
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -200,6 +212,12 @@ export const insertChefDocumentSchema = createInsertSchema(chefDocuments).omit({
   uploadedAt: true,
 });
 
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -229,3 +247,6 @@ export type GigApplication = typeof gigApplications.$inferSelect;
 
 export type InsertChefDocument = z.infer<typeof insertChefDocumentSchema>;
 export type ChefDocument = typeof chefDocuments.$inferSelect;
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;

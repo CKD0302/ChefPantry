@@ -25,7 +25,10 @@ import {
   type InsertGig,
   gigApplications,
   type GigApplication,
-  type InsertGigApplication
+  type InsertGigApplication,
+  notifications,
+  type Notification,
+  type InsertNotification
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not } from "drizzle-orm";
@@ -81,6 +84,11 @@ export interface IStorage {
   createGigApplication(application: InsertGigApplication): Promise<GigApplication>;
   updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined>;
   acceptChefForGig(applicationId: string, gigId: string): Promise<{ acceptedApplication: GigApplication; rejectedCount: number }>;
+  confirmGigApplication(applicationId: string, gigId: string, businessId: string, gigTitle: string): Promise<GigApplication | undefined>;
+  
+  // Notification methods
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotificationsByRecipient(recipientId: string): Promise<Notification[]>;
 }
 
 export class DBStorage implements IStorage {
