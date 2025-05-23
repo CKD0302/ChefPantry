@@ -198,12 +198,20 @@ export default function ManageGigs() {
   };
 
   const isCurrentGig = (gig: Gig) => {
+    if (!gig.end_date || !gig.start_date) {
+      // If no dates are set, consider it current if it's active
+      return gig.is_active;
+    }
     const today = new Date();
     const endDate = new Date(gig.end_date);
     return endDate >= today && gig.is_active;
   };
 
   const isPastGig = (gig: Gig) => {
+    if (!gig.end_date || !gig.start_date) {
+      // If no dates are set, consider it past if it's inactive
+      return !gig.is_active;
+    }
     const today = new Date();
     const endDate = new Date(gig.end_date);
     return endDate < today || !gig.is_active;
@@ -390,6 +398,9 @@ interface GigCardProps {
 
 function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isCurrent }: GigCardProps) {
   const formatDateRange = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) {
+      return "Date not set";
+    }
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
