@@ -28,7 +28,7 @@ import {
   type InsertGigApplication
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, not } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -369,6 +369,48 @@ export class DBStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async acceptChefForGig(applicationId: string, gigId: string): Promise<{ acceptedApplication: GigApplication; rejectedCount: number }> {
+    // Use a transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // 1. Accept the specific application
+      const acceptedResult = await tx
+        .update(gigApplications)
+        .set({ 
+          status: "accepted",
+          updatedAt: new Date()
+        })
+        .where(eq(gigApplications.id, applicationId))
+        .returning();
+
+      if (acceptedResult.length === 0) {
+        throw new Error("Application not found");
+      }
+
+      const acceptedApplication = acceptedResult[0];
+
+      // 2. Reject all other applications for the same gig
+      const rejectedResult = await tx
+        .update(gigApplications)
+        .set({ 
+          status: "rejected",
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(gigApplications.gigId, gigId),
+            not(eq(gigApplications.id, applicationId)),
+            not(eq(gigApplications.status, "rejected")) // Only update non-rejected applications
+          )
+        )
+        .returning();
+
+      return {
+        acceptedApplication,
+        rejectedCount: rejectedResult.length
+      };
+    });
   }
 }
 
