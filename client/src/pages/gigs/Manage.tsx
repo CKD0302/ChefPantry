@@ -80,6 +80,7 @@ export default function ManageGigs() {
     setError(null);
 
     try {
+      console.log("Business profile check:", user);
       console.log("Fetching gigs for user:", user.id);
       
       // Fetch ALL gigs created by this business (both active and inactive)
@@ -87,7 +88,7 @@ export default function ManageGigs() {
         .from("gigs")
         .select("*")
         .eq("created_by", user.id)
-        .order("start_date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       console.log("Gigs query result:", { gigs, error: gigsError });
 
