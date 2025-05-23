@@ -465,6 +465,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Confirm a gig application (for chefs)
+  apiRouter.put("/applications/:id/confirm", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // First, get the application and gig details
+      const application = await storage.getGigApplication(id);
+      
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.status === "confirmed") {
+        return res.status(400).json({ message: "Application is already confirmed" });
+      }
+
+      if (application.status !== "accepted") {
+        return res.status(400).json({ message: "Only accepted applications can be confirmed" });
+      }
+
+      // Get gig details for notification
+      const gig = await storage.getGig(application.gigId);
+      
+      if (!gig) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+
+      // Confirm the application and create notification
+      const confirmedApplication = await storage.confirmGigApplication(
+        id, 
+        application.gigId, 
+        gig.createdBy, 
+        gig.title
+      );
+      
+      res.status(200).json({
+        message: "Gig confirmed successfully",
+        application: confirmedApplication
+      });
+    } catch (error) {
+      console.error("Error confirming gig:", error);
+      res.status(500).json({ message: "Failed to confirm gig" });
+    }
+  });
+
   // Mount API routes
   app.use("/api", apiRouter);
 

@@ -21,6 +21,7 @@ import CreateGig from "@/pages/gigs/Create";
 import ManageGigs from "@/pages/gigs/Manage";
 import BrowseGigs from "@/pages/gigs/Browse";
 import ViewGig from "@/pages/gigs/View";
+import MyApplications from "@/pages/gigs/MyApplications";
 import GigApplications from "@/pages/gigs/applications/GigApplications";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/gigs/manage" component={ManageGigs} />
       <Route path="/gigs/browse" component={BrowseGigs} />
       <Route path="/gigs/view/:id" component={ViewGig} />
+      <Route path="/gigs/my-applications" component={MyApplications} />
       <Route path="/gigs/applications/:gigId" component={GigApplications} />
       
       <Route component={NotFound} />

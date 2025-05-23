@@ -420,6 +420,55 @@ export class DBStorage implements IStorage {
       };
     });
   }
+
+  async confirmGigApplication(applicationId: string, gigId: string, businessId: string, gigTitle: string): Promise<GigApplication | undefined> {
+    // Use a transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // 1. Update the application status to confirmed
+      const confirmedResult = await tx
+        .update(gigApplications)
+        .set({ 
+          status: "confirmed",
+          updatedAt: new Date()
+        })
+        .where(eq(gigApplications.id, applicationId))
+        .returning();
+
+      if (confirmedResult.length === 0) {
+        throw new Error("Application not found");
+      }
+
+      const confirmedApplication = confirmedResult[0];
+
+      // 2. Create a notification for the business
+      await tx
+        .insert(notifications)
+        .values({
+          recipientId: businessId,
+          type: "gig_confirmed",
+          message: `The chef has confirmed the gig for "${gigTitle}"`,
+          linkUrl: `/gigs/view/${gigId}`,
+          isRead: false
+        });
+
+      return confirmedApplication;
+    });
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const result = await db.insert(notifications).values(insertNotification).returning();
+    return result[0];
+  }
+
+  async getNotificationsByRecipient(recipientId: string): Promise<Notification[]> {
+    const result = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.recipientId, recipientId))
+      .orderBy(desc(notifications.createdAt));
+    
+    return result;
+  }
 }
 
 export const storage = new DBStorage();
