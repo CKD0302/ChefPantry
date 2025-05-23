@@ -183,12 +183,16 @@ export default function BrowseGigs() {
     setError(null);
 
     try {
-      // Fetch gigs directly from Supabase instead of using API
+      // Get today's date in YYYY-MM-DD format for filtering
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch gigs directly from Supabase with date filtering
       const { data, error } = await supabase
         .from("gigs")
         .select("*")
         .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .gte("start_date", today) // Only show gigs that start today or in the future
+        .order("start_date", { ascending: true }); // Order by start date ascending
         
       if (error) {
         throw error;
@@ -200,7 +204,8 @@ export default function BrowseGigs() {
       const formattedGigs = data.map(gig => ({
         id: gig.id,
         title: gig.title,
-        gigDate: gig.date,
+        startDate: gig.start_date,
+        endDate: gig.end_date,
         startTime: gig.start_time,
         endTime: gig.end_time,
         location: gig.location,

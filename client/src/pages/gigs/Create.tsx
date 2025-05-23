@@ -141,7 +141,8 @@ export default function CreateGig() {
       const gigData = {
         createdBy: user.id,
         title: data.title,
-        gigDate: data.gigDate,
+        startDate: data.startDate,
+        endDate: data.endDate,
         startTime: data.startTime,
         endTime: data.endTime,
         location: data.location,
@@ -254,13 +255,27 @@ export default function CreateGig() {
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <FormField
                       control={form.control}
-                      name="gigDate"
+                      name="startDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Date</FormLabel>
+                          <FormLabel>Start Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
