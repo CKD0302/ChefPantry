@@ -14,7 +14,10 @@ import {
   Mail, 
   CheckCircle, 
   XCircle,
-  Eye
+  Eye,
+  Copy,
+  Archive,
+  RotateCcw
 } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
@@ -77,13 +80,12 @@ export default function ManageGigs() {
     setError(null);
 
     try {
-      // Fetch gigs created by this business
+      // Fetch ALL gigs created by this business (both active and inactive)
       const { data: gigs, error: gigsError } = await supabase
         .from("gigs")
         .select("*")
         .eq("created_by", user.id)
-        .eq("is_active", true)
-        .order("start_date", { ascending: true });
+        .order("start_date", { ascending: false });
 
       if (gigsError) {
         throw gigsError;
@@ -167,6 +169,39 @@ export default function ManageGigs() {
     } finally {
       setAcceptingId(null);
     }
+  };
+
+  const reuseGig = (gig: Gig) => {
+    // Store the gig data in localStorage for the create form to use
+    const gigTemplate = {
+      title: gig.title,
+      role: gig.role,
+      venue_type: gig.venue_type,
+      location: gig.location,
+      pay_rate: gig.pay_rate
+    };
+    
+    localStorage.setItem('gigTemplate', JSON.stringify(gigTemplate));
+    
+    toast({
+      title: "Gig Template Saved",
+      description: "The gig details have been saved. You'll be redirected to create a new gig with these details.",
+    });
+    
+    // Redirect to create gig page
+    window.location.href = "/gigs/create?template=true";
+  };
+
+  const isCurrentGig = (gig: Gig) => {
+    const today = new Date();
+    const endDate = new Date(gig.end_date);
+    return endDate >= today && gig.is_active;
+  };
+
+  const isPastGig = (gig: Gig) => {
+    const today = new Date();
+    const endDate = new Date(gig.end_date);
+    return endDate < today || !gig.is_active;
   };
 
   const formatDateRange = (startDate: string, endDate: string) => {
@@ -271,7 +306,7 @@ export default function ManageGigs() {
                 <Eye className="h-12 w-12 text-neutral-400 mb-4" />
                 <h3 className="text-xl font-medium mb-2">No Gigs Found</h3>
                 <p className="text-neutral-600 text-center max-w-md mb-6">
-                  You haven't posted any active gigs yet. Create your first gig to start receiving applications from talented chefs.
+                  You haven't posted any gigs yet. Create your first gig to start receiving applications from talented chefs.
                 </p>
                 <Button onClick={() => window.location.href = "/gigs/create"}>
                   Create Your First Gig
@@ -279,133 +314,262 @@ export default function ManageGigs() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
-              {gigsWithApplications.map(({ gig, applications }) => (
-                <Card key={gig.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-xl">{gig.title}</CardTitle>
-                        <CardDescription className="flex items-center mt-2">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {gig.location}
-                        </CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <Badge className="text-lg py-1 px-3 bg-primary text-white mb-2">
-                          £{gig.pay_rate}/hr
-                        </Badge>
-                        <div className="text-sm text-neutral-500">
-                          {applications.length} application{applications.length !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    </div>
+            <>
+              {/* Current Gigs Section */}
+              {gigsWithApplications.filter(({ gig }) => isCurrentGig(gig)).length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <CalendarCheck className="h-5 w-5 text-green-600 mr-2" />
+                    <h2 className="text-xl font-semibold text-green-700">Current & Upcoming Gigs</h2>
+                  </div>
+                  <div className="space-y-6">
+                    {gigsWithApplications
+                      .filter(({ gig }) => isCurrentGig(gig))
+                      .map(({ gig, applications }) => (
+                        <GigCard 
+                          key={gig.id} 
+                          gig={gig} 
+                          applications={applications} 
+                          onAcceptChef={acceptChef}
+                          onReuseGig={reuseGig}
+                          acceptingId={acceptingId}
+                          isCurrent={true}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                      <div className="flex items-center">
-                        <CalendarCheck className="h-4 w-4 text-neutral-500 mr-2" />
-                        <div>
-                          <p className="text-sm text-neutral-500">Date</p>
-                          <p className="font-medium">{formatDateRange(gig.start_date, gig.end_date)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 text-neutral-500 mr-2" />
-                        <div>
-                          <p className="text-sm text-neutral-500">Time</p>
-                          <p className="font-medium">
-                            {gig.start_time.substring(0, 5)} - {gig.end_time.substring(0, 5)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 text-neutral-500 mr-2" />
-                        <div>
-                          <p className="text-sm text-neutral-500">Role</p>
-                          <p className="font-medium">{getRoleLabel(gig.role)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <Separator />
-
-                  <CardContent className="pt-6">
-                    {applications.length === 0 ? (
-                      <div className="text-center py-8">
-                        <User className="h-8 w-8 text-neutral-400 mx-auto mb-3" />
-                        <p className="text-neutral-500">No applications yet</p>
-                        <p className="text-sm text-neutral-400">Applications will appear here when chefs apply</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <h4 className="font-semibold">Applications ({applications.length})</h4>
-                        {applications.map((application) => (
-                          <div key={application.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h5 className="font-medium">
-                                  {application.chef_profile?.first_name} {application.chef_profile?.last_name}
-                                </h5>
-                                <div className="flex items-center text-sm text-neutral-600 mt-1">
-                                  <Mail className="h-3 w-3 mr-1" />
-                                  {application.chef_profile?.email}
-                                </div>
-                                <p className="text-sm text-neutral-500 mt-1">
-                                  Applied on {format(new Date(application.applied_at), "MMM d, yyyy 'at' h:mm a")}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {getStatusBadge(application.status)}
-                                {application.status === "applied" && (
-                                  <Button
-                                    onClick={() => acceptChef(
-                                      application.id,
-                                      `${application.chef_profile?.first_name} ${application.chef_profile?.last_name}`,
-                                      gig.title
-                                    )}
-                                    disabled={acceptingId === application.id}
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
-                                  >
-                                    {acceptingId === application.id ? (
-                                      "Accepting..."
-                                    ) : (
-                                      <>
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Accept Chef
-                                      </>
-                                    )}
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {application.message && (
-                              <div className="bg-neutral-50 rounded p-3 mt-3">
-                                <p className="text-sm font-medium mb-1">Application Message:</p>
-                                <p className="text-sm text-neutral-700">{application.message}</p>
-                              </div>
-                            )}
-                            
-                            {application.chef_profile?.bio && (
-                              <div className="mt-3">
-                                <p className="text-sm font-medium mb-1">About the Chef:</p>
-                                <p className="text-sm text-neutral-700">{application.chef_profile.bio}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+              {/* Past Gigs Section */}
+              {gigsWithApplications.filter(({ gig }) => isPastGig(gig)).length > 0 && (
+                <div>
+                  <div className="flex items-center mb-4">
+                    <Archive className="h-5 w-5 text-neutral-500 mr-2" />
+                    <h2 className="text-xl font-semibold text-neutral-700">Past Gigs</h2>
+                  </div>
+                  <div className="space-y-6">
+                    {gigsWithApplications
+                      .filter(({ gig }) => isPastGig(gig))
+                      .map(({ gig, applications }) => (
+                        <GigCard 
+                          key={gig.id} 
+                          gig={gig} 
+                          applications={applications} 
+                          onAcceptChef={acceptChef}
+                          onReuseGig={reuseGig}
+                          acceptingId={acceptingId}
+                          isCurrent={false}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
       <Footer />
     </div>
+  );
+}
+
+// Separate component for gig cards to reduce complexity
+interface GigCardProps {
+  gig: Gig;
+  applications: Application[];
+  onAcceptChef: (applicationId: string, chefName: string, gigTitle: string) => void;
+  onReuseGig: (gig: Gig) => void;
+  acceptingId: string | null;
+  isCurrent: boolean;
+}
+
+function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isCurrent }: GigCardProps) {
+  const formatDateRange = (startDate: string, endDate: string) => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (startDate === endDate) {
+        return format(start, "MMM d, yyyy");
+      } else {
+        return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+      }
+    } catch (error) {
+      return "Invalid date";
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "accepted":
+        return <Badge className="bg-green-100 text-green-800">Accepted</Badge>;
+      case "confirmed":
+        return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>;
+      case "rejected":
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+      case "applied":
+        return <Badge className="bg-blue-100 text-blue-800">Applied</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getRoleLabel = (roleValue: string) => {
+    const roleMap: {[key: string]: string} = {
+      "head_chef": "Head Chef",
+      "sous_chef": "Sous Chef",
+      "pastry_chef": "Pastry Chef",
+      "line_cook": "Line Cook",
+      "prep_cook": "Prep Cook",
+      "kitchen_porter": "Kitchen Porter",
+      "dishwasher": "Dishwasher",
+      "server": "Server",
+      "bartender": "Bartender",
+      "barista": "Barista",
+      "host": "Host/Hostess",
+      "other": "Other"
+    };
+    return roleMap[roleValue] || roleValue;
+  };
+
+  return (
+    <Card className={!isCurrent ? "opacity-75" : ""}>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-xl">{gig.title}</CardTitle>
+            <CardDescription className="flex items-center mt-2">
+              <MapPin className="h-4 w-4 mr-1" />
+              {gig.location}
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <Badge className="text-lg py-1 px-3 bg-primary text-white mb-2">
+              £{gig.pay_rate}/hr
+            </Badge>
+            <div className="text-sm text-neutral-500">
+              {applications.length} application{applications.length !== 1 ? 's' : ''}
+            </div>
+            {!isCurrent && (
+              <Badge variant="secondary" className="mt-1">
+                {gig.is_active ? "Completed" : "Inactive"}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="flex items-center">
+            <CalendarCheck className="h-4 w-4 text-neutral-500 mr-2" />
+            <div>
+              <p className="text-sm text-neutral-500">Date</p>
+              <p className="font-medium">{formatDateRange(gig.start_date, gig.end_date)}</p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <Clock className="h-4 w-4 text-neutral-500 mr-2" />
+            <div>
+              <p className="text-sm text-neutral-500">Time</p>
+              <p className="font-medium">
+                {gig.start_time.substring(0, 5)} - {gig.end_time.substring(0, 5)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <User className="h-4 w-4 text-neutral-500 mr-2" />
+            <div>
+              <p className="text-sm text-neutral-500">Role</p>
+              <p className="font-medium">{getRoleLabel(gig.role)}</p>
+            </div>
+          </div>
+        </div>
+
+        {!isCurrent && (
+          <div className="mt-4 pt-4 border-t">
+            <Button
+              onClick={() => onReuseGig(gig)}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reuse This Gig
+            </Button>
+          </div>
+        )}
+      </CardHeader>
+
+      <Separator />
+
+      <CardContent className="pt-6">
+        {applications.length === 0 ? (
+          <div className="text-center py-8">
+            <User className="h-8 w-8 text-neutral-400 mx-auto mb-3" />
+            <p className="text-neutral-500">No applications yet</p>
+            <p className="text-sm text-neutral-400">Applications will appear here when chefs apply</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <h4 className="font-semibold">Applications ({applications.length})</h4>
+            {applications.map((application) => (
+              <div key={application.id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h5 className="font-medium">
+                      {application.chef_profile?.first_name} {application.chef_profile?.last_name}
+                    </h5>
+                    <div className="flex items-center text-sm text-neutral-600 mt-1">
+                      <Mail className="h-3 w-3 mr-1" />
+                      {application.chef_profile?.email}
+                    </div>
+                    <p className="text-sm text-neutral-500 mt-1">
+                      Applied on {format(new Date(application.applied_at), "MMM d, yyyy 'at' h:mm a")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(application.status)}
+                    {application.status === "applied" && isCurrent && (
+                      <Button
+                        onClick={() => onAcceptChef(
+                          application.id,
+                          `${application.chef_profile?.first_name} ${application.chef_profile?.last_name}`,
+                          gig.title
+                        )}
+                        disabled={acceptingId === application.id}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {acceptingId === application.id ? (
+                          "Accepting..."
+                        ) : (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Accept Chef
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {application.message && (
+                  <div className="bg-neutral-50 rounded p-3 mt-3">
+                    <p className="text-sm font-medium mb-1">Application Message:</p>
+                    <p className="text-sm text-neutral-700">{application.message}</p>
+                  </div>
+                )}
+                
+                {application.chef_profile?.bio && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium mb-1">About the Chef:</p>
+                    <p className="text-sm text-neutral-700">{application.chef_profile.bio}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

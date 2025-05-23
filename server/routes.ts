@@ -492,10 +492,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Chef profile not found" });
       }
 
+      // Extract first name from fullName field
+      const firstName = chefProfile.fullName.split(' ')[0] || 'Chef';
+
       // Confirm the application and create notification
       const confirmedApplication = await storage.confirmGigApplication(
         id, 
-        chefProfile.firstName
+        firstName
       );
       
       res.status(200).json({
