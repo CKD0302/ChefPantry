@@ -83,12 +83,18 @@ export default function ManageGigs() {
       console.log("Business profile check:", user);
       console.log("Fetching gigs for user:", user.id);
       
-      // Fetch ALL gigs created by this business (both active and inactive)
+      // TEMPORARY FIX: Fetch ALL gigs to debug the issue
       const { data: gigs, error: gigsError } = await supabase
         .from("gigs")
         .select("*")
-        .eq("created_by", user.id)
         .order("created_at", { ascending: false });
+
+      console.log("DEBUGGING - Current user ID:", user.id);
+      console.log("DEBUGGING - All gigs found:", gigs);
+      console.log("DEBUGGING - Filtering gigs for current user...");
+      
+      // Filter gigs for current user
+      const userGigs = gigs?.filter(gig => gig.created_by === user.id) || [];
 
       console.log("Gigs query result:", { gigs, error: gigsError });
       console.log("Number of gigs found:", gigs?.length || 0);
@@ -107,7 +113,7 @@ export default function ManageGigs() {
 
       const gigsWithApps: GigWithApplications[] = [];
 
-      for (const gig of gigs || []) {
+      for (const gig of userGigs || []) {
         // Fetch applications for each gig
         const { data: applications, error: appsError } = await supabase
           .from("gig_applications")
