@@ -39,7 +39,8 @@ import Footer from "@/components/Footer";
 // Define the gig creation schema
 const gigSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
-  gigDate: z.string().nonempty("Date is required"),
+  startDate: z.string().nonempty("Start date is required"),
+  endDate: z.string().nonempty("End date is required"),
   startTime: z.string().nonempty("Start time is required"),
   endTime: z.string().nonempty("End time is required"),
   location: z.string().min(3, "Location is required"),
@@ -52,6 +53,12 @@ const gigSchema = z.object({
   equipmentProvided: z.string().optional(),
   benefits: z.string().optional(),
   tipsAvailable: z.boolean().default(false),
+}).refine((data) => {
+  // Validate that end date is not before start date
+  return new Date(data.endDate) >= new Date(data.startDate);
+}, {
+  message: "End date must be on or after start date",
+  path: ["endDate"],
 });
 
 type GigFormValues = z.infer<typeof gigSchema>;
@@ -98,7 +105,8 @@ export default function CreateGig() {
     resolver: zodResolver(gigSchema),
     defaultValues: {
       title: "",
-      gigDate: format(new Date(), "yyyy-MM-dd"),
+      startDate: format(new Date(), "yyyy-MM-dd"),
+      endDate: format(new Date(), "yyyy-MM-dd"),
       startTime: "09:00",
       endTime: "17:00",
       location: "",
