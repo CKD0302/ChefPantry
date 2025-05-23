@@ -80,6 +80,7 @@ export interface IStorage {
   getGigApplicationsByChefId(chefId: string): Promise<GigApplication[]>;
   createGigApplication(application: InsertGigApplication): Promise<GigApplication>;
   updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined>;
+  acceptChefForGig(applicationId: string, gigId: string): Promise<{ acceptedApplication: GigApplication; rejectedCount: number }>;
 }
 
 export class DBStorage implements IStorage {

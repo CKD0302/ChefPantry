@@ -435,6 +435,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Accept a chef for a gig (accepts one, rejects all others)
+  apiRouter.put("/applications/:id/accept", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // First, get the application to find the gig_id
+      const application = await storage.getGigApplication(id);
+      
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.status === "accepted") {
+        return res.status(400).json({ message: "Application is already accepted" });
+      }
+
+      // Accept this specific application and reject all others for the same gig
+      const result = await storage.acceptChefForGig(id, application.gigId);
+      
+      res.status(200).json({
+        message: "Chef accepted successfully",
+        acceptedApplication: result.acceptedApplication,
+        rejectedCount: result.rejectedCount
+      });
+    } catch (error) {
+      console.error("Error accepting chef for gig:", error);
+      res.status(500).json({ message: "Failed to accept chef for gig" });
+    }
+  });
+
   // Mount API routes
   app.use("/api", apiRouter);
 
