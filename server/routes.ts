@@ -485,19 +485,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Only accepted applications can be confirmed" });
       }
 
-      // Get gig details for notification
-      const gig = await storage.getGig(application.gigId);
+      // Get chef profile information for the notification
+      const chefProfile = await storage.getChefProfile(application.chefId);
       
-      if (!gig) {
-        return res.status(404).json({ message: "Gig not found" });
+      if (!chefProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
       }
 
       // Confirm the application and create notification
       const confirmedApplication = await storage.confirmGigApplication(
         id, 
-        application.gigId, 
-        gig.createdBy, 
-        gig.title
+        chefProfile.firstName
       );
       
       res.status(200).json({

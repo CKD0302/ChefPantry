@@ -84,7 +84,7 @@ export interface IStorage {
   createGigApplication(application: InsertGigApplication): Promise<GigApplication>;
   updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined>;
   acceptChefForGig(applicationId: string, gigId: string): Promise<{ acceptedApplication: GigApplication; rejectedCount: number }>;
-  confirmGigApplication(applicationId: string, gigId: string, businessId: string, gigTitle: string): Promise<GigApplication | undefined>;
+  confirmGigApplication(applicationId: string, chefFirstName: string): Promise<GigApplication | undefined>;
   
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -421,7 +421,7 @@ export class DBStorage implements IStorage {
     });
   }
 
-  async confirmGigApplication(applicationId: string, gigId: string, businessId: string, gigTitle: string): Promise<GigApplication | undefined> {
+  async confirmGigApplication(applicationId: string, chefFirstName: string): Promise<GigApplication | undefined> {
     // Use a transaction to ensure atomicity
     return await db.transaction(async (tx) => {
       // 1. Update the application status to confirmed
@@ -440,14 +440,27 @@ export class DBStorage implements IStorage {
 
       const confirmedApplication = confirmedResult[0];
 
-      // 2. Create a notification for the business
+      // 2. Get gig details to find business ID and gig title
+      const gigResult = await tx
+        .select()
+        .from(gigs)
+        .where(eq(gigs.id, confirmedApplication.gigId))
+        .limit(1);
+
+      if (gigResult.length === 0) {
+        throw new Error("Gig not found");
+      }
+
+      const gig = gigResult[0];
+
+      // 3. Create a notification for the business
       await tx
         .insert(notifications)
         .values({
-          recipientId: businessId,
+          recipientId: gig.createdBy,
           type: "gig_confirmed",
-          message: `The chef has confirmed the gig for "${gigTitle}"`,
-          linkUrl: `/gigs/view/${gigId}`,
+          message: `Chef ${chefFirstName} has confirmed the gig: ${gig.title}`,
+          linkUrl: `/gigs/view/${gig.id}`,
           isRead: false
         });
 
