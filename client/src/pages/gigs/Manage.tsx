@@ -91,6 +91,14 @@ export default function ManageGigs() {
         .order("created_at", { ascending: false });
 
       console.log("Gigs query result:", { gigs, error: gigsError });
+      console.log("Number of gigs found:", gigs?.length || 0);
+      
+      // Let's also check what gigs exist for ANY user to debug
+      const { data: allGigs } = await supabase
+        .from("gigs")
+        .select("id, created_by, title")
+        .limit(10);
+      console.log("All gigs in database (sample):", allGigs);
 
       if (gigsError) {
         console.error("Error fetching gigs:", gigsError);
