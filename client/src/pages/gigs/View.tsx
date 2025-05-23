@@ -45,7 +45,8 @@ import Footer from "@/components/Footer";
 interface Gig {
   id: string;
   title: string;
-  gigDate: string;
+  startDate: string;
+  endDate: string;
   startTime: string;
   endTime: string;
   location: string;
@@ -133,7 +134,8 @@ export default function ViewGig() {
       const formattedGig = {
         id: data.id,
         title: data.title,
-        gigDate: data.date,
+        startDate: data.start_date,
+        endDate: data.end_date,
         startTime: data.start_time,
         endTime: data.end_time,
         location: data.location,
@@ -246,15 +248,34 @@ export default function ViewGig() {
   };
 
   // Helper functions for displaying data
-  const formatDateTime = (date: string, time: string): { date: string; time: string } => {
-    if (!date) return { date: "N/A", time: "" };
+  const formatDateRange = (startDate: string, endDate: string): { dateRange: string; duration: string } => {
+    if (!startDate || !endDate) return { dateRange: "N/A", duration: "" };
     try {
-      const formattedDate = format(new Date(date), "EEEE, MMMM d, yyyy");
-      // Convert time from HH:MM:SS to HH:MM format
-      const formattedTime = time ? time.substring(0, 5) : "";
-      return { date: formattedDate, time: formattedTime };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Calculate the number of days
+      const timeDiff = end.getTime() - start.getTime();
+      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end days
+      
+      // Format the date range
+      const startFormatted = format(start, "MMM d");
+      const endFormatted = format(end, "MMM d, yyyy");
+      
+      let dateRange;
+      if (startDate === endDate) {
+        // Single day gig
+        dateRange = format(start, "EEEE, MMMM d, yyyy");
+      } else {
+        // Multi-day gig
+        dateRange = `${startFormatted} - ${endFormatted}`;
+      }
+      
+      const duration = dayDiff === 1 ? "1 day" : `${dayDiff} days`;
+      
+      return { dateRange, duration };
     } catch (error) {
-      return { date: "Invalid date", time: "" };
+      return { dateRange: "Invalid date", duration: "" };
     }
   };
 
@@ -293,10 +314,10 @@ export default function ViewGig() {
     return venueMap[venueValue] || venueValue;
   };
 
-  const isPastGig = (date: string) => {
-    if (!date) return false;
+  const isPastGig = (endDate: string) => {
+    if (!endDate) return false;
     try {
-      return isBefore(new Date(date), new Date());
+      return isBefore(new Date(endDate), new Date());
     } catch (error) {
       return false;
     }
@@ -365,8 +386,8 @@ export default function ViewGig() {
     );
   }
 
-  const { date: formattedDate, time: formattedStartTime } = formatDateTime(gig.gigDate, gig.startTime);
-  const isPast = isPastGig(gig.gigDate);
+  const { dateRange: formattedDateRange, duration } = formatDateRange(gig.startDate, gig.endDate);
+  const isPast = isPastGig(gig.endDate);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -401,8 +422,9 @@ export default function ViewGig() {
                 <div className="flex items-center">
                   <CalendarCheck className="h-5 w-5 text-neutral-500 mr-2" />
                   <div>
-                    <p className="text-sm text-neutral-500">Date</p>
-                    <p className="font-medium">{formattedDate}</p>
+                    <p className="text-sm text-neutral-500">Date Range</p>
+                    <p className="font-medium">{formattedDateRange}</p>
+                    {duration && <p className="text-sm text-neutral-500">({duration})</p>}
                   </div>
                 </div>
                 <div className="flex items-center">
