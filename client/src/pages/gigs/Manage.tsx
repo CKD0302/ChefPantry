@@ -122,6 +122,11 @@ export default function ManageGigs() {
 
         if (appsError) {
           console.error("Error fetching applications:", appsError);
+          // Still add the gig even if applications fail to load
+          gigsWithApps.push({
+            gig,
+            applications: []
+          });
           continue;
         }
 
