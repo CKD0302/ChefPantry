@@ -110,7 +110,6 @@ export const gigs = pgTable("gigs", {
   id: uuid("id").defaultRandom().primaryKey(),
   createdBy: text("created_by").notNull(), // UUID from Supabase auth
   title: text("title").notNull(),
-  gigDate: date("date"), // Legacy field - will be removed after migration
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   startTime: time("start_time").notNull(),

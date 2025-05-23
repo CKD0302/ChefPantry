@@ -33,6 +33,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { supabase } from "@/utils/supabaseClient";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -137,52 +138,43 @@ export default function CreateGig() {
     setIsSubmitting(true);
 
     try {
-      // Format the data for the API using camelCase field names that match the schema
+      // Format the data for the database using snake_case field names
       const gigData = {
-        createdBy: user.id,
+        created_by: user.id,
         title: data.title,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        start_time: data.startTime + ":00", // Convert HH:MM to HH:MM:SS format
+        end_time: data.endTime + ":00", // Convert HH:MM to HH:MM:SS format
         location: data.location,
-        payRate: data.payRate.toString(), // Send as string to match validation expectation
+        pay_rate: Number(data.payRate), // Send as number
         role: data.role,
-        venueType: data.venueType,
-        dressCode: data.dressCode || null,
-        serviceExpectations: data.serviceExpectations || null,
-        kitchenDetails: data.kitchenDetails || null,
-        equipmentProvided: data.equipmentProvided ? data.equipmentProvided.split(',').map(item => item.trim()) : [],
+        venue_type: data.venueType,
+        dress_code: data.dressCode || null,
+        service_expectations: data.serviceExpectations || null,
+        kitchen_details: data.kitchenDetails || null,
+        equipment_provided: data.equipmentProvided ? data.equipmentProvided.split(',').map(item => item.trim()) : [],
         benefits: data.benefits ? data.benefits.split(',').map(item => item.trim()) : [],
-        tipsAvailable: data.tipsAvailable === true,
-        isActive: true
+        tips_available: data.tipsAvailable === true,
+        is_active: true
       };
-
-      // Send the request to the API
-      const response = await fetch("/api/gigs/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(gigData),
-      });
-
-      const responseData = await response.json();
       
-      if (!response.ok) {
-        // Log the full response data for better debugging
-        console.error("Server validation error (full):", responseData);
-        
-        // Log detailed error information from the errors array if available
-        if (responseData.errors) {
-          console.error("Validation errors detail:", responseData.errors);
-        }
-        
-        throw new Error(responseData.message || "Failed to create gig");
+      console.log("Payload being sent to database:", gigData);
+
+      // Insert directly into Supabase instead of using API endpoint
+      const { data: insertedGig, error } = await supabase
+        .from("gigs")
+        .insert(gigData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Database error:", error);
+        throw new Error(error.message || "Failed to create gig");
       }
 
       // Log success data for verification
-      console.log("Gig created successfully:", responseData);
+      console.log("Gig created successfully:", insertedGig);
       
       toast({
         title: "Success",
