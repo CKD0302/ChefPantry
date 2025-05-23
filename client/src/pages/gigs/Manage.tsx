@@ -80,12 +80,21 @@ export default function ManageGigs() {
     setError(null);
 
     try {
+      // First check what user we have
+      const currentSession = await supabase.auth.getSession();
+      console.log("MANAGE PAGE - Current session user:", currentSession.data.session?.user?.id);
+      console.log("MANAGE PAGE - useAuth user:", user.id);
+      console.log("MANAGE PAGE - User email:", user.email);
+      
       // Fetch gigs for this business
       const { data: gigs, error: gigsError } = await supabase
         .from("gigs")
         .select("*")
         .eq("created_by", user.id)
         .order("created_at", { ascending: false });
+
+      console.log("MANAGE PAGE - Gigs found:", gigs?.length || 0);
+      console.log("MANAGE PAGE - Raw gigs data:", gigs);
 
       if (gigsError) {
         console.error("Error fetching gigs:", gigsError);

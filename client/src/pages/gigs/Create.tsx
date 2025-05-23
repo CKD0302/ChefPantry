@@ -159,8 +159,11 @@ export default function CreateGig() {
         is_active: true
       };
       
-      console.log("Current user ID:", user.id);
-      console.log("Current user email:", user.email);
+      // Check current session vs useAuth
+      const currentSession = await supabase.auth.getSession();
+      console.log("CREATE PAGE - Current session user:", currentSession.data.session?.user?.id);
+      console.log("CREATE PAGE - useAuth user:", user.id);
+      console.log("CREATE PAGE - User email:", user.email);
       console.log("Payload being sent to database:", gigData);
 
       // Insert directly into Supabase instead of using API endpoint
