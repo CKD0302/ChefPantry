@@ -162,8 +162,8 @@ export default function BrowseGigs() {
     filtered.sort((a, b) => {
       // Past gigs at the end
       const now = new Date();
-      const dateA = parseISO(a.gigDate);
-      const dateB = parseISO(b.gigDate);
+      const dateA = parseISO(a.start_date || a.created_at);
+      const dateB = parseISO(b.start_date || b.created_at);
       
       const aIsPast = !isAfter(dateA, now);
       const bIsPast = !isAfter(dateB, now);
