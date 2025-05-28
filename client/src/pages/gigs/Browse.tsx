@@ -162,8 +162,14 @@ export default function BrowseGigs() {
     filtered.sort((a, b) => {
       // Past gigs at the end
       const now = new Date();
-      const dateA = parseISO(a.start_date || a.created_at);
-      const dateB = parseISO(b.start_date || b.created_at);
+      // Handle null/undefined dates safely
+      const aDate = a.gigDate;
+      const bDate = b.gigDate;
+      
+      if (!aDate || !bDate) return 0; // Skip sorting if dates are missing
+      
+      const dateA = parseISO(aDate);
+      const dateB = parseISO(bDate);
       
       const aIsPast = !isAfter(dateA, now);
       const bIsPast = !isAfter(dateB, now);
@@ -172,7 +178,7 @@ export default function BrowseGigs() {
       if (!aIsPast && bIsPast) return -1;
       
       // Both future or both past, sort by closest date
-      return new Date(a.gigDate).getTime() - new Date(b.gigDate).getTime();
+      return dateA.getTime() - dateB.getTime();
     });
 
     setFilteredGigs(filtered);
@@ -219,7 +225,8 @@ export default function BrowseGigs() {
         benefits: gig.benefits || [],
         tipsAvailable: gig.tips_available,
         createdAt: gig.created_at,
-        createdBy: gig.created_by
+        createdBy: gig.created_by,
+        gigDate: gig.start_date || gig.created_at
       }));
       
       setGigs(formattedGigs || []);
