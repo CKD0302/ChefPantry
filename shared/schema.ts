@@ -160,7 +160,6 @@ export const notifications = pgTable("notifications", {
   linkUrl: text("link_url"), // Optional link to relevant page
   isRead: boolean("read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Schemas and types
