@@ -135,6 +135,7 @@ export const gigApplications = pgTable("gig_applications", {
   chefId: text("chef_id").notNull(), // UUID from Supabase auth
   status: text("status").notNull().default("applied"),
   message: text("message"),
+  confirmed: boolean("confirmed").default(false).notNull(),
   appliedAt: timestamp("applied_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

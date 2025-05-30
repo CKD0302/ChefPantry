@@ -81,6 +81,7 @@ export interface IStorage {
   getGigApplication(id: string): Promise<GigApplication | undefined>;
   getGigApplicationsByGigId(gigId: string): Promise<GigApplication[]>;
   getGigApplicationsByChefId(chefId: string): Promise<GigApplication[]>;
+  getAcceptedApplicationsByChefId(chefId: string): Promise<GigApplication[]>;
   createGigApplication(application: InsertGigApplication): Promise<GigApplication>;
   updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined>;
   acceptChefForGig(applicationId: string, gigId: string): Promise<{ acceptedApplication: GigApplication; rejectedCount: number }>;
@@ -353,6 +354,17 @@ export class DBStorage implements IStorage {
     return db.select()
       .from(gigApplications)
       .where(eq(gigApplications.chefId, chefId))
+      .orderBy(desc(gigApplications.appliedAt));
+  }
+
+  async getAcceptedApplicationsByChefId(chefId: string): Promise<GigApplication[]> {
+    return db.select()
+      .from(gigApplications)
+      .where(and(
+        eq(gigApplications.chefId, chefId),
+        eq(gigApplications.status, "accepted"),
+        eq(gigApplications.confirmed, false)
+      ))
       .orderBy(desc(gigApplications.appliedAt));
   }
   
