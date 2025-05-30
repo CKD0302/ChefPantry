@@ -125,6 +125,7 @@ export const gigs = pgTable("gigs", {
   benefits: text("benefits").array(),
   tipsAvailable: boolean("tips_available").default(false),
   isActive: boolean("is_active").default(true),
+  isBooked: boolean("is_booked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -215,7 +216,6 @@ export const insertChefDocumentSchema = createInsertSchema(chefDocuments).omit({
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

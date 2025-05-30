@@ -286,7 +286,7 @@ export class DBStorage implements IStorage {
   async getAllActiveGigs(): Promise<Gig[]> {
     return db.select()
       .from(gigs)
-      .where(eq(gigs.isActive, true))
+      .where(and(eq(gigs.isActive, true), eq(gigs.isBooked, false)))
       .orderBy(desc(gigs.createdAt));
   }
   
@@ -466,7 +466,13 @@ export class DBStorage implements IStorage {
 
       const gig = gigResult[0];
 
-      // 3. Create a notification for the business
+      // 3. Mark the gig as booked
+      await tx
+        .update(gigs)
+        .set({ isBooked: true })
+        .where(eq(gigs.id, confirmedApplication.gigId));
+
+      // 4. Create a notification for the business
       await tx
         .insert(notifications)
         .values({
