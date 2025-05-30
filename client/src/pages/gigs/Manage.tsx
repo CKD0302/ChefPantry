@@ -44,13 +44,13 @@ interface Application {
   status: string;
   message: string;
   applied_at: string;
-  chef_profiles: {
-    full_name: string;
+  chef_profile?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
     bio: string;
-    skills: string[];
-    experience_years: number;
-    location: string;
-  } | null;
+  };
 }
 
 interface GigWithApplications {
@@ -104,19 +104,10 @@ export default function ManageGigs() {
       const gigsWithApps: GigWithApplications[] = [];
 
       for (const gig of gigs || []) {
-        // Fetch applications for each gig
+        // Fetch applications for each gig (simplified query)
         const { data: applications, error: appsError } = await supabase
           .from("gig_applications")
-          .select(`
-            *,
-            chef_profiles (
-              full_name,
-              bio,
-              skills,
-              experience_years,
-              location
-            )
-          `)
+          .select("*")
           .eq("gig_id", gig.id)
           .order("applied_at", { ascending: false });
 
@@ -130,9 +121,25 @@ export default function ManageGigs() {
           continue;
         }
 
+        // For each application, fetch the chef profile separately
+        const applicationsWithProfiles = [];
+        
+        for (const app of applications || []) {
+          const { data: chefProfile } = await supabase
+            .from("chef_profiles")
+            .select("first_name, last_name, email, phone, bio")
+            .eq("id", app.chef_id)
+            .single();
+            
+          applicationsWithProfiles.push({
+            ...app,
+            chef_profiles: chefProfile
+          });
+        }
+
         gigsWithApps.push({
           gig,
-          applications: applications || []
+          applications: applicationsWithProfiles || []
         });
       }
 
@@ -542,11 +549,11 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h5 className="font-medium">
-                      {application.chef_profiles?.full_name || "Chef"}
+                      {application.chef_profile?.first_name} {application.chef_profile?.last_name}
                     </h5>
                     <div className="flex items-center text-sm text-neutral-600 mt-1">
                       <Mail className="h-3 w-3 mr-1" />
-                      {application.chef_profiles?.location}
+                      {application.chef_profile?.email}
                     </div>
                     <p className="text-sm text-neutral-500 mt-1">
                       Applied on {format(new Date(application.applied_at), "MMM d, yyyy 'at' h:mm a")}
@@ -558,7 +565,7 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                       <Button
                         onClick={() => onAcceptChef(
                           application.id,
-                          application.chef_profiles?.full_name || "Chef",
+                          `${application.chef_profile?.first_name} ${application.chef_profile?.last_name}`,
                           gig.title
                         )}
                         disabled={acceptingId === application.id}
@@ -585,10 +592,10 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                   </div>
                 )}
                 
-                {application.chef_profiles?.bio && (
+                {application.chef_profile?.bio && (
                   <div className="mt-3">
                     <p className="text-sm font-medium mb-1">About the Chef:</p>
-                    <p className="text-sm text-neutral-700">{application.chef_profiles.bio}</p>
+                    <p className="text-sm text-neutral-700">{application.chef_profile.bio}</p>
                   </div>
                 )}
               </div>
