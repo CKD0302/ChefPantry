@@ -394,6 +394,7 @@ export default function ManageGigs() {
                           onAcceptChef={acceptChef}
                           onDeclineChef={declineChef}
                           onReuseGig={reuseGig}
+                          onNavigate={navigate}
                           acceptingId={acceptingId}
                           isCurrent={true}
                         />
@@ -420,6 +421,7 @@ export default function ManageGigs() {
                           onAcceptChef={acceptChef}
                           onDeclineChef={declineChef}
                           onReuseGig={reuseGig}
+                          onNavigate={navigate}
                           acceptingId={acceptingId}
                           isCurrent={false}
                         />
@@ -443,11 +445,12 @@ interface GigCardProps {
   onAcceptChef: (applicationId: string, chefName: string, gigTitle: string) => void;
   onDeclineChef: (applicationId: string) => void;
   onReuseGig: (gig: Gig) => void;
+  onNavigate: (path: string) => void;
   acceptingId: string | null;
   isCurrent: boolean;
 }
 
-function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, acceptingId, isCurrent }: GigCardProps) {
+function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, onNavigate, acceptingId, isCurrent }: GigCardProps) {
   const formatDateRange = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) {
       return "Date not set";
@@ -590,7 +593,7 @@ function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, a
                         variant="link"
                         size="sm"
                         className="h-auto p-0 text-blue-600 hover:text-blue-800"
-                        onClick={() => navigate(`/profile/chef/${application.chef_id}`)}
+                        onClick={() => onNavigate(`/profile/chef/${application.chef_id}`)}
                       >
                         View Profile
                       </Button>
