@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/utils/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ interface GigWithApplications {
 
 export default function ManageGigs() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [gigsWithApplications, setGigsWithApplications] = useState<GigWithApplications[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -588,7 +590,7 @@ function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, a
                         variant="link"
                         size="sm"
                         className="h-auto p-0 text-blue-600 hover:text-blue-800"
-                        onClick={() => window.open(`/profile/chef/${application.chef_id}`, '_blank')}
+                        onClick={() => navigate(`/profile/chef/${application.chef_id}`)}
                       >
                         View Profile
                       </Button>
