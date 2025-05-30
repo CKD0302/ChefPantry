@@ -542,11 +542,11 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h5 className="font-medium">
-                      {application.chef_profile?.first_name} {application.chef_profile?.last_name}
+                      {application.chef_profiles?.full_name || "Chef"}
                     </h5>
                     <div className="flex items-center text-sm text-neutral-600 mt-1">
                       <Mail className="h-3 w-3 mr-1" />
-                      {application.chef_profile?.email}
+                      {application.chef_profiles?.location}
                     </div>
                     <p className="text-sm text-neutral-500 mt-1">
                       Applied on {format(new Date(application.applied_at), "MMM d, yyyy 'at' h:mm a")}
@@ -585,10 +585,10 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                   </div>
                 )}
                 
-                {application.chef_profile?.bio && (
+                {application.chef_profiles?.bio && (
                   <div className="mt-3">
                     <p className="text-sm font-medium mb-1">About the Chef:</p>
-                    <p className="text-sm text-neutral-700">{application.chef_profile.bio}</p>
+                    <p className="text-sm text-neutral-700">{application.chef_profiles.bio}</p>
                   </div>
                 )}
               </div>
