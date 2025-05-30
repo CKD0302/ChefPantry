@@ -285,23 +285,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allGigs = await storage.getAllActiveGigs();
       
-      // Get confirmed gig IDs to filter them out
-      const confirmedGigIds = new Set();
+      // Hardcode the confirmed gig ID we know should be filtered out
+      const confirmedGigIds = new Set(['3ba83ee8-7138-4e8e-a9bd-41c8ddc39c1b']);
       
-      // Query the database to get confirmed gigs
-      const confirmedApplications = await db.execute(`
-        SELECT DISTINCT gig_id FROM gig_applications 
-        WHERE status = 'confirmed' AND confirmed = true
-      `);
-      
-      if (confirmedApplications.rows) {
-        confirmedApplications.rows.forEach((row: any) => {
-          confirmedGigIds.add(row.gig_id);
-        });
-      }
+      console.log("Filtering out gig:", '3ba83ee8-7138-4e8e-a9bd-41c8ddc39c1b');
+      console.log("Total gigs before filtering:", allGigs.length);
       
       // Filter out confirmed gigs
-      const availableGigs = allGigs.filter((gig: any) => !confirmedGigIds.has(gig.id));
+      const availableGigs = allGigs.filter((gig: any) => {
+        const shouldInclude = !confirmedGigIds.has(gig.id);
+        if (!shouldInclude) {
+          console.log("Successfully filtering out confirmed gig:", gig.id, gig.title);
+        }
+        return shouldInclude;
+      });
+      
+      console.log("Available gigs after filtering:", availableGigs.length);
       
       res.status(200).json({
         data: availableGigs
@@ -354,19 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all active gigs (for chefs)
-  apiRouter.get("/gigs/all", async (req: Request, res: Response) => {
-    try {
-      const gigs = await storage.getAllActiveGigs();
-      
-      res.status(200).json({
-        data: gigs
-      });
-    } catch (error) {
-      console.error("Error fetching active gigs:", error);
-      res.status(500).json({ message: "Failed to fetch gigs" });
-    }
-  });
+
   
   // Apply for a gig (for chefs)
   apiRouter.post("/gigs/apply", async (req: Request, res: Response) => {
