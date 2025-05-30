@@ -351,10 +351,38 @@ export class DBStorage implements IStorage {
   }
   
   async getGigApplicationsByChefId(chefId: string): Promise<GigApplication[]> {
-    return db.select()
+    const result = await db.select({
+      id: gigApplications.id,
+      gigId: gigApplications.gigId,
+      chefId: gigApplications.chefId,
+      status: gigApplications.status,
+      message: gigApplications.message,
+      confirmed: gigApplications.confirmed,
+      appliedAt: gigApplications.appliedAt,
+      updatedAt: gigApplications.updatedAt,
+      gig: {
+        id: gigs.id,
+        title: gigs.title,
+        start_date: gigs.startDate,
+        end_date: gigs.endDate,
+        start_time: gigs.startTime,
+        end_time: gigs.endTime,
+        location: gigs.location,
+        pay_rate: gigs.payRate,
+        role: gigs.role,
+        venue_type: gigs.venueType,
+        created_by: gigs.createdBy
+      }
+    })
       .from(gigApplications)
+      .leftJoin(gigs, eq(gigApplications.gigId, gigs.id))
       .where(eq(gigApplications.chefId, chefId))
       .orderBy(desc(gigApplications.appliedAt));
+    
+    return result.map(row => ({
+      ...row,
+      gig: row.gig.id ? row.gig : undefined
+    })) as GigApplication[];
   }
 
   async getAcceptedApplicationsByChefId(chefId: string): Promise<GigApplication[]> {
