@@ -282,10 +282,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all active gigs (for chefs) - placed before specific ID route to avoid route conflicts
   apiRouter.get("/gigs/all", async (req: Request, res: Response) => {
     try {
-      const gigs = await storage.getAllActiveGigs();
+      const allGigs = await storage.getAllActiveGigs();
+      
+      // Filter out booked gigs manually since schema sync is having issues
+      const availableGigs = allGigs.filter((gig: any) => !gig.isBooked);
       
       res.status(200).json({
-        data: gigs
+        data: availableGigs
       });
     } catch (error) {
       console.error("Error fetching active gigs:", error);

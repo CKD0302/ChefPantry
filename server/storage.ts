@@ -31,7 +31,7 @@ import {
   type InsertNotification
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, not } from "drizzle-orm";
+import { eq, and, desc, not, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -286,7 +286,7 @@ export class DBStorage implements IStorage {
   async getAllActiveGigs(): Promise<Gig[]> {
     return db.select()
       .from(gigs)
-      .where(and(eq(gigs.isActive, true), eq(gigs.isBooked, false)))
+      .where(eq(gigs.isActive, true))
       .orderBy(desc(gigs.createdAt));
   }
   
