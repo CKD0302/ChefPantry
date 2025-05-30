@@ -511,6 +511,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get accepted applications that need confirmation (for chefs)
+  apiRouter.get("/applications/accepted", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.query;
+      
+      if (!chefId || typeof chefId !== 'string') {
+        return res.status(400).json({ message: "Chef ID is required" });
+      }
+      
+      const acceptedApplications = await storage.getAcceptedApplicationsByChefId(chefId);
+      
+      res.status(200).json({
+        data: acceptedApplications
+      });
+    } catch (error) {
+      console.error("Error fetching accepted applications:", error);
+      res.status(500).json({ message: "Failed to fetch accepted applications" });
+    }
+  });
+
   // Mount API routes
   app.use("/api", apiRouter);
 

@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { CheckCircle, Calendar, MapPin, DollarSign, Clock } from "lucide-react";
+import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalDocuments from "@/components/ProfessionalDocuments";
@@ -14,6 +19,7 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const [hasProfile, setHasProfile] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+  const queryClient = useQueryClient();
   
   // Check if the user's profile exists in the database
   useEffect(() => {
