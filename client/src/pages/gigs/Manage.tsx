@@ -625,7 +625,7 @@ function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, a
                           )}
                         </Button>
                         <Button
-                          onClick={() => declineChef(application.id)}
+                          onClick={() => onDeclineChef(application.id)}
                           disabled={acceptingId === application.id}
                           size="sm"
                           variant="outline"
