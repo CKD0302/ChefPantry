@@ -259,7 +259,7 @@ export default function Dashboard() {
                             <div className="flex items-center gap-4 mt-2 text-sm text-green-700">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>Applied: {format(new Date(application.applied_at), "MMM d, yyyy")}</span>
+                                <span>Applied: {application.applied_at ? format(new Date(application.applied_at), "MMM d, yyyy") : 'Date not available'}</span>
                               </div>
                               <Badge className="bg-green-600 text-white">Accepted</Badge>
                             </div>
