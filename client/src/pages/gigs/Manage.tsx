@@ -588,7 +588,7 @@ function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, a
                         variant="link"
                         size="sm"
                         className="h-auto p-0 text-blue-600 hover:text-blue-800"
-                        onClick={() => window.open(`/profiles/chef/${application.chef_id}`, '_blank')}
+                        onClick={() => window.open(`/profile/chef/${application.chef_id}`, '_blank')}
                       >
                         View Profile
                       </Button>
