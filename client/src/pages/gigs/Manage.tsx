@@ -548,9 +548,19 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
               <div key={application.id} className="border rounded-lg p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h5 className="font-medium">
-                      {application.chef_profile?.first_name} {application.chef_profile?.last_name}
-                    </h5>
+                    <div className="flex items-center gap-2">
+                      <h5 className="font-medium">
+                        {application.chef_profile?.first_name} {application.chef_profile?.last_name}
+                      </h5>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-blue-600 hover:text-blue-800"
+                        onClick={() => window.open(`/profiles/chef/${application.chef_id}`, '_blank')}
+                      >
+                        View Profile
+                      </Button>
+                    </div>
                     <div className="flex items-center text-sm text-neutral-600 mt-1">
                       <Mail className="h-3 w-3 mr-1" />
                       {application.chef_profile?.email}
@@ -562,25 +572,37 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                   <div className="flex items-center gap-2">
                     {getStatusBadge(application.status)}
                     {application.status === "applied" && isCurrent && (
-                      <Button
-                        onClick={() => onAcceptChef(
-                          application.id,
-                          `${application.chef_profile?.first_name} ${application.chef_profile?.last_name}`,
-                          gig.title
-                        )}
-                        disabled={acceptingId === application.id}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        {acceptingId === application.id ? (
-                          "Accepting..."
-                        ) : (
-                          <>
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Accept Chef
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          onClick={() => onAcceptChef(
+                            application.id,
+                            `${application.chef_profile?.first_name} ${application.chef_profile?.last_name}`,
+                            gig.title
+                          )}
+                          disabled={acceptingId === application.id}
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {acceptingId === application.id ? (
+                            "Accepting..."
+                          ) : (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Accept Chef
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => onDeclineChef(application.id)}
+                          disabled={acceptingId === application.id}
+                          size="sm"
+                          variant="outline"
+                          className="border-red-200 text-red-600 hover:bg-red-50"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Decline
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
