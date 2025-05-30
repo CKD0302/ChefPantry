@@ -44,13 +44,13 @@ interface Application {
   status: string;
   message: string;
   applied_at: string;
-  chef_profiles?: {
+  chef_profiles: {
     full_name: string;
     bio: string;
     skills: string[];
     experience_years: number;
     location: string;
-  };
+  } | null;
 }
 
 interface GigWithApplications {
