@@ -104,19 +104,10 @@ export default function ManageGigs() {
       const gigsWithApps: GigWithApplications[] = [];
 
       for (const gig of gigs || []) {
-        // Fetch applications for each gig
+        // Fetch applications for each gig (simplified query)
         const { data: applications, error: appsError } = await supabase
           .from("gig_applications")
-          .select(`
-            *,
-            chef_profiles!chef_id (
-              first_name,
-              last_name,
-              email,
-              phone,
-              bio
-            )
-          `)
+          .select("*")
           .eq("gig_id", gig.id)
           .order("applied_at", { ascending: false });
 
@@ -130,9 +121,25 @@ export default function ManageGigs() {
           continue;
         }
 
+        // For each application, fetch the chef profile separately
+        const applicationsWithProfiles = [];
+        
+        for (const app of applications || []) {
+          const { data: chefProfile } = await supabase
+            .from("chef_profiles")
+            .select("first_name, last_name, email, phone, bio")
+            .eq("id", app.chef_id)
+            .single();
+            
+          applicationsWithProfiles.push({
+            ...app,
+            chef_profiles: chefProfile
+          });
+        }
+
         gigsWithApps.push({
           gig,
-          applications: applications || []
+          applications: applicationsWithProfiles || []
         });
       }
 
