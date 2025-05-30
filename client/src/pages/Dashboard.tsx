@@ -65,6 +65,43 @@ export default function Dashboard() {
     
     checkProfile();
   }, [user]);
+
+  // Fetch accepted applications that need confirmation (for chefs)
+  const { data: acceptedApplications, isLoading: loadingAccepted } = useQuery({
+    queryKey: ['/api/applications/accepted', user?.id],
+    enabled: !!user && user.user_metadata?.role === 'chef',
+    queryFn: async () => {
+      const response = await fetch(`/api/applications/accepted?chefId=${user!.id}`);
+      if (!response.ok) throw new Error('Failed to fetch accepted applications');
+      return response.json();
+    }
+  });
+
+  // Mutation for confirming gigs
+  const confirmGigMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      const response = await fetch(`/api/applications/${applicationId}/confirm`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error('Failed to confirm gig');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Gig Confirmed",
+        description: "You've successfully confirmed the gig. The business has been notified.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/applications/accepted'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to confirm gig. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
   
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -72,35 +109,36 @@ export default function Dashboard() {
     if (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to sign out. Please try again.",
+        description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
-      return;
+    } else {
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+      navigate("/");
     }
-    
-    toast({
-      title: "Success",
-      description: "You have been signed out successfully!",
-    });
-    
-    // Redirect to home page
-    navigate("/");
   };
-  
-  // Redirect if not authenticated
+
+  // If not authenticated, show unauthorized message
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-        <p className="text-neutral-800 mb-6">Please sign in to access your dashboard.</p>
-        <Button onClick={() => navigate("/auth/signin")}>
-          Sign In
-        </Button>
+      <div className="min-h-screen bg-neutral-100 flex flex-col">
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 py-8 mt-16">
+          <div className="bg-white shadow-sm rounded-lg p-6 text-center">
+            <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+            <p className="text-neutral-600 mb-4">You need to be logged in to access this page.</p>
+            <Button onClick={() => navigate("/auth/signin")}>Sign In</Button>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
-  
-  // Show loading state while checking profile
+
+  // If profile check is in progress, show loading
   if (isCheckingProfile) {
     return (
       <div className="min-h-screen bg-neutral-100 flex flex-col">
@@ -151,7 +189,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          {userRole === "chef" && !hasProfile ? (
+          {userRole === "chef" && !hasProfile && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Your Chef Profile</h2>
               <div className="bg-neutral-100 p-4 rounded">
@@ -166,7 +204,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          ) : userRole === "chef" && hasProfile ? (
+          )}
+
+          {userRole === "chef" && hasProfile && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Your Chef Profile</h2>
               <div className="bg-white border border-neutral-200 rounded p-4">
@@ -182,11 +222,65 @@ export default function Dashboard() {
                     >
                       Browse Gigs
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/gigs/my-applications")}
+                    >
+                      Applied Gigs
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
-          ) : userRole === "business" && !hasProfile ? (
+          )}
+
+          {/* Gigs Offered to You Section (for chefs) */}
+          {userRole === "chef" && hasProfile && acceptedApplications?.data && acceptedApplications.data.length > 0 && (
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    Gigs Offered to You
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-neutral-600 mb-4">
+                    You've been selected for the following gigs. Please confirm your acceptance to secure your booking.
+                  </p>
+                  <div className="space-y-4">
+                    {acceptedApplications.data.map((application: any) => (
+                      <div key={application.id} className="border rounded-lg p-4 bg-green-50 border-green-200">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-green-800">
+                              Gig Offer: {application.gig?.title || 'Gig Details'}
+                            </h3>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-green-700">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>Applied: {format(new Date(application.applied_at), "MMM d, yyyy")}</span>
+                              </div>
+                              <Badge className="bg-green-600 text-white">Accepted</Badge>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => confirmGigMutation.mutate(application.id)}
+                            disabled={confirmGigMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {confirmGigMutation.isPending ? "Confirming..." : "Confirm Gig"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {userRole === "business" && !hasProfile && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Your Business Profile</h2>
               <div className="bg-neutral-100 p-4 rounded">
@@ -201,19 +295,21 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          ) : userRole === "business" && hasProfile ? (
+          )}
+
+          {userRole === "business" && hasProfile && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Your Business Profile</h2>
               <div className="bg-white border border-neutral-200 rounded p-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
                   <div>
-                    <p className="text-green-600 font-medium mb-2">✓ Your profile is complete!</p>
-                    <p className="text-neutral-600">You can now post gigs to find chefs.</p>
+                    <p className="text-green-600 font-medium mb-2">✓ Your business profile is complete!</p>
+                    <p className="text-neutral-600">You can now post gigs and find chefs.</p>
                   </div>
                   <div className="flex gap-3 mt-4 md:mt-0">
                     <Button 
-                      onClick={() => navigate("/gigs/create")}
                       className="bg-primary hover:bg-primary-dark text-white"
+                      onClick={() => navigate("/gigs/create")}
                     >
                       Post a Gig
                     </Button>
@@ -227,7 +323,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          ) : (
+          )}
+
+          {!["chef", "business"].includes(userRole) && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Create Your Profile</h2>
               <div className="bg-neutral-100 p-4 rounded">
@@ -243,16 +341,17 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          
+
+          {/* Recent Bookings Section */}
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">Recent Bookings</h2>
-            <div className="bg-neutral-100 p-6 rounded text-center">
-              <p>You don't have any bookings yet.</p>
+            <div className="bg-neutral-100 rounded p-8 text-center">
+              <p className="text-neutral-600">You don't have any bookings yet.</p>
             </div>
           </div>
-          
-          {/* Only show Professional Documents section for chefs */}
-          {user?.user_metadata?.role === "chef" && (
+
+          {/* Professional Documents (for chefs only) */}
+          {userRole === "chef" && (
             <div className="mt-8">
               <ProfessionalDocuments />
             </div>
