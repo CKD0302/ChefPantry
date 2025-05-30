@@ -1,6 +1,7 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { z } from "zod";
 import { 
   insertContactMessageSchema,
@@ -284,8 +285,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allGigs = await storage.getAllActiveGigs();
       
-      // Filter out booked gigs manually since schema sync is having issues
-      const availableGigs = allGigs.filter((gig: any) => !gig.isBooked);
+      // Get confirmed gig IDs to filter them out
+      const confirmedGigIds = new Set();
+      
+      // Query the database to get confirmed gigs
+      const confirmedApplications = await db.execute(`
+        SELECT DISTINCT gig_id FROM gig_applications 
+        WHERE status = 'confirmed' AND confirmed = true
+      `);
+      
+      if (confirmedApplications.rows) {
+        confirmedApplications.rows.forEach((row: any) => {
+          confirmedGigIds.add(row.gig_id);
+        });
+      }
+      
+      // Filter out confirmed gigs
+      const availableGigs = allGigs.filter((gig: any) => !confirmedGigIds.has(gig.id));
       
       res.status(200).json({
         data: availableGigs
