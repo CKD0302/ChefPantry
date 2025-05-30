@@ -17,7 +17,8 @@ import {
   Eye,
   Copy,
   Archive,
-  RotateCcw
+  RotateCcw,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
@@ -193,6 +194,34 @@ export default function ManageGigs() {
     }
   };
 
+  const declineChef = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("gig_applications")
+        .update({ status: "rejected" })
+        .eq("id", applicationId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Application Declined",
+        description: "The chef application has been declined.",
+      });
+
+      // Refresh the data
+      await fetchGigsWithApplications();
+    } catch (error) {
+      console.error("Error declining application:", error);
+      toast({
+        title: "Error",
+        description: "Failed to decline application. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const reuseGig = (gig: Gig) => {
     // Store the gig data in localStorage for the create form to use
     const gigTemplate = {
@@ -361,6 +390,7 @@ export default function ManageGigs() {
                           gig={gig} 
                           applications={applications} 
                           onAcceptChef={acceptChef}
+                          onDeclineChef={declineChef}
                           onReuseGig={reuseGig}
                           acceptingId={acceptingId}
                           isCurrent={true}
@@ -386,6 +416,7 @@ export default function ManageGigs() {
                           gig={gig} 
                           applications={applications} 
                           onAcceptChef={acceptChef}
+                          onDeclineChef={declineChef}
                           onReuseGig={reuseGig}
                           acceptingId={acceptingId}
                           isCurrent={false}
@@ -408,12 +439,13 @@ interface GigCardProps {
   gig: Gig;
   applications: Application[];
   onAcceptChef: (applicationId: string, chefName: string, gigTitle: string) => void;
+  onDeclineChef: (applicationId: string) => void;
   onReuseGig: (gig: Gig) => void;
   acceptingId: string | null;
   isCurrent: boolean;
 }
 
-function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isCurrent }: GigCardProps) {
+function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, acceptingId, isCurrent }: GigCardProps) {
   const formatDateRange = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) {
       return "Date not set";
@@ -593,7 +625,7 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                           )}
                         </Button>
                         <Button
-                          onClick={() => onDeclineChef(application.id)}
+                          onClick={() => declineChef(application.id)}
                           disabled={acceptingId === application.id}
                           size="sm"
                           variant="outline"
