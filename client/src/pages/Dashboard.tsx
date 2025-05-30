@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, DollarSign, Clock } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, DollarSign, Clock, Bell, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -77,6 +77,17 @@ export default function Dashboard() {
     }
   });
 
+  // Fetch notifications (for businesses)
+  const { data: notifications, isLoading: loadingNotifications } = useQuery({
+    queryKey: ['/api/notifications', user?.id],
+    enabled: !!user && user.user_metadata?.role === 'business',
+    queryFn: async () => {
+      const response = await fetch(`/api/notifications?recipientId=${user!.id}`);
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      return response.json();
+    }
+  });
+
   // Mutation for confirming gigs
   const confirmGigMutation = useMutation({
     mutationFn: async (applicationId: string) => {
@@ -93,6 +104,7 @@ export default function Dashboard() {
         description: "You've successfully confirmed the gig. The business has been notified.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/applications/accepted'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
     onError: () => {
       toast({
@@ -322,6 +334,64 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Recent Notifications Section (for businesses) */}
+          {userRole === "business" && hasProfile && (
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-blue-600" />
+                    Recent Notifications
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingNotifications ? (
+                    <div className="text-center py-4">
+                      <p className="text-neutral-600">Loading notifications...</p>
+                    </div>
+                  ) : notifications?.data && notifications.data.length > 0 ? (
+                    <div className="space-y-3">
+                      {notifications.data.slice(0, 5).map((notification: any) => (
+                        <div key={notification.id} className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="text-sm text-blue-800 mb-2">
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-blue-600">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  {notification.created_at ? format(new Date(notification.created_at), "MMM d, yyyy 'at' h:mm a") : 'Recently'}
+                                </span>
+                              </div>
+                            </div>
+                            {notification.link_url && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(notification.link_url)}
+                                className="text-blue-600 border-blue-200 hover:bg-blue-100"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                View Gig
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Bell className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+                      <p className="text-neutral-600">No notifications yet</p>
+                      <p className="text-sm text-neutral-500">You'll see updates here when chefs confirm your gigs</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 

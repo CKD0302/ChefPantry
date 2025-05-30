@@ -531,6 +531,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get notifications for a user
+  apiRouter.get("/notifications", async (req: Request, res: Response) => {
+    try {
+      const { recipientId } = req.query;
+      
+      if (!recipientId || typeof recipientId !== 'string') {
+        return res.status(400).json({ message: "Recipient ID is required" });
+      }
+      
+      const notifications = await storage.getNotificationsByRecipient(recipientId);
+      
+      res.status(200).json({
+        data: notifications
+      });
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
   // Mount API routes
   app.use("/api", apiRouter);
 

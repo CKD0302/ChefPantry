@@ -441,6 +441,7 @@ export class DBStorage implements IStorage {
         .update(gigApplications)
         .set({ 
           status: "confirmed",
+          confirmed: true,
           updatedAt: new Date()
         })
         .where(eq(gigApplications.id, applicationId))
