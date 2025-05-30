@@ -44,12 +44,12 @@ interface Application {
   status: string;
   message: string;
   applied_at: string;
-  chef_profile?: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
+  chef_profiles?: {
+    full_name: string;
     bio: string;
+    skills: string[];
+    experience_years: number;
+    location: string;
   };
 }
 
@@ -104,10 +104,19 @@ export default function ManageGigs() {
       const gigsWithApps: GigWithApplications[] = [];
 
       for (const gig of gigs || []) {
-        // Fetch applications for each gig (simplified query)
+        // Fetch applications for each gig
         const { data: applications, error: appsError } = await supabase
           .from("gig_applications")
-          .select("*")
+          .select(`
+            *,
+            chef_profiles (
+              full_name,
+              bio,
+              skills,
+              experience_years,
+              location
+            )
+          `)
           .eq("gig_id", gig.id)
           .order("applied_at", { ascending: false });
 
@@ -121,25 +130,9 @@ export default function ManageGigs() {
           continue;
         }
 
-        // For each application, fetch the chef profile separately
-        const applicationsWithProfiles = [];
-        
-        for (const app of applications || []) {
-          const { data: chefProfile } = await supabase
-            .from("chef_profiles")
-            .select("first_name, last_name, email, phone, bio")
-            .eq("id", app.chef_id)
-            .single();
-            
-          applicationsWithProfiles.push({
-            ...app,
-            chef_profiles: chefProfile
-          });
-        }
-
         gigsWithApps.push({
           gig,
-          applications: applicationsWithProfiles || []
+          applications: applications || []
         });
       }
 
@@ -565,7 +558,7 @@ function GigCard({ gig, applications, onAcceptChef, onReuseGig, acceptingId, isC
                       <Button
                         onClick={() => onAcceptChef(
                           application.id,
-                          `${application.chef_profile?.first_name} ${application.chef_profile?.last_name}`,
+                          application.chef_profiles?.full_name || "Chef",
                           gig.title
                         )}
                         disabled={acceptingId === application.id}
