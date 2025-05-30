@@ -63,34 +63,16 @@ export default function MyApplications() {
     setError(null);
 
     try {
-      // Fetch applications for this chef with gig details
-      const { data: applications, error: appsError } = await supabase
-        .from("gig_applications")
-        .select(`
-          *,
-          gigs!gig_id (
-            id,
-            title,
-            start_date,
-            end_date,
-            start_time,
-            end_time,
-            location,
-            pay_rate,
-            role,
-            venue_type,
-            created_by
-          )
-        `)
-        .eq("chef_id", user.id)
-        .order("applied_at", { ascending: false });
+      // Fetch applications for this chef from our API
+      const response = await fetch(`/api/applications/mine?chefId=${user.id}`);
+      const data = await response.json();
 
-      if (appsError) {
-        throw appsError;
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch applications");
       }
 
-      console.log("Applications fetched successfully:", applications);
-      setApplications(applications || []);
+      console.log("Applications fetched successfully:", data.data);
+      setApplications(data.data || []);
     } catch (error) {
       console.error("Error fetching applications:", error);
       setError("Failed to load your applications");
@@ -142,8 +124,17 @@ export default function MyApplications() {
 
   const formatDateRange = (startDate: string, endDate: string) => {
     try {
+      if (!startDate || !endDate) {
+        return "Date not provided";
+      }
+      
       const start = new Date(startDate);
       const end = new Date(endDate);
+      
+      // Check if dates are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return "Date not provided";
+      }
       
       if (startDate === endDate) {
         return format(start, "MMM d, yyyy");
@@ -151,7 +142,23 @@ export default function MyApplications() {
         return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
       }
     } catch (error) {
-      return "Invalid date";
+      return "Date not provided";
+    }
+  };
+
+  const formatTimeRange = (startTime: string, endTime: string) => {
+    try {
+      if (!startTime || !endTime) {
+        return "Time not provided";
+      }
+      
+      // Remove seconds if present (e.g., "09:00:00" -> "09:00")
+      const start = startTime.substring(0, 5);
+      const end = endTime.substring(0, 5);
+      
+      return `${start} - ${end}`;
+    } catch (error) {
+      return "Time not provided";
     }
   };
 
@@ -255,15 +262,15 @@ export default function MyApplications() {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-xl text-green-800">{application.gig?.title}</CardTitle>
+                          <CardTitle className="text-xl text-green-800">{application.gig?.title || "Gig Title"}</CardTitle>
                           <CardDescription className="flex items-center mt-2 text-green-700">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {application.gig?.location}
+                            {application.gig?.location || "Location not provided"}
                           </CardDescription>
                         </div>
                         <div className="text-right">
                           <Badge className="text-lg py-1 px-3 bg-green-600 text-white mb-2">
-                            £{application.gig?.pay_rate}/hr
+                            {application.gig?.pay_rate ? `£${application.gig.pay_rate}/hr` : "Rate not specified"}
                           </Badge>
                           <div className="mt-2">
                             {getStatusBadge(application.status)}
@@ -286,7 +293,7 @@ export default function MyApplications() {
                           <div>
                             <p className="text-sm text-green-600">Time</p>
                             <p className="font-medium text-green-800">
-                              {application.gig?.start_time.substring(0, 5)} - {application.gig?.end_time.substring(0, 5)}
+                              {formatTimeRange(application.gig?.start_time || "", application.gig?.end_time || "")}
                             </p>
                           </div>
                         </div>
@@ -294,7 +301,7 @@ export default function MyApplications() {
                           <FileText className="h-4 w-4 text-green-600 mr-2" />
                           <div>
                             <p className="text-sm text-green-600">Role</p>
-                            <p className="font-medium text-green-800">{getRoleLabel(application.gig?.role || "")}</p>
+                            <p className="font-medium text-green-800">{getRoleLabel(application.gig?.role || "") || "Role not specified"}</p>
                           </div>
                         </div>
                       </div>
@@ -357,15 +364,15 @@ export default function MyApplications() {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-xl">{application.gig?.title}</CardTitle>
+                          <CardTitle className="text-xl">{application.gig?.title || "Gig Title"}</CardTitle>
                           <CardDescription className="flex items-center mt-2">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {application.gig?.location}
+                            {application.gig?.location || "Location not provided"}
                           </CardDescription>
                         </div>
                         <div className="text-right">
                           <Badge className="text-lg py-1 px-3 bg-primary text-white mb-2">
-                            £{application.gig?.pay_rate}/hr
+                            {application.gig?.pay_rate ? `£${application.gig.pay_rate}/hr` : "Rate not specified"}
                           </Badge>
                           <div className="mt-2">
                             {getStatusBadge(application.status)}
@@ -388,7 +395,7 @@ export default function MyApplications() {
                           <div>
                             <p className="text-sm text-neutral-500">Time</p>
                             <p className="font-medium">
-                              {application.gig?.start_time.substring(0, 5)} - {application.gig?.end_time.substring(0, 5)}
+                              {formatTimeRange(application.gig?.start_time || "", application.gig?.end_time || "")}
                             </p>
                           </div>
                         </div>
@@ -396,7 +403,7 @@ export default function MyApplications() {
                           <FileText className="h-4 w-4 text-neutral-500 mr-2" />
                           <div>
                             <p className="text-sm text-neutral-500">Role</p>
-                            <p className="font-medium">{getRoleLabel(application.gig?.role || "")}</p>
+                            <p className="font-medium">{getRoleLabel(application.gig?.role || "") || "Role not specified"}</p>
                           </div>
                         </div>
                       </div>
