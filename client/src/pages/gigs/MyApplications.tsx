@@ -25,7 +25,7 @@ interface Application {
   chef_id: string;
   status: string;
   message: string;
-  applied_at: string;
+  appliedAt: string;
   gig?: {
     id: string;
     title: string;
@@ -415,7 +415,17 @@ export default function MyApplications() {
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="text-sm text-neutral-600 mb-1">
-                            Applied on {format(new Date(application.applied_at), "MMM d, yyyy 'at' h:mm a")}
+                            Applied on {(() => {
+                              try {
+                                const date = new Date(application.appliedAt);
+                                if (isNaN(date.getTime())) {
+                                  return "Date not available";
+                                }
+                                return format(date, "MMM d, yyyy 'at' h:mm a");
+                              } catch (error) {
+                                return "Date not available";
+                              }
+                            })()}
                           </p>
                           {application.message && (
                             <p className="text-sm text-neutral-700 bg-neutral-50 rounded p-2 mt-2">
