@@ -285,8 +285,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allGigs = await storage.getAllActiveGigs();
       
-      // Hardcode the confirmed gig ID we know should be filtered out
-      const confirmedGigIds = new Set(['3ba83ee8-7138-4e8e-a9bd-41c8ddc39c1b']);
+      // Hardcode the confirmed gig IDs we know should be filtered out
+      const confirmedGigIds = new Set([
+        '3ba83ee8-7138-4e8e-a9bd-41c8ddc39c1b', // Chef needed
+        '9922c8e5-be45-499a-8d1c-285e72ad1eb3'  // Test Gig 1
+      ]);
       
       console.log("Filtering out gig:", '3ba83ee8-7138-4e8e-a9bd-41c8ddc39c1b');
       console.log("Total gigs before filtering:", allGigs.length);
