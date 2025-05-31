@@ -179,6 +179,17 @@ export const gigInvoices = pgTable("gig_invoices", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Reviews table for mutual reviews between chefs and businesses
+export const reviews = pgTable("reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gigId: uuid("gig_id").notNull().references(() => gigs.id),
+  reviewerId: text("reviewer_id").notNull(), // UUID from Supabase auth (chef or business)
+  recipientId: text("recipient_id").notNull(), // UUID from Supabase auth (chef or business)
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -239,6 +250,11 @@ export const insertGigInvoiceSchema = createInsertSchema(gigInvoices).omit({
   createdAt: true,
 });
 
+export const insertReviewSchema = createInsertSchema(reviews).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -274,3 +290,6 @@ export type Notification = typeof notifications.$inferSelect;
 
 export type InsertGigInvoice = z.infer<typeof insertGigInvoiceSchema>;
 export type GigInvoice = typeof gigInvoices.$inferSelect;
+
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type Review = typeof reviews.$inferSelect;

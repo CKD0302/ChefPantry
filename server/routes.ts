@@ -9,7 +9,8 @@ import {
   insertBusinessProfileSchema,
   insertGigSchema,
   insertGigApplicationSchema,
-  insertGigInvoiceSchema
+  insertGigInvoiceSchema,
+  insertReviewSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";

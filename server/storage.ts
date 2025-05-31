@@ -31,7 +31,10 @@ import {
   type InsertGigInvoice,
   notifications,
   type Notification,
-  type InsertNotification
+  type InsertNotification,
+  reviews,
+  type Review,
+  type InsertReview
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not, sql } from "drizzle-orm";
@@ -101,6 +104,14 @@ export interface IStorage {
   getGigInvoiceByGigAndChef(gigId: string, chefId: string): Promise<GigInvoice | undefined>;
   getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]>;
   getGigInvoicesByBusiness(businessId: string): Promise<GigInvoice[]>;
+  
+  // Review methods
+  createReview(review: InsertReview): Promise<Review>;
+  getReview(id: string): Promise<Review | undefined>;
+  getReviewByGigAndReviewer(gigId: string, reviewerId: string): Promise<Review | undefined>;
+  getReviewsForRecipient(recipientId: string): Promise<Review[]>;
+  getReviewsForGig(gigId: string): Promise<Review[]>;
+  getAverageRating(recipientId: string): Promise<number>;
 }
 
 export class DBStorage implements IStorage {
@@ -612,6 +623,48 @@ export class DBStorage implements IStorage {
     .leftJoin(chefProfiles, eq(gigInvoices.chefId, chefProfiles.id))
     .where(eq(gigInvoices.businessId, businessId))
     .orderBy(desc(gigInvoices.createdAt));
+  }
+
+  // Review methods
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const result = await db.insert(reviews).values(insertReview).returning();
+    return result[0];
+  }
+
+  async getReview(id: string): Promise<Review | undefined> {
+    const result = await db.select().from(reviews).where(eq(reviews.id, id));
+    return result[0];
+  }
+
+  async getReviewByGigAndReviewer(gigId: string, reviewerId: string): Promise<Review | undefined> {
+    const result = await db.select()
+      .from(reviews)
+      .where(and(eq(reviews.gigId, gigId), eq(reviews.reviewerId, reviewerId)));
+    return result[0];
+  }
+
+  async getReviewsForRecipient(recipientId: string): Promise<Review[]> {
+    return db.select()
+      .from(reviews)
+      .where(eq(reviews.recipientId, recipientId))
+      .orderBy(desc(reviews.createdAt));
+  }
+
+  async getReviewsForGig(gigId: string): Promise<Review[]> {
+    return db.select()
+      .from(reviews)
+      .where(eq(reviews.gigId, gigId))
+      .orderBy(desc(reviews.createdAt));
+  }
+
+  async getAverageRating(recipientId: string): Promise<number> {
+    const result = await db.select({
+      avgRating: sql<number>`AVG(${reviews.rating})`
+    })
+    .from(reviews)
+    .where(eq(reviews.recipientId, recipientId));
+    
+    return result[0]?.avgRating || 0;
   }
 }
 
