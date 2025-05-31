@@ -1,0 +1,43 @@
+Update the Chefy app with a post-gig invoice flow for chefs.
+
+1. **Trigger Display of “Submit Invoice” Button**
+   - On the `/gigs/my-applications` page:
+     - For each gig application with `status = 'confirmed'`, check if the `end_date` in the related `gigs` table is in the past compared to `new Date()`.
+     - If the current date is after the `end_date`, show a green **"Submit Invoice"** button.
+
+2. **Invoice Submission Modal/Form**
+   - When the button is clicked, open a modal form.
+   - Pre-fill the following values using gig and application data:
+     - `Gig Title`, `Location`, `Start/End Date`, `Time`, `Rate per Hour`
+     - `Hours Worked`: default = difference between `start_time` and `end_time` (allow editing)
+     - `Notes`: optional
+     - `Total Amount`: calculated live as `rate_per_hour * hours_worked`
+   - Add a "Submit Invoice" button inside the modal.
+
+3. **Insert into `gig_invoices` table**
+   - On form submit, insert a new record into the `public.gig_invoices` table with:
+     - `gig_id`
+     - `chef_id` (from session)
+     - `business_id` (from gig)
+     - `hours_worked`
+     - `rate_per_hour` (from gig)
+     - `total_amount`
+     - `notes` (if provided)
+     - `status = 'pending'`
+   - Show toast confirmation if successful or error message if failed.
+
+4. **Insert Notification to Business**
+   - After invoice submission, insert into `notifications` table:
+     - `recipient_id = business_id`
+     - `type = 'invoice_ready'`
+     - `message = 'An invoice has been submitted for your recent gig.'`
+     - `link_url = '/dashboard/invoices'`
+     - `read = false`
+
+5. **Prevent Duplicate Invoices**
+   - Before allowing submission, check if a `gig_invoice` already exists for that `gig_id` and `chef_id`. If yes, disable the button or show “Invoice submitted.”
+
+6. **UI Notes**
+   - Use consistent modal styling as with confirmation dialogs.
+   - Update the invoice list in the dashboard after submission (if applicable).
+

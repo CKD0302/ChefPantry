@@ -163,6 +163,21 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Gig Invoices table for post-gig billing
+export const gigInvoices = pgTable("gig_invoices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gigId: uuid("gig_id").notNull().references(() => gigs.id),
+  chefId: text("chef_id").notNull(), // UUID from Supabase auth
+  businessId: text("business_id").notNull(), // UUID from Supabase auth
+  hoursWorked: numeric("hours_worked", { precision: 10, scale: 2 }).notNull(),
+  ratePerHour: numeric("rate_per_hour", { precision: 10, scale: 2 }).notNull(),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+  notes: text("notes"),
+  status: text("status").notNull().default("pending"), // 'pending', 'paid', 'disputed'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -218,6 +233,12 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
+export const insertGigInvoiceSchema = createInsertSchema(gigInvoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -250,3 +271,6 @@ export type ChefDocument = typeof chefDocuments.$inferSelect;
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+export type InsertGigInvoice = z.infer<typeof insertGigInvoiceSchema>;
+export type GigInvoice = typeof gigInvoices.$inferSelect;

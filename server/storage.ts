@@ -381,7 +381,7 @@ export class DBStorage implements IStorage {
     
     return result.map(row => ({
       ...row,
-      gig: row.gig.id ? row.gig : undefined
+      gig: (row.gig && row.gig.id) ? row.gig : undefined
     })) as GigApplication[];
   }
 
