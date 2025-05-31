@@ -66,6 +66,7 @@ export interface IStorage {
   getChefProfile(id: string): Promise<ChefProfile | undefined>;
   createChefProfile(profile: InsertChefProfile): Promise<ChefProfile>;
   updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined>;
+  updateChefStripeAccountId(id: string, stripeAccountId: string): Promise<ChefProfile | undefined>;
   
   // Business Profiles methods (Supabase)
   getBusinessProfile(id: string): Promise<BusinessProfile | undefined>;

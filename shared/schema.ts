@@ -79,6 +79,7 @@ export const chefProfiles = pgTable("chef_profiles", {
   languages: text("languages").array(),
   certifications: text("certifications").array(),
   isAvailable: boolean("is_available").default(true),
+  stripeAccountId: text("stripe_account_id"), // Stripe Connect account ID
   // isApproved field removed per user request
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -175,7 +176,6 @@ export const gigInvoices = pgTable("gig_invoices", {
   notes: text("notes"),
   status: text("status").notNull().default("pending"), // 'pending', 'paid', 'disputed'
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Schemas and types
@@ -236,7 +236,6 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 export const insertGigInvoiceSchema = createInsertSchema(gigInvoices).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
