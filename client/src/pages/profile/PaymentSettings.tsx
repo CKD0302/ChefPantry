@@ -8,9 +8,7 @@ import { ArrowLeft, CreditCard, DollarSign, Clock, CheckCircle } from "lucide-re
 import { Link } from "wouter";
 import StripeConnectOnboarding from "@/components/StripeConnectOnboarding";
 import { apiRequest } from "@/lib/queryClient";
-
-// Mock chef ID - in real app this would come from auth
-const MOCK_CHEF_ID = "chef_01";
+import { useAuth } from "@/hooks/useAuth";
 
 interface GigInvoice {
   id: string;
@@ -30,10 +28,26 @@ interface GigInvoice {
 }
 
 export default function PaymentSettings() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Please sign in to access payment settings</h1>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const chefId = user.id;
+
   // Query invoices for this chef
   const { data: invoices, isLoading: invoicesLoading } = useQuery<GigInvoice[]>({
-    queryKey: ["/api/invoices/chef", MOCK_CHEF_ID],
-    queryFn: () => apiRequest("GET", `/api/invoices/chef/${MOCK_CHEF_ID}`).then(res => res.json()),
+    queryKey: ["/api/invoices/chef", chefId],
+    queryFn: () => apiRequest("GET", `/api/invoices/chef/${chefId}`).then(res => res.json()),
   });
 
   const formatCurrency = (amount: number) => {
@@ -85,7 +99,7 @@ export default function PaymentSettings() {
 
         <div className="space-y-6">
           {/* Stripe Connect Onboarding */}
-          <StripeConnectOnboarding chefId={MOCK_CHEF_ID} />
+          <StripeConnectOnboarding chefId={chefId} />
 
           {/* Earnings Overview */}
           <Card>
