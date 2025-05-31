@@ -588,30 +588,37 @@ export class DBStorage implements IStorage {
     return result[0];
   }
 
-  async getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]> {
-    return db.select({
+  async getGigInvoicesByChef(chefId: string): Promise<any[]> {
+    const result = await db.select({
       id: gigInvoices.id,
       gigId: gigInvoices.gigId,
       chefId: gigInvoices.chefId,
+      businessId: gigInvoices.businessId,
       hoursWorked: gigInvoices.hoursWorked,
-      hourlyRate: gigInvoices.hourlyRate,
+      hourlyRate: gigInvoices.ratePerHour,
       totalAmount: gigInvoices.totalAmount,
-      description: gigInvoices.description,
+      description: gigInvoices.notes,
       status: gigInvoices.status,
-      submittedAt: gigInvoices.submittedAt,
-      createdAt: gigInvoices.createdAt,
-      updatedAt: gigInvoices.updatedAt,
-      gig: {
-        title: gigs.title,
-        businessName: businessProfiles.businessName,
-        date: gigs.startDate
-      }
+      submittedAt: gigInvoices.createdAt,
+      gigTitle: gigs.title,
+      businessName: businessProfiles.businessName,
+      gigDate: gigs.startDate
     })
       .from(gigInvoices)
       .leftJoin(gigs, eq(gigInvoices.gigId, gigs.id))
-      .leftJoin(businessProfiles, eq(gigs.businessId, businessProfiles.id))
+      .leftJoin(businessProfiles, eq(gigs.createdBy, businessProfiles.id))
       .where(eq(gigInvoices.chefId, chefId))
       .orderBy(desc(gigInvoices.createdAt));
+    
+    // Transform the result to match the expected interface
+    return result.map(invoice => ({
+      ...invoice,
+      gig: {
+        title: invoice.gigTitle,
+        businessName: invoice.businessName,
+        date: invoice.gigDate
+      }
+    }));
   }
 
   async getGigInvoicesByBusiness(businessId: string): Promise<any[]> {
