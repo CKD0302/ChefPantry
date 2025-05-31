@@ -775,6 +775,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create a review
+  apiRouter.post("/reviews", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertReviewSchema.parse(req.body);
+      
+      // Check if review already exists
+      const existingReview = await storage.getReviewByGigAndReviewer(validatedData.gigId, validatedData.reviewerId);
+      if (existingReview) {
+        return res.status(400).json({ message: "Review already submitted for this gig" });
+      }
+      
+      const review = await storage.createReview(validatedData);
+      res.status(201).json({ message: "Review submitted successfully", review });
+    } catch (error) {
+      console.error("Error creating review:", error);
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // Get reviews for a recipient
+  apiRouter.get("/reviews/recipient/:recipientId", async (req: Request, res: Response) => {
+    try {
+      const { recipientId } = req.params;
+      const reviews = await storage.getReviewsForRecipient(recipientId);
+      res.status(200).json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // Get average rating for a recipient
+  apiRouter.get("/reviews/rating/:recipientId", async (req: Request, res: Response) => {
+    try {
+      const { recipientId } = req.params;
+      const avgRating = await storage.getAverageRating(recipientId);
+      res.status(200).json({ averageRating: avgRating });
+    } catch (error) {
+      console.error("Error fetching average rating:", error);
+      res.status(500).json({ message: "Failed to fetch average rating" });
+    }
+  });
+
+  // Check if review exists
+  apiRouter.get("/reviews/check", async (req: Request, res: Response) => {
+    try {
+      const { gigId, reviewerId } = req.query;
+      
+      if (!gigId || !reviewerId || typeof gigId !== 'string' || typeof reviewerId !== 'string') {
+        return res.status(400).json({ message: "Gig ID and Reviewer ID are required" });
+      }
+      
+      const existingReview = await storage.getReviewByGigAndReviewer(gigId, reviewerId);
+      
+      res.status(200).json({
+        exists: !!existingReview,
+        review: existingReview
+      });
+    } catch (error) {
+      console.error("Error checking review:", error);
+      res.status(500).json({ message: "Failed to check review" });
+    }
+  });
+
   // Mount API routes
   app.use("/api", apiRouter);
 

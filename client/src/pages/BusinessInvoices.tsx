@@ -14,12 +14,14 @@ import {
   ExternalLink, 
   AlertTriangle,
   CheckCircle,
-  Receipt
+  Receipt,
+  Star
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ReviewSubmissionModal from "@/components/ReviewSubmissionModal";
 
 interface InvoiceData {
   id: string;
@@ -47,6 +49,8 @@ interface InvoiceData {
 export default function BusinessInvoices() {
   const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState("pending");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
 
   if (!user) {
     return (
@@ -104,6 +108,11 @@ export default function BusinessInvoices() {
     // Open Stripe Dashboard with payment link
     const stripePaymentUrl = `https://dashboard.stripe.com/payments?recipient=${invoice.chef.stripeAccountId}`;
     window.open(stripePaymentUrl, '_blank');
+  };
+
+  const handleReviewClick = (invoice: InvoiceData) => {
+    setSelectedInvoice(invoice);
+    setReviewModalOpen(true);
   };
 
   const filterInvoicesByStatus = (status: string) => {
@@ -276,6 +285,8 @@ export default function BusinessInvoices() {
                         key={invoice.id} 
                         invoice={invoice} 
                         onPayClick={handlePayInvoice}
+                        onReviewClick={handleReviewClick}
+                        currentUserId={user.id}
                       />
                     ))}
                   </div>
@@ -284,6 +295,23 @@ export default function BusinessInvoices() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Review Submission Modal */}
+        {selectedInvoice && (
+          <ReviewSubmissionModal
+            isOpen={reviewModalOpen}
+            onClose={() => {
+              setReviewModalOpen(false);
+              setSelectedInvoice(null);
+            }}
+            gigId={selectedInvoice.gigId}
+            recipientId={selectedInvoice.chefId}
+            reviewerId={user.id}
+            recipientName={selectedInvoice.chef.fullName}
+            recipientType="chef"
+            gigTitle={selectedInvoice.gig.title}
+          />
+        )}
       </main>
       <Footer />
     </div>
@@ -293,6 +321,8 @@ export default function BusinessInvoices() {
 interface InvoiceCardProps {
   invoice: InvoiceData;
   onPayClick: (invoice: InvoiceData) => void;
+  onReviewClick?: (invoice: InvoiceData) => void;
+  currentUserId?: string;
 }
 
 function InvoiceCard({ invoice, onPayClick }: InvoiceCardProps) {
