@@ -589,8 +589,27 @@ export class DBStorage implements IStorage {
   }
 
   async getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]> {
-    return db.select()
+    return db.select({
+      id: gigInvoices.id,
+      gigId: gigInvoices.gigId,
+      chefId: gigInvoices.chefId,
+      hoursWorked: gigInvoices.hoursWorked,
+      hourlyRate: gigInvoices.hourlyRate,
+      totalAmount: gigInvoices.totalAmount,
+      description: gigInvoices.description,
+      status: gigInvoices.status,
+      submittedAt: gigInvoices.submittedAt,
+      createdAt: gigInvoices.createdAt,
+      updatedAt: gigInvoices.updatedAt,
+      gig: {
+        title: gigs.title,
+        businessName: businessProfiles.businessName,
+        date: gigs.startDate
+      }
+    })
       .from(gigInvoices)
+      .leftJoin(gigs, eq(gigInvoices.gigId, gigs.id))
+      .leftJoin(businessProfiles, eq(gigs.businessId, businessProfiles.id))
       .where(eq(gigInvoices.chefId, chefId))
       .orderBy(desc(gigInvoices.createdAt));
   }
