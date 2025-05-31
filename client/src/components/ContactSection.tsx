@@ -79,7 +79,7 @@ export default function ContactSection() {
           <div className="md:w-1/2 md:pr-12">
             <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6">Get in Touch</h2>
             <p className="text-lg text-neutral-800 mb-8">
-              Have questions about Chefy? Our team is ready to help you get started on our platform.
+              Have questions about Chef Pantry? Our team is ready to help you get started on our platform.
             </p>
             
             <div className="space-y-4 mb-8">

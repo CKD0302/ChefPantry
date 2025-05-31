@@ -8,7 +8,7 @@ export default function CallToAction() {
           Ready to Transform Your Culinary Career?
         </h2>
         <p className="text-xl text-white opacity-90 mb-8 max-w-3xl mx-auto">
-          Join Chefy today and be part of a community that values culinary talent and creates exceptional dining experiences.
+          Join Chef Pantry today and be part of a community that values culinary talent and creates exceptional dining experiences.
         </p>
         <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
           <Button 

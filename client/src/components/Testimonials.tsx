@@ -5,13 +5,13 @@ import { Star } from "lucide-react";
 export default function Testimonials() {
   const testimonials = [
     {
-      text: "Chefy has transformed how I find work in the culinary industry. I'm able to connect with amazing restaurants and events that truly value my skills. The platform is intuitive and the staff is incredibly supportive.",
+      text: "Chef Pantry has transformed how I find work in the culinary industry. I'm able to connect with amazing restaurants and events that truly value my skills. The platform is intuitive and the staff is incredibly supportive.",
       author: "Marcus Johnson",
       role: "Executive Chef, San Francisco",
       initials: "MJ"
     },
     {
-      text: "As a boutique hotel, we often need specialized culinary talent for special events. Chefy makes it easy to find the perfect chef for any occasion. The quality of talent on the platform is exceptional.",
+      text: "As a boutique hotel, we often need specialized culinary talent for special events. Chef Pantry makes it easy to find the perfect chef for any occasion. The quality of talent on the platform is exceptional.",
       author: "Sarah Thompson",
       role: "Events Director, Lakeview Hotel",
       initials: "ST"

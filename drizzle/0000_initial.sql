@@ -1,4 +1,4 @@
--- Create tables for Chefy application
+-- Create tables for Chef Pantry application
 
 -- Users table
 CREATE TABLE IF NOT EXISTS "users" (
