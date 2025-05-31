@@ -13,11 +13,13 @@ import {
   CheckCircle, 
   XCircle,
   FileText,
-  Award
+  Award,
+  Receipt
 } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import InvoiceSubmissionModal from "@/components/InvoiceSubmissionModal";
 
 interface Application {
   id: string;
@@ -47,6 +49,9 @@ export default function MyApplications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [invoiceStatuses, setInvoiceStatuses] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,6 +78,13 @@ export default function MyApplications() {
 
       console.log("Applications fetched successfully:", data.data);
       setApplications(data.data || []);
+      
+      // Check invoice status for each confirmed application
+      const confirmedApplications = data.data?.filter((app: Application) => 
+        app.status === "confirmed" && app.gig
+      ) || [];
+      
+      await checkInvoiceStatuses(confirmedApplications);
     } catch (error) {
       console.error("Error fetching applications:", error);
       setError("Failed to load your applications");
@@ -84,6 +96,25 @@ export default function MyApplications() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkInvoiceStatuses = async (confirmedApplications: Application[]) => {
+    const statuses: Record<string, boolean> = {};
+    
+    for (const app of confirmedApplications) {
+      if (app.gig && user?.id) {
+        try {
+          const response = await fetch(`/api/invoices/check?gigId=${app.gig.id}&chefId=${user.id}`);
+          const data = await response.json();
+          statuses[app.gig.id] = data.exists;
+        } catch (error) {
+          console.error("Error checking invoice status:", error);
+          statuses[app.gig.id] = false;
+        }
+      }
+    }
+    
+    setInvoiceStatuses(statuses);
   };
 
   const confirmGig = async (applicationId: string, gigTitle: string) => {
@@ -193,6 +224,29 @@ export default function MyApplications() {
       "other": "Other"
     };
     return roleMap[roleValue] || roleValue;
+  };
+
+  const isGigCompleted = (endDate: string) => {
+    if (!endDate) return false;
+    const gigEndDate = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return gigEndDate < today;
+  };
+
+  const handleSubmitInvoice = (application: Application) => {
+    setSelectedApplication(application);
+    setInvoiceModalOpen(true);
+  };
+
+  const handleInvoiceSuccess = async () => {
+    if (selectedApplication?.gig) {
+      setInvoiceStatuses(prev => ({
+        ...prev,
+        [selectedApplication.gig!.id]: true
+      }));
+    }
+    await fetchMyApplications();
   };
 
   // Filter applications that need confirmation (accepted but not confirmed)
@@ -433,6 +487,27 @@ export default function MyApplications() {
                             </p>
                           )}
                         </div>
+                        
+                        {/* Submit Invoice Button for Completed Confirmed Gigs */}
+                        {application.status === "confirmed" && 
+                         application.gig && 
+                         isGigCompleted(application.gig.end_date) && (
+                          <div>
+                            {invoiceStatuses[application.gig.id] ? (
+                              <Badge className="bg-blue-100 text-blue-800">
+                                Invoice Submitted
+                              </Badge>
+                            ) : (
+                              <Button
+                                onClick={() => handleSubmitInvoice(application)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Receipt className="h-4 w-4 mr-2" />
+                                Submit Invoice
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -443,6 +518,19 @@ export default function MyApplications() {
         </div>
       </main>
       <Footer />
+      
+      {/* Invoice Submission Modal */}
+      {selectedApplication && (
+        <InvoiceSubmissionModal
+          application={selectedApplication}
+          isOpen={invoiceModalOpen}
+          onClose={() => {
+            setInvoiceModalOpen(false);
+            setSelectedApplication(null);
+          }}
+          onSuccess={handleInvoiceSuccess}
+        />
+      )}
     </div>
   );
 }
