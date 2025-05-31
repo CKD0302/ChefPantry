@@ -651,6 +651,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get invoices for a business
+  apiRouter.get("/invoices/business/:businessId", async (req: Request, res: Response) => {
+    try {
+      const { businessId } = req.params;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "Business ID is required" });
+      }
+      
+      const invoices = await storage.getGigInvoicesByBusiness(businessId);
+      
+      res.status(200).json(invoices);
+    } catch (error) {
+      console.error("Error fetching business invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
   // Create Stripe Connect account for chef
   apiRouter.post("/stripe/connect/account", async (req: Request, res: Response) => {
     try {

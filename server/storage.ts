@@ -584,11 +584,34 @@ export class DBStorage implements IStorage {
       .orderBy(desc(gigInvoices.createdAt));
   }
 
-  async getGigInvoicesByBusiness(businessId: string): Promise<GigInvoice[]> {
-    return db.select()
-      .from(gigInvoices)
-      .where(eq(gigInvoices.businessId, businessId))
-      .orderBy(desc(gigInvoices.createdAt));
+  async getGigInvoicesByBusiness(businessId: string): Promise<any[]> {
+    return db.select({
+      id: gigInvoices.id,
+      gigId: gigInvoices.gigId,
+      chefId: gigInvoices.chefId,
+      businessId: gigInvoices.businessId,
+      hoursWorked: gigInvoices.hoursWorked,
+      ratePerHour: gigInvoices.ratePerHour,
+      totalAmount: gigInvoices.totalAmount,
+      notes: gigInvoices.notes,
+      status: gigInvoices.status,
+      submittedAt: gigInvoices.createdAt,
+      gig: {
+        title: gigs.title,
+        location: gigs.location,
+        startDate: gigs.startDate,
+        endDate: gigs.endDate,
+      },
+      chef: {
+        fullName: chefProfiles.fullName,
+        stripeAccountId: chefProfiles.stripeAccountId,
+      }
+    })
+    .from(gigInvoices)
+    .leftJoin(gigs, eq(gigInvoices.gigId, gigs.id))
+    .leftJoin(chefProfiles, eq(gigInvoices.chefId, chefProfiles.id))
+    .where(eq(gigInvoices.businessId, businessId))
+    .orderBy(desc(gigInvoices.createdAt));
   }
 }
 
