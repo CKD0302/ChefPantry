@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Health check endpoint
   apiRouter.get("/health", (req: Request, res: Response) => {
-    res.json({ status: "ok", message: "Chefy API is working!" });
+    res.json({ status: "ok", message: "Chef Pantry API is working!" });
   });
   
   // Contact form submission

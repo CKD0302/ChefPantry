@@ -44,7 +44,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center mb-4">
-              <span className="text-primary font-poppins font-bold text-2xl">Chefy</span>
+              <span className="text-primary font-poppins font-bold text-2xl">Chef Pantry</span>
               <UtensilsIcon className="ml-2 text-primary h-5 w-5" />
             </div>
             <p className="text-neutral-300 mb-4">
@@ -105,7 +105,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-neutral-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-neutral-400">© {currentYear} Chefy. All rights reserved.</p>
+          <p className="text-neutral-400">© {currentYear} Chef Pantry. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             {legalLinks.map((link, index) => (
               <a 

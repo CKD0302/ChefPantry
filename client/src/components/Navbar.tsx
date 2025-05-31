@@ -37,7 +37,7 @@ export default function Navbar() {
             {/* Logo */}
             <Link href="/">
               <div className="flex-shrink-0 flex items-center cursor-pointer">
-                <span className="text-primary font-poppins font-bold text-2xl">Chefy</span>
+                <span className="text-primary font-poppins font-bold text-2xl">Chef Pantry</span>
                 <UtensilsIcon className="ml-2 text-primary h-5 w-5" />
               </div>
             </Link>

@@ -11,7 +11,7 @@ export default function HeroSection() {
               <span className="text-secondary">Hospitality Businesses</span>
             </h1>
             <p className="text-lg md:text-xl text-neutral-800 mb-8">
-              Chefy is a chef-first platform that makes it easy for freelance culinary talent to find meaningful work with top hospitality businesses.
+              Chef Pantry is a chef-first platform that makes it easy for freelance culinary talent to find meaningful work with top hospitality businesses.
             </p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
               <Button className="gradient-bg text-white font-medium px-6 py-3 h-auto shadow-lg hover:opacity-90 transition-opacity">

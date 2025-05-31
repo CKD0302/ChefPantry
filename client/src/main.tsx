@@ -6,21 +6,21 @@ import { setupStorageBuckets } from "./utils/setupStorage";
 const root = document.getElementById("root");
 
 // Add title and meta tags
-document.title = "Chefy - Chef-first Freelance Booking Platform";
+document.title = "Chef Pantry - Chef-first Freelance Booking Platform";
 const metaDescription = document.createElement("meta");
 metaDescription.name = "description";
-metaDescription.content = "Chefy is a chef-first platform connecting freelance chefs with hospitality businesses. Find culinary talent or your next booking opportunity.";
+metaDescription.content = "Chef Pantry is a chef-first platform connecting freelance chefs with hospitality businesses. Find culinary talent or your next booking opportunity.";
 document.head.appendChild(metaDescription);
 
 // Add Open Graph tags
 const ogTitle = document.createElement("meta");
 ogTitle.setAttribute("property", "og:title");
-ogTitle.content = "Chefy - Chef-first Freelance Booking Platform";
+ogTitle.content = "Chef Pantry - Chef-first Freelance Booking Platform";
 document.head.appendChild(ogTitle);
 
 const ogDescription = document.createElement("meta");
 ogDescription.setAttribute("property", "og:description");
-ogDescription.content = "Connect culinary talent with hospitality businesses. Find your next chef or booking opportunity with Chefy.";
+ogDescription.content = "Connect culinary talent with hospitality businesses. Find your next chef or booking opportunity with Chef Pantry.";
 document.head.appendChild(ogDescription);
 
 const ogType = document.createElement("meta");

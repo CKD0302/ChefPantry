@@ -196,7 +196,7 @@ export default function PaymentSettings() {
           <Card>
             <CardHeader>
               <CardTitle>Payment Information</CardTitle>
-              <CardDescription>How payments work on Chefy</CardDescription>
+              <CardDescription>How payments work on Chef Pantry</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">

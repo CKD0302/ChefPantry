@@ -81,7 +81,7 @@ export default function SignUp() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Sign Up</CardTitle>
           <CardDescription className="text-center">
-            Create an account to get started with Chefy
+            Create an account to get started with Chef Pantry
           </CardDescription>
         </CardHeader>
         <CardContent>
