@@ -240,6 +240,14 @@ export default function Dashboard() {
                     >
                       Applied Gigs
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/profile/payment-settings")}
+                      className="flex items-center gap-2"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      Payment Setup
+                    </Button>
                   </div>
                 </div>
               </div>
