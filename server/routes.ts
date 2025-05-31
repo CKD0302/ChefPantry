@@ -13,6 +13,12 @@ import {
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import Stripe from "stripe";
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -624,6 +630,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking invoice:", error);
       res.status(500).json({ message: "Failed to check invoice" });
+    }
+  });
+
+  // Create Stripe Connect account for chef
+  apiRouter.post("/stripe/connect/account", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.body;
+      
+      if (!chefId || typeof chefId !== 'string') {
+        return res.status(400).json({ message: "Chef ID is required" });
+      }
+      
+      // Check if chef already has a Stripe account
+      const chefProfile = await storage.getChefProfile(chefId);
+      if (!chefProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
+      }
+      
+      if (chefProfile.stripeAccountId) {
+        return res.status(400).json({ message: "Chef already has a Stripe account" });
+      }
+      
+      // Create Stripe Connect account
+      const account = await stripe.accounts.create({
+        type: 'standard',
+        ...(chefProfile.email && { email: chefProfile.email }),
+      });
+      
+      // Update chef profile with Stripe account ID
+      await storage.updateChefStripeAccountId(chefId, account.id);
+      
+      res.status(201).json({
+        message: "Stripe account created successfully",
+        accountId: account.id
+      });
+    } catch (error) {
+      console.error("Error creating Stripe account:", error);
+      res.status(500).json({ message: "Failed to create Stripe account" });
+    }
+  });
+
+  // Generate Stripe Connect onboarding link
+  apiRouter.post("/stripe/connect/onboarding", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.body;
+      
+      if (!chefId || typeof chefId !== 'string') {
+        return res.status(400).json({ message: "Chef ID is required" });
+      }
+      
+      const chefProfile = await storage.getChefProfile(chefId);
+      if (!chefProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
+      }
+      
+      if (!chefProfile.stripeAccountId) {
+        return res.status(400).json({ message: "Chef must have a Stripe account first" });
+      }
+      
+      // Create account link for onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: chefProfile.stripeAccountId,
+        refresh_url: `${req.protocol}://${req.get('host')}/profile/stripe-connect?refresh=true`,
+        return_url: `${req.protocol}://${req.get('host')}/profile/stripe-connect?success=true`,
+        type: 'account_onboarding',
+      });
+      
+      res.status(200).json({
+        onboardingUrl: accountLink.url
+      });
+    } catch (error) {
+      console.error("Error creating onboarding link:", error);
+      res.status(500).json({ message: "Failed to create onboarding link" });
+    }
+  });
+
+  // Check Stripe account status
+  apiRouter.get("/stripe/connect/status/:chefId", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.params;
+      
+      const chefProfile = await storage.getChefProfile(chefId);
+      if (!chefProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
+      }
+      
+      if (!chefProfile.stripeAccountId) {
+        return res.status(200).json({
+          hasAccount: false,
+          accountConnected: false
+        });
+      }
+      
+      // Get account details from Stripe
+      const account = await stripe.accounts.retrieve(chefProfile.stripeAccountId);
+      
+      res.status(200).json({
+        hasAccount: true,
+        accountConnected: account.details_submitted,
+        accountId: account.id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled
+      });
+    } catch (error) {
+      console.error("Error checking Stripe account status:", error);
+      res.status(500).json({ message: "Failed to check account status" });
     }
   });
 

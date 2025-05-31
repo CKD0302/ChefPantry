@@ -249,6 +249,17 @@ export class DBStorage implements IStorage {
     
     return result[0];
   }
+
+  async updateChefStripeAccountId(id: string, stripeAccountId: string): Promise<ChefProfile | undefined> {
+    const result = await db.update(chefProfiles)
+      .set({ 
+        stripeAccountId,
+        updatedAt: new Date()
+      })
+      .where(eq(chefProfiles.id, id))
+      .returning();
+    return result[0];
+  }
   
   // Business Profiles methods (Supabase)
   async getBusinessProfile(id: string): Promise<BusinessProfile | undefined> {

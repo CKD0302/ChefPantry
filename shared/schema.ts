@@ -64,6 +64,7 @@ export const contactMessages = pgTable("contact_messages", {
 export const chefProfiles = pgTable("chef_profiles", {
   id: text("id").primaryKey(), // UUID from Supabase auth
   fullName: text("full_name").notNull(),
+  email: text("email"),
   bio: text("bio").notNull(),
   skills: text("skills").array().notNull(),
   experienceYears: integer("experience_years").notNull(),
