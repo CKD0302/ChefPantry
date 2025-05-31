@@ -325,7 +325,14 @@ interface InvoiceCardProps {
   currentUserId?: string;
 }
 
-function InvoiceCard({ invoice, onPayClick }: InvoiceCardProps) {
+function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: InvoiceCardProps) {
+  // Check if review exists for this gig and reviewer
+  const { data: reviewCheck } = useQuery({
+    queryKey: ["/api/reviews/check", invoice.gigId, currentUserId],
+    queryFn: () => apiRequest("GET", `/api/reviews/check?gigId=${invoice.gigId}&reviewerId=${currentUserId}`).then(res => res.json()),
+    enabled: !!currentUserId && invoice.status.toLowerCase() === 'paid',
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
@@ -402,24 +409,48 @@ function InvoiceCard({ invoice, onPayClick }: InvoiceCardProps) {
       )}
 
       <div className="flex items-center justify-between pt-4 border-t">
-        {!invoice.chef.stripeAccountId ? (
-          <Alert className="flex-1 mr-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              This chef has not connected their payment account yet. Payment cannot be processed.
-            </AlertDescription>
-          </Alert>
-        ) : invoice.status.toLowerCase() === 'pending' ? (
-          <Button 
-            onClick={() => onPayClick(invoice)}
-            className="flex items-center gap-2"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Pay with Stripe
-          </Button>
-        ) : (
-          <div className="text-sm text-gray-500">
-            Payment {invoice.status.toLowerCase() === 'paid' ? 'completed' : 'in progress'}
+        <div className="flex items-center gap-4">
+          {!invoice.chef.stripeAccountId ? (
+            <Alert className="flex-1">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                This chef has not connected their payment account yet. Payment cannot be processed.
+              </AlertDescription>
+            </Alert>
+          ) : invoice.status.toLowerCase() === 'pending' ? (
+            <Button 
+              onClick={() => onPayClick(invoice)}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Pay with Stripe
+            </Button>
+          ) : (
+            <div className="text-sm text-gray-500">
+              Payment {invoice.status.toLowerCase() === 'paid' ? 'completed' : 'in progress'}
+            </div>
+          )}
+        </div>
+
+        {/* Review Section for Paid Invoices */}
+        {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && (
+          <div className="flex items-center gap-2">
+            {reviewCheck?.exists ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Review Submitted</span>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onReviewClick(invoice)}
+                className="flex items-center gap-2"
+              >
+                <Star className="h-4 w-4" />
+                Leave Review
+              </Button>
+            )}
           </div>
         )}
       </div>
