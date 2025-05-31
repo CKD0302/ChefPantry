@@ -8,7 +8,8 @@ import {
   insertChefProfileSchema,
   insertBusinessProfileSchema,
   insertGigSchema,
-  insertGigApplicationSchema
+  insertGigApplicationSchema,
+  insertGigInvoiceSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -557,6 +558,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Submit invoice for a completed gig
+  apiRouter.post("/invoices", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertGigInvoiceSchema.parse(req.body);
+      
+      // Check if invoice already exists for this gig and chef
+      const existingInvoice = await storage.getGigInvoiceByGigAndChef(
+        validatedData.gigId, 
+        validatedData.chefId
+      );
+      
+      if (existingInvoice) {
+        return res.status(400).json({ message: "Invoice already exists for this gig" });
+      }
+      
+      // Create the invoice
+      const invoice = await storage.createGigInvoice(validatedData);
+      
+      // Create notification for the business
+      await storage.createNotification({
+        recipientId: validatedData.businessId,
+        type: "invoice_ready",
+        message: "An invoice has been submitted for your recent gig.",
+        linkUrl: "/dashboard/invoices",
+        isRead: false
+      });
+      
+      res.status(201).json({
+        message: "Invoice submitted successfully",
+        data: invoice
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details
+        });
+      } else {
+        console.error("Error creating invoice:", error);
+        res.status(500).json({ message: "Failed to submit invoice" });
+      }
+    }
+  });
+
+  // Check if invoice exists for a gig and chef
+  apiRouter.get("/invoices/check", async (req: Request, res: Response) => {
+    try {
+      const { gigId, chefId } = req.query;
+      
+      if (!gigId || !chefId || typeof gigId !== 'string' || typeof chefId !== 'string') {
+        return res.status(400).json({ message: "Gig ID and Chef ID are required" });
+      }
+      
+      const existingInvoice = await storage.getGigInvoiceByGigAndChef(gigId, chefId);
+      
+      res.status(200).json({
+        exists: !!existingInvoice,
+        invoice: existingInvoice
+      });
+    } catch (error) {
+      console.error("Error checking invoice:", error);
+      res.status(500).json({ message: "Failed to check invoice" });
     }
   });
 

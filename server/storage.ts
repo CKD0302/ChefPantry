@@ -26,6 +26,9 @@ import {
   gigApplications,
   type GigApplication,
   type InsertGigApplication,
+  gigInvoices,
+  type GigInvoice,
+  type InsertGigInvoice,
   notifications,
   type Notification,
   type InsertNotification
@@ -90,6 +93,13 @@ export interface IStorage {
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
   getNotificationsByRecipient(recipientId: string): Promise<Notification[]>;
+  
+  // Invoice methods
+  createGigInvoice(invoice: InsertGigInvoice): Promise<GigInvoice>;
+  getGigInvoice(id: string): Promise<GigInvoice | undefined>;
+  getGigInvoiceByGigAndChef(gigId: string, chefId: string): Promise<GigInvoice | undefined>;
+  getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]>;
+  getGigInvoicesByBusiness(businessId: string): Promise<GigInvoice[]>;
 }
 
 export class DBStorage implements IStorage {
@@ -528,6 +538,45 @@ export class DBStorage implements IStorage {
       .orderBy(desc(notifications.createdAt));
     
     return result;
+  }
+
+  // Invoice methods
+  async createGigInvoice(insertInvoice: InsertGigInvoice): Promise<GigInvoice> {
+    const result = await db.insert(gigInvoices).values(insertInvoice).returning();
+    return result[0];
+  }
+
+  async getGigInvoice(id: string): Promise<GigInvoice | undefined> {
+    const result = await db.select()
+      .from(gigInvoices)
+      .where(eq(gigInvoices.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getGigInvoiceByGigAndChef(gigId: string, chefId: string): Promise<GigInvoice | undefined> {
+    const result = await db.select()
+      .from(gigInvoices)
+      .where(and(
+        eq(gigInvoices.gigId, gigId),
+        eq(gigInvoices.chefId, chefId)
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]> {
+    return db.select()
+      .from(gigInvoices)
+      .where(eq(gigInvoices.chefId, chefId))
+      .orderBy(desc(gigInvoices.createdAt));
+  }
+
+  async getGigInvoicesByBusiness(businessId: string): Promise<GigInvoice[]> {
+    return db.select()
+      .from(gigInvoices)
+      .where(eq(gigInvoices.businessId, businessId))
+      .orderBy(desc(gigInvoices.createdAt));
   }
 }
 
