@@ -339,6 +339,14 @@ export default function Dashboard() {
                     >
                       Manage Gigs
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/business/invoices")}
+                      className="flex items-center gap-2"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      Invoices
+                    </Button>
                   </div>
                 </div>
               </div>
