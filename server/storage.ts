@@ -454,7 +454,7 @@ export class DBStorage implements IStorage {
       business: {
         businessName: businessProfiles.businessName,
         location: businessProfiles.location,
-        venueType: businessProfiles.venueType
+        description: businessProfiles.description
       }
     })
       .from(gigApplications)

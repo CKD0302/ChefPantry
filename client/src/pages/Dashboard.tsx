@@ -88,6 +88,17 @@ export default function Dashboard() {
     }
   });
 
+  // Fetch confirmed bookings (for chefs)
+  const { data: confirmedBookings, isLoading: loadingBookings } = useQuery({
+    queryKey: ['/api/bookings/confirmed', user?.id],
+    enabled: !!user && user.user_metadata?.role === 'chef',
+    queryFn: async () => {
+      const response = await fetch(`/api/bookings/confirmed?chefId=${user!.id}`);
+      if (!response.ok) throw new Error('Failed to fetch confirmed bookings');
+      return response.json();
+    }
+  });
+
   // Mutation for confirming gigs
   const confirmGigMutation = useMutation({
     mutationFn: async (applicationId: string) => {
@@ -104,6 +115,7 @@ export default function Dashboard() {
         description: "You've successfully confirmed the gig. The business has been notified.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/applications/accepted'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings/confirmed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
     onError: () => {
@@ -429,12 +441,56 @@ export default function Dashboard() {
           )}
 
           {/* Recent Bookings Section */}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Recent Bookings</h2>
-            <div className="bg-neutral-100 rounded p-8 text-center">
-              <p className="text-neutral-600">You don't have any bookings yet.</p>
+          {userRole === "chef" && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Recent Bookings</h2>
+              {loadingBookings ? (
+                <div className="bg-neutral-100 rounded p-8 text-center">
+                  <p className="text-neutral-600">Loading bookings...</p>
+                </div>
+              ) : confirmedBookings && confirmedBookings.data && confirmedBookings.data.length > 0 ? (
+                <div className="space-y-4">
+                  {confirmedBookings.data.map((booking: any) => (
+                    <Card key={booking.id} className="p-4">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg">{booking.gig.title}</h3>
+                          <p className="text-gray-600 mb-2">{booking.business.businessName}</p>
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{booking.gig.location}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{format(new Date(booking.gig.startDate), 'PPP')}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{booking.gig.startTime} - {booking.gig.endTime}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4" />
+                              <span>£{booking.gig.payRate}/hr</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 md:mt-0">
+                          <Badge variant="default" className="bg-green-100 text-green-800">
+                            Confirmed
+                          </Badge>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-neutral-100 rounded p-8 text-center">
+                  <p className="text-neutral-600">You don't have any confirmed bookings yet.</p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Professional Documents (for chefs only) */}
           {userRole === "chef" && (
