@@ -89,6 +89,7 @@ export interface IStorage {
   getGigApplicationsByGigId(gigId: string): Promise<GigApplication[]>;
   getGigApplicationsByChefId(chefId: string): Promise<GigApplication[]>;
   getAcceptedApplicationsByChefId(chefId: string): Promise<GigApplication[]>;
+  getConfirmedBookingsByChefId(chefId: string): Promise<any[]>;
   createGigApplication(application: InsertGigApplication): Promise<GigApplication>;
   updateGigApplicationStatus(id: string, status: string): Promise<GigApplication | undefined>;
   acceptChefForGig(applicationId: string, gigId: string): Promise<{ acceptedApplication: GigApplication; rejectedCount: number }>;
@@ -427,6 +428,44 @@ export class DBStorage implements IStorage {
         eq(gigApplications.confirmed, false)
       ))
       .orderBy(desc(gigApplications.appliedAt));
+  }
+
+  async getConfirmedBookingsByChefId(chefId: string): Promise<any[]> {
+    return db.select({
+      id: gigApplications.id,
+      gigId: gigApplications.gigId,
+      chefId: gigApplications.chefId,
+      status: gigApplications.status,
+      confirmed: gigApplications.confirmed,
+      appliedAt: gigApplications.appliedAt,
+      updatedAt: gigApplications.updatedAt,
+      gig: {
+        id: gigs.id,
+        title: gigs.title,
+        location: gigs.location,
+        startDate: gigs.startDate,
+        endDate: gigs.endDate,
+        startTime: gigs.startTime,
+        endTime: gigs.endTime,
+        payRate: gigs.payRate,
+        role: gigs.role,
+        venueType: gigs.venueType
+      },
+      business: {
+        businessName: businessProfiles.businessName,
+        location: businessProfiles.location,
+        venueType: businessProfiles.venueType
+      }
+    })
+      .from(gigApplications)
+      .leftJoin(gigs, eq(gigApplications.gigId, gigs.id))
+      .leftJoin(businessProfiles, eq(gigs.createdBy, businessProfiles.id))
+      .where(and(
+        eq(gigApplications.chefId, chefId),
+        eq(gigApplications.status, "accepted"),
+        eq(gigApplications.confirmed, true)
+      ))
+      .orderBy(desc(gigs.startDate));
   }
   
   async createGigApplication(insertApplication: InsertGigApplication): Promise<GigApplication> {

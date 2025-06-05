@@ -548,6 +548,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get confirmed bookings (for chefs)
+  apiRouter.get("/bookings/confirmed", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.query;
+      
+      if (!chefId || typeof chefId !== 'string') {
+        return res.status(400).json({ message: "Chef ID is required" });
+      }
+      
+      const confirmedBookings = await storage.getConfirmedBookingsByChefId(chefId);
+      
+      res.status(200).json({
+        data: confirmedBookings
+      });
+    } catch (error) {
+      console.error("Error fetching confirmed bookings:", error);
+      res.status(500).json({ message: "Failed to fetch confirmed bookings" });
+    }
+  });
+
   // Get notifications for a user
   apiRouter.get("/notifications", async (req: Request, res: Response) => {
     try {
