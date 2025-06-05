@@ -129,8 +129,15 @@ export default function BusinessInvoices() {
   const paidInvoices = filterInvoicesByStatus('paid');
   const processingInvoices = filterInvoicesByStatus('processing');
 
-  const totalPending = pendingInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const totalPaid = paidInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const totalPending = pendingInvoices.reduce((sum, inv) => {
+    const amount = parseFloat(String(inv.totalAmount)) || 0;
+    return sum + amount;
+  }, 0);
+  
+  const totalPaid = paidInvoices.reduce((sum, inv) => {
+    const amount = parseFloat(String(inv.totalAmount)) || 0;
+    return sum + amount;
+  }, 0);
 
   if (isLoading) {
     return (
