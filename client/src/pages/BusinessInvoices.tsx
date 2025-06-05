@@ -38,6 +38,10 @@ interface InvoiceData {
   serviceTitle?: string;
   serviceDescription?: string;
   paymentType?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  sortCode?: string;
   gig?: {
     title: string;
     location: string;
@@ -447,9 +451,45 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
         </div>
       )}
 
+      {/* Bank Details Section for Manual Invoices */}
+      {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h5 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
+            <Receipt className="h-4 w-4" />
+            Bank Details for Payment
+          </h5>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-blue-700 font-medium">Bank Name:</span>
+              <p className="text-blue-900">{invoice.bankName}</p>
+            </div>
+            <div>
+              <span className="text-blue-700 font-medium">Account Name:</span>
+              <p className="text-blue-900">{invoice.accountName}</p>
+            </div>
+            <div>
+              <span className="text-blue-700 font-medium">Sort Code:</span>
+              <p className="text-blue-900">{invoice.sortCode}</p>
+            </div>
+            <div>
+              <span className="text-blue-700 font-medium">Account Number:</span>
+              <p className="text-blue-900">{invoice.accountNumber}</p>
+            </div>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            Please use bank transfer to pay this invoice using the details above.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-4 border-t">
         <div className="flex items-center gap-4">
-          {!invoice.chef.stripeAccountId ? (
+          {/* Show bank payment message for manual invoices with bank details */}
+          {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode ? (
+            <div className="text-sm text-blue-600 font-medium">
+              Pay via bank transfer using details above
+            </div>
+          ) : !invoice.chef.stripeAccountId ? (
             <Alert className="flex-1">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
