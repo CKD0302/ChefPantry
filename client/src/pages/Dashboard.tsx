@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, DollarSign, Clock, Bell, ExternalLink } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -257,7 +257,7 @@ export default function Dashboard() {
                       onClick={() => navigate("/profile/payment-settings")}
                       className="flex items-center gap-2"
                     >
-                      <DollarSign className="h-4 w-4" />
+                      <PoundSterling className="h-4 w-4 text-blue-600" />
                       Payment Setup
                     </Button>
                   </div>
@@ -356,7 +356,7 @@ export default function Dashboard() {
                       onClick={() => navigate("/business/invoices")}
                       className="flex items-center gap-2"
                     >
-                      <DollarSign className="h-4 w-4" />
+                      <PoundSterling className="h-4 w-4 text-blue-600" />
                       Invoices
                     </Button>
                   </div>

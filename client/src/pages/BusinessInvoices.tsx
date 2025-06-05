@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   FileText, 
-  DollarSign, 
+  PoundSterling, 
   Clock, 
   Calendar, 
   MapPin, 
@@ -213,7 +213,7 @@ export default function BusinessInvoices() {
               Pending ({pendingInvoices.length})
             </TabsTrigger>
             <TabsTrigger value="processing" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <PoundSterling className="h-4 w-4" />
               Processing ({processingInvoices.length})
             </TabsTrigger>
             <TabsTrigger value="paid" className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function BusinessInvoices() {
               <CardContent>
                 {processingInvoices.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <PoundSterling className="h-12 w-12 mx-auto mb-4 text-blue-300" />
                     <p>No invoices being processed</p>
                   </div>
                 ) : (
