@@ -51,6 +51,9 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
   const [fixedAmount, setFixedAmount] = useState('');
   const [notes, setNotes] = useState('');
   
+  // Payment method selection
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'bank'>('stripe');
+  
   // Bank details fields
   const [bankName, setBankName] = useState('');
   const [accountName, setAccountName] = useState('');
@@ -160,12 +163,12 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
         totalAmount: calculateTotal(),
         notes: notes || null,
         status: "pending",
-        bankDetails: {
+        bankDetails: paymentMethod === 'bank' ? {
           bankName: bankName.trim(),
           accountName: accountName.trim(),
           accountNumber: accountNumber.trim(),
           sortCode: sortCode.trim()
-        }
+        } : null
       };
 
       const response = await fetch("/api/invoices", {
@@ -215,6 +218,7 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
     setHoursWorked('');
     setFixedAmount('');
     setNotes('');
+    setPaymentMethod('stripe');
     setBankName('');
     setAccountName('');
     setAccountNumber('');
@@ -426,10 +430,26 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
                 />
               </div>
 
-              {/* Bank Details Section */}
+              {/* Payment Method Selection */}
               <div className="border-t pt-4">
-                <h4 className="font-medium text-gray-900 mb-3">Bank Details for Payment</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <Label>Payment Method *</Label>
+                <RadioGroup value={paymentMethod} onValueChange={(value: 'stripe' | 'bank') => setPaymentMethod(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="stripe" id="stripe" />
+                    <Label htmlFor="stripe">Stripe Connect (Online Payment)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="bank" id="bank" />
+                    <Label htmlFor="bank">Bank Transfer (Manual Payment)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Bank Details Section - Only show if bank transfer is selected */}
+              {paymentMethod === 'bank' && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Bank Details for Payment</h4>
+                  <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="bankName">Bank Name</Label>
                     <Input
@@ -468,8 +488,9 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
                       maxLength={8}
                     />
                   </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Total Display */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
