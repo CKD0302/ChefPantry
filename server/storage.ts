@@ -462,8 +462,7 @@ export class DBStorage implements IStorage {
       .leftJoin(businessProfiles, eq(gigs.createdBy, businessProfiles.id))
       .where(and(
         eq(gigApplications.chefId, chefId),
-        eq(gigApplications.status, "accepted"),
-        eq(gigApplications.confirmed, true)
+        eq(gigApplications.status, "confirmed")
       ))
       .orderBy(desc(gigs.startDate));
   }
