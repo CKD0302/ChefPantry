@@ -14,7 +14,7 @@ import {
   ChefHat,
   Award,
   Clock,
-  DollarSign,
+  PoundSterling,
   ArrowLeft
 } from "lucide-react";
 import { format } from "date-fns";
@@ -199,8 +199,8 @@ export default function ChefView() {
                 <CardContent className="space-y-4">
                   {chef.hourly_rate && (
                     <div className="flex items-center gap-3">
-                      <DollarSign className="h-5 w-5 text-gray-400" />
-                      <span className="text-gray-700">${chef.hourly_rate}/hour</span>
+                      <PoundSterling className="h-5 w-5 text-blue-600" />
+                      <span className="text-gray-700">£{chef.hourly_rate}/hour</span>
                     </div>
                   )}
                   {chef.availability && chef.availability.length > 0 && (
