@@ -387,7 +387,7 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
         <div>
           <span className="text-gray-500">Amount:</span>
-          <div className="font-medium text-lg">{formatCurrency(invoice.totalAmount)}</div>
+          <div className="font-medium text-lg">{formatCurrency(parseFloat(String(invoice.totalAmount)) || 0)}</div>
         </div>
         <div>
           <span className="text-gray-500">
@@ -401,8 +401,8 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
           <span className="text-gray-500">Rate:</span>
           <div className="font-medium">
             {invoice.paymentType === 'hourly' 
-              ? `${formatCurrency(invoice.ratePerHour)}/hr`
-              : formatCurrency(invoice.totalAmount)
+              ? `${formatCurrency(parseFloat(String(invoice.ratePerHour)) || 0)}/hr`
+              : formatCurrency(parseFloat(String(invoice.totalAmount)) || 0)
             }
           </div>
         </div>

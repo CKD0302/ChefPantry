@@ -81,9 +81,20 @@ export default function PaymentSettings() {
     }
   };
 
-  const totalEarnings = invoices?.reduce((sum, invoice) => sum + invoice.totalAmount, 0) || 0;
-  const pendingAmount = invoices?.filter(inv => inv.status === 'pending').reduce((sum, invoice) => sum + invoice.totalAmount, 0) || 0;
-  const paidAmount = invoices?.filter(inv => inv.status === 'paid').reduce((sum, invoice) => sum + invoice.totalAmount, 0) || 0;
+  const totalEarnings = invoices?.reduce((sum, invoice) => {
+    const amount = parseFloat(String(invoice.totalAmount)) || 0;
+    return sum + amount;
+  }, 0) || 0;
+  
+  const pendingAmount = invoices?.filter(inv => inv.status === 'pending').reduce((sum, invoice) => {
+    const amount = parseFloat(String(invoice.totalAmount)) || 0;
+    return sum + amount;
+  }, 0) || 0;
+  
+  const paidAmount = invoices?.filter(inv => inv.status === 'paid').reduce((sum, invoice) => {
+    const amount = parseFloat(String(invoice.totalAmount)) || 0;
+    return sum + amount;
+  }, 0) || 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
