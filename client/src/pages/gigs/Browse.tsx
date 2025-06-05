@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format, isAfter, parseISO } from "date-fns";
-import { MapPin, Clock, DollarSign, CalendarIcon, Filter, Search } from "lucide-react";
+import { MapPin, Clock, PoundSterling, CalendarIcon, Filter, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CreditCard, DollarSign, Clock, CheckCircle, Plus } from "lucide-react";
+import { ArrowLeft, CreditCard, PoundSterling, Clock, CheckCircle, Plus } from "lucide-react";
 import { Link } from "wouter";
 import StripeConnectOnboarding from "@/components/StripeConnectOnboarding";
 import ManualInvoiceModal from "@/components/ManualInvoiceModal";
@@ -119,7 +119,7 @@ export default function PaymentSettings() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5" />
+                <PoundSterling className="h-5 w-5 text-blue-600" />
                 <span>Earnings Overview</span>
               </CardTitle>
               <CardDescription>Your earnings from completed gigs</CardDescription>

@@ -28,7 +28,7 @@ import { format, parseISO, isBefore } from "date-fns";
 import { 
   MapPin, 
   Clock, 
-  DollarSign, 
+  PoundSterling, 
   Info, 
   Award, 
   CalendarCheck, 
@@ -453,7 +453,7 @@ export default function ViewGig() {
                 </div>
                 {gig.tipsAvailable && (
                   <div className="flex items-center">
-                    <DollarSign className="h-5 w-5 text-green-500 mr-2" />
+                    <PoundSterling className="h-5 w-5 text-blue-600 mr-2" />
                     <div>
                       <p className="font-medium text-green-600">Tips Available</p>
                     </div>

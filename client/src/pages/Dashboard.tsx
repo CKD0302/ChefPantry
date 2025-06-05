@@ -470,7 +470,7 @@ export default function Dashboard() {
                               <span>{booking.gig.startTime} - {booking.gig.endTime}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />
+                              <PoundSterling className="h-4 w-4 text-blue-600" />
                               <span>£{booking.gig.payRate}/hr</span>
                             </div>
                           </div>
