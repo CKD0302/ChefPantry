@@ -593,14 +593,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertGigInvoiceSchema.parse(req.body);
       
-      // Check if invoice already exists for this gig and chef
-      const existingInvoice = await storage.getGigInvoiceByGigAndChef(
-        validatedData.gigId, 
-        validatedData.chefId
-      );
-      
-      if (existingInvoice) {
-        return res.status(400).json({ message: "Invoice already exists for this gig" });
+      // For regular gig invoices, check if invoice already exists
+      if (validatedData.gigId) {
+        const existingInvoice = await storage.getGigInvoiceByGigAndChef(
+          validatedData.gigId, 
+          validatedData.chefId
+        );
+        
+        if (existingInvoice) {
+          return res.status(400).json({ message: "Invoice already exists for this gig" });
+        }
       }
       
       // Create the invoice
@@ -609,9 +611,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create notification for the business
       await storage.createNotification({
         recipientId: validatedData.businessId,
-        type: "invoice_ready",
-        message: "An invoice has been submitted for your recent gig.",
-        linkUrl: "/dashboard/invoices",
+        type: validatedData.isManual ? "manual_invoice_ready" : "invoice_ready",
+        message: validatedData.isManual 
+          ? "A new invoice has been submitted for your review."
+          : "An invoice has been submitted for your recent gig.",
+        linkUrl: "/business/invoices",
         isRead: false
       });
       
@@ -630,6 +634,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error creating invoice:", error);
         res.status(500).json({ message: "Failed to submit invoice" });
       }
+    }
+  });
+
+  // Search businesses by name and location
+  apiRouter.get("/businesses/search", async (req: Request, res: Response) => {
+    try {
+      const { name, location } = req.query;
+      
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ message: "Business name is required" });
+      }
+      
+      const businesses = await storage.searchBusinesses(name, location as string);
+      
+      res.status(200).json({
+        data: businesses
+      });
+    } catch (error) {
+      console.error("Error searching businesses:", error);
+      res.status(500).json({ message: "Failed to search businesses" });
     }
   });
 

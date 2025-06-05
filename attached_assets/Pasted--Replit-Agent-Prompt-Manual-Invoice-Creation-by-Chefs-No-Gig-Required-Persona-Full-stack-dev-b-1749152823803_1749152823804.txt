@@ -1,0 +1,75 @@
+🧠 Replit Agent Prompt: Manual Invoice Creation by Chefs (No Gig Required)
+Persona: Full-stack dev building a freelance chef platform (Chef Pantry)
+Goal: Allow chefs to create and send invoices manually — not tied to a specific gig
+Context: Some chefs may work off-platform or get ad hoc work. We want to support them with a flexible invoicing feature.
+
+✅ Functional Requirements:
+1. UI Access Point
+
+Add a “Create Invoice” button to the Chef’s Payment Setup dashboard
+
+Placement: under existing Stripe connection or invoice history
+
+Label: “Send an Invoice (No Gig)”
+
+2. Business Selection Flow
+
+Step 1: Chef enters the business name and location
+
+System should:
+
+Query the business_profiles table
+
+Show confirmation if match is found
+
+If multiple matches, allow chef to select
+
+If no match, display error and block invoice submission
+
+3. Manual Invoice Form
+Once the business is confirmed, present a form with:
+
+Service title (text input)
+
+Description of work (textarea)
+
+Hourly rate or fixed amount toggle
+
+Hours worked (if hourly)
+
+Total calculated amount (auto if hourly, manual if fixed)
+
+Optional notes
+
+Option to use connected Stripe account or manually enter bank details (IBAN, sort code, account number)
+
+4. Submit Invoice
+
+On submit:
+
+Save invoice to gig_invoices table with a flag like is_manual = true
+
+Include Stripe payment link if applicable
+
+Trigger a notification for the business in the notifications table
+
+Business user receives it in their dashboard (can view, pay via Stripe, or mark as paid manually)
+
+5. Business Invoice View
+
+Business users should see all invoices (manual + gig-related) in a “Payments” or “Invoices” section
+
+For each invoice:
+
+View invoice details
+
+See Stripe Pay link (if used)
+
+Option to “Mark as Paid” manually
+
+📌 Notes:
+Reuse existing components from the gig invoice feature to reduce dev time.
+
+The Stripe link should only be shown if the chef has connected Stripe; fallback UI appears if not.
+
+Add a payment_type column if helpful to track (e.g. manual, gig, off_platform).

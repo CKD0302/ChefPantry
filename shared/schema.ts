@@ -168,7 +168,7 @@ export const notifications = pgTable("notifications", {
 // Gig Invoices table for post-gig billing
 export const gigInvoices = pgTable("gig_invoices", {
   id: uuid("id").defaultRandom().primaryKey(),
-  gigId: uuid("gig_id").notNull().references(() => gigs.id),
+  gigId: uuid("gig_id").references(() => gigs.id), // Made nullable for manual invoices
   chefId: text("chef_id").notNull(), // UUID from Supabase auth
   businessId: text("business_id").notNull(), // UUID from Supabase auth
   hoursWorked: numeric("hours_worked", { precision: 10, scale: 2 }).notNull(),
@@ -176,6 +176,10 @@ export const gigInvoices = pgTable("gig_invoices", {
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
   status: text("status").notNull().default("pending"), // 'pending', 'paid', 'disputed'
+  isManual: boolean("is_manual").default(false).notNull(), // Flag for manual invoices
+  serviceTitle: text("service_title"), // For manual invoices
+  serviceDescription: text("service_description"), // For manual invoices
+  paymentType: text("payment_type").default("hourly").notNull(), // 'hourly', 'fixed'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

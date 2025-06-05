@@ -75,6 +75,7 @@ export interface IStorage {
   getBusinessProfile(id: string): Promise<BusinessProfile | undefined>;
   createBusinessProfile(profile: InsertBusinessProfile): Promise<BusinessProfile>;
   updateBusinessProfile(id: string, profile: Partial<InsertBusinessProfile>): Promise<BusinessProfile | undefined>;
+  searchBusinesses(name: string, location?: string): Promise<BusinessProfile[]>;
   
   // Gig methods
   getGig(id: string): Promise<Gig | undefined>;
@@ -309,6 +310,18 @@ export class DBStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async searchBusinesses(name: string, location?: string): Promise<BusinessProfile[]> {
+    let query = db.select()
+      .from(businessProfiles)
+      .where(sql`LOWER(${businessProfiles.businessName}) LIKE LOWER(${'%' + name + '%'})`);
+
+    if (location) {
+      query = query.where(sql`LOWER(${businessProfiles.location}) LIKE LOWER(${'%' + location + '%'})`);
+    }
+
+    return query.limit(10);
   }
 
   // Gig methods
