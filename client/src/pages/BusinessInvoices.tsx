@@ -25,7 +25,7 @@ import ReviewSubmissionModal from "@/components/ReviewSubmissionModal";
 
 interface InvoiceData {
   id: string;
-  gigId: string;
+  gigId: string | null;
   chefId: string;
   businessId: string;
   hoursWorked: number;
@@ -34,7 +34,11 @@ interface InvoiceData {
   notes: string | null;
   status: string;
   submittedAt: Date;
-  gig: {
+  isManual?: boolean;
+  serviceTitle?: string;
+  serviceDescription?: string;
+  paymentType?: string;
+  gig?: {
     title: string;
     location: string;
     startDate: string;

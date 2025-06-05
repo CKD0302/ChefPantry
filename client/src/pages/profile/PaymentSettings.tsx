@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CreditCard, DollarSign, Clock, CheckCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, DollarSign, Clock, CheckCircle, Plus } from "lucide-react";
 import { Link } from "wouter";
 import StripeConnectOnboarding from "@/components/StripeConnectOnboarding";
+import ManualInvoiceModal from "@/components/ManualInvoiceModal";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -29,6 +30,7 @@ interface GigInvoice {
 
 export default function PaymentSettings() {
   const { user } = useAuth();
+  const [isManualInvoiceModalOpen, setIsManualInvoiceModalOpen] = useState(false);
   
   if (!user) {
     return (
@@ -232,7 +234,40 @@ export default function PaymentSettings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Manual Invoice Creation */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Send Invoice (No Gig)</CardTitle>
+              <CardDescription>Create and send invoices for work completed outside the platform</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Need to invoice a business for work done off-platform? Use this feature to create and send professional invoices directly to businesses registered on Chef Pantry.
+                </p>
+                <Button 
+                  onClick={() => setIsManualInvoiceModalOpen(true)}
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Invoice
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Manual Invoice Modal */}
+        <ManualInvoiceModal
+          isOpen={isManualInvoiceModalOpen}
+          onClose={() => setIsManualInvoiceModalOpen(false)}
+          onSuccess={() => {
+            // Refetch invoices when a new one is created
+            window.location.reload();
+          }}
+          chefId={chefId}
+        />
       </div>
     </div>
   );

@@ -313,15 +313,20 @@ export class DBStorage implements IStorage {
   }
 
   async searchBusinesses(name: string, location?: string): Promise<BusinessProfile[]> {
-    let query = db.select()
-      .from(businessProfiles)
-      .where(sql`LOWER(${businessProfiles.businessName}) LIKE LOWER(${'%' + name + '%'})`);
-
     if (location) {
-      query = query.where(sql`LOWER(${businessProfiles.location}) LIKE LOWER(${'%' + location + '%'})`);
+      return db.select()
+        .from(businessProfiles)
+        .where(and(
+          sql`LOWER(${businessProfiles.businessName}) LIKE LOWER(${'%' + name + '%'})`,
+          sql`LOWER(${businessProfiles.location}) LIKE LOWER(${'%' + location + '%'})`
+        ))
+        .limit(10);
+    } else {
+      return db.select()
+        .from(businessProfiles)
+        .where(sql`LOWER(${businessProfiles.businessName}) LIKE LOWER(${'%' + name + '%'})`)
+        .limit(10);
     }
-
-    return query.limit(10);
   }
 
   // Gig methods
