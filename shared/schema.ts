@@ -180,6 +180,10 @@ export const gigInvoices = pgTable("gig_invoices", {
   serviceTitle: text("service_title"), // For manual invoices
   serviceDescription: text("service_description"), // For manual invoices
   paymentType: text("payment_type").default("hourly").notNull(), // 'hourly', 'fixed'
+  bankName: text("bank_name"), // Bank name for payment
+  accountName: text("account_name"), // Account holder name
+  accountNumber: text("account_number"), // Bank account number
+  sortCode: text("sort_code"), // Bank sort code
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

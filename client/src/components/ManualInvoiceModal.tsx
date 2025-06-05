@@ -51,6 +51,12 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
   const [fixedAmount, setFixedAmount] = useState('');
   const [notes, setNotes] = useState('');
   
+  // Bank details fields
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [sortCode, setSortCode] = useState('');
+  
   const { toast } = useToast();
 
   const handleSearchBusinesses = async () => {
@@ -153,7 +159,13 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
         ratePerHour: paymentType === 'hourly' ? hourlyRate : fixedAmount,
         totalAmount: calculateTotal(),
         notes: notes || null,
-        status: "pending"
+        status: "pending",
+        bankDetails: {
+          bankName: bankName.trim(),
+          accountName: accountName.trim(),
+          accountNumber: accountNumber.trim(),
+          sortCode: sortCode.trim()
+        }
       };
 
       const response = await fetch("/api/invoices", {
@@ -203,6 +215,10 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
     setHoursWorked('');
     setFixedAmount('');
     setNotes('');
+    setBankName('');
+    setAccountName('');
+    setAccountNumber('');
+    setSortCode('');
   };
 
   const handleClose = () => {
@@ -408,6 +424,51 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
                   placeholder="Any additional details or payment instructions..."
                   rows={2}
                 />
+              </div>
+
+              {/* Bank Details Section */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-900 mb-3">Bank Details for Payment</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      placeholder="e.g., Barclays Bank"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountName">Account Name</Label>
+                    <Input
+                      id="accountName"
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      placeholder="Account holder name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sortCode">Sort Code</Label>
+                    <Input
+                      id="sortCode"
+                      value={sortCode}
+                      onChange={(e) => setSortCode(e.target.value)}
+                      placeholder="12-34-56"
+                      maxLength={8}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountNumber">Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder="12345678"
+                      maxLength={8}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Total Display */}
