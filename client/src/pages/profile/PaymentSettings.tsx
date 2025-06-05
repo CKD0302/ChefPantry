@@ -32,6 +32,15 @@ export default function PaymentSettings() {
   const { user } = useAuth();
   const [isManualInvoiceModalOpen, setIsManualInvoiceModalOpen] = useState(false);
   
+  const chefId = user?.id;
+
+  // Query invoices for this chef
+  const { data: invoices, isLoading: invoicesLoading } = useQuery<GigInvoice[]>({
+    queryKey: ["/api/invoices/chef", chefId],
+    queryFn: () => apiRequest("GET", `/api/invoices/chef/${chefId}`).then(res => res.json()),
+    enabled: !!chefId, // Only run query when chefId is available
+  });
+  
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -43,14 +52,6 @@ export default function PaymentSettings() {
       </div>
     );
   }
-
-  const chefId = user.id;
-
-  // Query invoices for this chef
-  const { data: invoices, isLoading: invoicesLoading } = useQuery<GigInvoice[]>({
-    queryKey: ["/api/invoices/chef", chefId],
-    queryFn: () => apiRequest("GET", `/api/invoices/chef/${chefId}`).then(res => res.json()),
-  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -101,7 +102,7 @@ export default function PaymentSettings() {
 
         <div className="space-y-6">
           {/* Stripe Connect Onboarding */}
-          <StripeConnectOnboarding chefId={chefId} />
+          <StripeConnectOnboarding chefId={chefId!} />
 
           {/* Earnings Overview */}
           <Card>

@@ -56,6 +56,13 @@ export default function BusinessInvoices() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
 
+  // Query invoices for this business
+  const { data: invoices, isLoading } = useQuery<InvoiceData[]>({
+    queryKey: ["/api/invoices/business", user?.id],
+    queryFn: () => apiRequest("GET", `/api/invoices/business/${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id,
+  });
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -69,12 +76,6 @@ export default function BusinessInvoices() {
       </div>
     );
   }
-
-  // Query invoices for this business
-  const { data: invoices, isLoading } = useQuery<InvoiceData[]>({
-    queryKey: ["/api/invoices/business", user.id],
-    queryFn: () => apiRequest("GET", `/api/invoices/business/${user.id}`).then(res => res.json()),
-  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -301,7 +302,7 @@ export default function BusinessInvoices() {
         </Tabs>
 
         {/* Review Submission Modal */}
-        {selectedInvoice && (
+        {selectedInvoice && selectedInvoice.gigId && selectedInvoice.gig && (
           <ReviewSubmissionModal
             isOpen={reviewModalOpen}
             onClose={() => {
@@ -369,8 +370,16 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
     <div className="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-semibold text-lg">{invoice.gig.title}</h3>
+          <h3 className="font-semibold text-lg">
+            {invoice.gig ? invoice.gig.title : (invoice.serviceTitle || 'Manual Invoice')}
+          </h3>
           <p className="text-sm text-gray-600">Chef: {invoice.chef.fullName}</p>
+          {invoice.isManual && (
+            <div className="flex items-center gap-1 mt-1">
+              <Receipt className="h-3 w-3 text-blue-500" />
+              <span className="text-xs text-blue-600">Manual Invoice</span>
+            </div>
+          )}
         </div>
         {getStatusBadge(invoice.status)}
       </div>
@@ -381,12 +390,21 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
           <div className="font-medium text-lg">{formatCurrency(invoice.totalAmount)}</div>
         </div>
         <div>
-          <span className="text-gray-500">Hours:</span>
-          <div className="font-medium">{invoice.hoursWorked}h</div>
+          <span className="text-gray-500">
+            {invoice.paymentType === 'hourly' ? 'Hours:' : 'Type:'}
+          </span>
+          <div className="font-medium">
+            {invoice.paymentType === 'hourly' ? `${invoice.hoursWorked}h` : 'Fixed Rate'}
+          </div>
         </div>
         <div>
           <span className="text-gray-500">Rate:</span>
-          <div className="font-medium">{formatCurrency(invoice.ratePerHour)}/hr</div>
+          <div className="font-medium">
+            {invoice.paymentType === 'hourly' 
+              ? `${formatCurrency(invoice.ratePerHour)}/hr`
+              : formatCurrency(invoice.totalAmount)
+            }
+          </div>
         </div>
         <div>
           <span className="text-gray-500">Submitted:</span>
@@ -394,16 +412,26 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-        <div className="flex items-center gap-1">
-          <MapPin className="h-4 w-4" />
-          <span>{invoice.gig.location}</span>
+      {invoice.gig && (
+        <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+          <div className="flex items-center gap-1">
+            <MapPin className="h-4 w-4" />
+            <span>{invoice.gig.location}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            <span>{formatDate(invoice.gig.startDate)}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <Calendar className="h-4 w-4" />
-          <span>{formatDate(invoice.gig.startDate)}</span>
+      )}
+
+      {invoice.serviceDescription && (
+        <div className="mb-4 p-3 bg-blue-50 rounded">
+          <p className="text-sm text-gray-700">
+            <strong>Service:</strong> {invoice.serviceDescription}
+          </p>
         </div>
-      </div>
+      )}
 
       {invoice.notes && (
         <div className="mb-4 p-3 bg-gray-100 rounded">
