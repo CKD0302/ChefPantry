@@ -163,12 +163,12 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
         totalAmount: calculateTotal(),
         notes: notes || null,
         status: "pending",
-        bankDetails: paymentMethod === 'bank' ? {
+        ...(paymentMethod === 'bank' && {
           bankName: bankName.trim(),
           accountName: accountName.trim(),
           accountNumber: accountNumber.trim(),
           sortCode: sortCode.trim()
-        } : null
+        })
       };
 
       const response = await fetch("/api/invoices", {

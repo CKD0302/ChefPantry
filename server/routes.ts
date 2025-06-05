@@ -591,9 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Submit invoice for a completed gig
   apiRouter.post("/invoices", async (req: Request, res: Response) => {
     try {
-      console.log("Raw request body:", JSON.stringify(req.body, null, 2));
       const validatedData = insertGigInvoiceSchema.parse(req.body);
-      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
       
       // For regular gig invoices, check if invoice already exists
       if (validatedData.gigId) {
