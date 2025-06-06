@@ -19,7 +19,7 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   
-  const userRole = user?.user_metadata?.role || "user";
+  const userRole = user?.user_metadata?.role || "chef";
   
   // Check if profile exists using API
   const { data: profile, isLoading: isCheckingProfile } = useQuery({
