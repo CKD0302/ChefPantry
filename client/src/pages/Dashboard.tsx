@@ -220,10 +220,8 @@ export default function Dashboard() {
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/profile/payment-settings")}
-                      className="flex items-center gap-2"
                     >
-                      <PoundSterling className="h-4 w-4 text-blue-600" />
-                      Payment Setup
+                      Payments
                     </Button>
                   </div>
                 </div>
