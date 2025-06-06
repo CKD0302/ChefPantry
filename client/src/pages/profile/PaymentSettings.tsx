@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, CreditCard, PoundSterling, Clock, CheckCircle, Plus, Building, Banknote } from "lucide-react";
+import { ArrowLeft, CreditCard, PoundSterling, Clock, CheckCircle, Plus, Building } from "lucide-react";
 import { Link } from "wouter";
 import StripeConnectOnboarding from "@/components/StripeConnectOnboarding";
 import ManualInvoiceModal from "@/components/ManualInvoiceModal";
@@ -55,16 +55,15 @@ export default function PaymentSettings() {
   });
 
   // Update form state when profile data loads
-  if (chefProfile && !profileLoading) {
-    const currentMethod = chefProfile.preferredPaymentMethod || 'bank';
-    if (paymentMethod !== currentMethod) {
-      setPaymentMethod(currentMethod);
+  useEffect(() => {
+    if (chefProfile && !profileLoading) {
+      setPaymentMethod(chefProfile.preferredPaymentMethod || 'bank');
       setBankName(chefProfile.bankName || '');
       setAccountName(chefProfile.accountName || '');
       setAccountNumber(chefProfile.accountNumber || '');
       setSortCode(chefProfile.sortCode || '');
     }
-  }
+  }, [chefProfile, profileLoading]);
 
   // Query invoices for this chef
   const { data: invoices, isLoading: invoicesLoading } = useQuery<GigInvoice[]>({
@@ -75,7 +74,13 @@ export default function PaymentSettings() {
 
   // Mutation to update payment preferences
   const updatePaymentPreferences = useMutation({
-    mutationFn: async (preferences: any) => {
+    mutationFn: async (preferences: {
+      preferredPaymentMethod: string;
+      bankName?: string;
+      accountName?: string;
+      accountNumber?: string;
+      sortCode?: string;
+    }) => {
       return apiRequest("PUT", `/api/chefs/payment-preferences/${chefId}`, preferences);
     },
     onSuccess: () => {

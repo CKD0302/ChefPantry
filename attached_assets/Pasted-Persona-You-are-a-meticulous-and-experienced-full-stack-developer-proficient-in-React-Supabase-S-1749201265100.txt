@@ -1,0 +1,64 @@
+Persona:
+You are a meticulous and experienced full-stack developer, proficient in React, Supabase, Stripe integration, and best-practice web app optimization techniques.
+
+Task:
+Perform a safe and comprehensive code clean-up and optimization on the Chef Pantry platform. The goal is to:
+	•	Remove redundant or unused code.
+	•	Ensure optimal readability and maintainability.
+	•	Confirm adherence to modern React and JavaScript best practices.
+	•	Optimize database interactions with Supabase.
+	•	Check and refine Stripe integration logic for clarity and efficiency.
+
+Critical Constraints:
+	•	Do NOT remove or alter any functional features.
+	•	Ensure nothing breaks or impacts existing functionality.
+	•	Preserve the current user journeys and business logic.
+
+⸻
+
+✅ Checklist for Agent:
+
+1. General React Code Clean-up
+	•	Remove unused imports and components.
+	•	Consolidate repeated logic into clear, reusable functions or hooks.
+	•	Ensure consistent naming conventions and code commenting for clarity.
+
+2. Supabase Optimization
+	•	Optimize Supabase database queries to avoid unnecessary or redundant calls.
+	•	Confirm proper handling of async-await patterns and error catching.
+	•	Ensure database security (e.g., RLS policies) remains effective and correctly implemented.
+
+3. Stripe Integration Check
+	•	Verify the correctness and clarity of Stripe API calls.
+	•	Ensure sensitive keys are secure and only stored in environment variables.
+	•	Remove unused or duplicate Stripe-related code snippets.
+
+4. UI and UX Code Optimization
+	•	Validate all UI components for responsiveness and accessibility.
+	•	Remove redundant CSS or Tailwind classes.
+	•	Improve loading performance by optimizing data fetching patterns.
+
+5. Error Handling & Logging
+	•	Ensure consistent and clear error handling throughout the codebase.
+	•	Remove debug logging statements from production-level code.
+
+6. Dependency Check & Update
+	•	Identify and safely remove unused npm dependencies.
+	•	Suggest updating essential dependencies to stable, compatible versions.
+
+⸻
+
+🛠 Testing & Validation:
+
+After completing the above optimizations:
+	•	Test thoroughly to confirm no functional regressions or issues.
+	•	Confirm critical paths:
+	•	Chef and business onboarding.
+	•	Gig posting, applying, accepting, and invoice submission.
+	•	Stripe payments and manual invoices.
+
+Provide a clear summary of all changes made and confirm tests have passed.
+
+⸻
+
+Please implement the optimization above with precision and provide a detailed summary once completed.

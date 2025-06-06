@@ -11,60 +11,27 @@ import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalDocuments from "@/components/ProfessionalDocuments";
-import { supabase } from "@/utils/supabaseClient";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [hasProfile, setHasProfile] = useState(false);
-  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const queryClient = useQueryClient();
   
-  // Check if the user's profile exists in the database
-  useEffect(() => {
-    if (!user) return;
-    
-    const checkProfile = async () => {
-      setIsCheckingProfile(true);
-      const userRole = user.user_metadata?.role || "user";
-      
-      try {
-        // Different check based on user role
-        if (userRole === "chef") {
-          // Check if chef profile exists
-          const { data, error } = await supabase
-            .from("chef_profiles")
-            .select("id")
-            .eq("id", user.id)
-            .single();
-            
-          console.log("Chef profile check:", { data, error });
-          setHasProfile(!!data);
-        } else if (userRole === "business") {
-          // Check if business profile exists
-          const { data, error } = await supabase
-            .from("business_profiles")
-            .select("id")
-            .eq("id", user.id)
-            .single();
-            
-          console.log("Business profile check:", { data, error, userId: user.id });
-          setHasProfile(!!data);
-        } else {
-          // No profile to check for other roles
-          setHasProfile(false);
-        }
-      } catch (error) {
-        console.error("Error checking profile:", error);
-        setHasProfile(false);
-      } finally {
-        setIsCheckingProfile(false);
-      }
-    };
-    
-    checkProfile();
-  }, [user]);
+  const userRole = user?.user_metadata?.role || "user";
+  
+  // Check if profile exists using API
+  const { data: profile, isLoading: isCheckingProfile } = useQuery({
+    queryKey: userRole === "chef" ? ["/api/profiles/chef", user?.id] : ["/api/profiles/business", user?.id],
+    queryFn: () => {
+      const endpoint = userRole === "chef" ? `/api/profiles/chef/${user!.id}` : `/api/profiles/business/${user!.id}`;
+      return apiRequest("GET", endpoint).then(res => res.json()).catch(() => null);
+    },
+    enabled: !!user && (userRole === "chef" || userRole === "business"),
+  });
+  
+  const hasProfile = !!profile;
 
   // Fetch accepted applications that need confirmation (for chefs)
   const { data: acceptedApplications, isLoading: loadingAccepted } = useQuery({
@@ -177,8 +144,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const userRole = user.user_metadata?.role || "user";
   
   return (
     <div className="min-h-screen bg-neutral-100 flex flex-col">
