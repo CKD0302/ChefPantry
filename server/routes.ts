@@ -819,6 +819,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update chef payment preferences
+  apiRouter.put("/chefs/payment-preferences/:chefId", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.params;
+      const { preferredPaymentMethod, bankName, accountName, accountNumber, sortCode } = req.body;
+      
+      if (!chefId) {
+        return res.status(400).json({ message: "Chef ID is required" });
+      }
+
+      if (!preferredPaymentMethod || !['stripe', 'bank'].includes(preferredPaymentMethod)) {
+        return res.status(400).json({ message: "Valid payment method is required (stripe or bank)" });
+      }
+
+      // If bank transfer is selected, validate bank details
+      if (preferredPaymentMethod === 'bank') {
+        if (!bankName || !accountName || !accountNumber || !sortCode) {
+          return res.status(400).json({ message: "All bank details are required for bank transfer" });
+        }
+      }
+
+      const preferences = {
+        preferredPaymentMethod,
+        bankName: preferredPaymentMethod === 'bank' ? bankName : null,
+        accountName: preferredPaymentMethod === 'bank' ? accountName : null,
+        accountNumber: preferredPaymentMethod === 'bank' ? accountNumber : null,
+        sortCode: preferredPaymentMethod === 'bank' ? sortCode : null,
+      };
+
+      const updatedProfile = await storage.updateChefPaymentPreferences(chefId, preferences);
+      
+      if (!updatedProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
+      }
+
+      res.status(200).json({
+        message: "Payment preferences updated successfully",
+        data: updatedProfile
+      });
+    } catch (error) {
+      console.error("Error updating payment preferences:", error);
+      res.status(500).json({ message: "Failed to update payment preferences" });
+    }
+  });
+
   // Create a review
   apiRouter.post("/reviews", async (req: Request, res: Response) => {
     try {

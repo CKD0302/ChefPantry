@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CreditCard, PoundSterling, Clock, CheckCircle, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ArrowLeft, CreditCard, PoundSterling, Clock, CheckCircle, Plus, Building, Banknote } from "lucide-react";
 import { Link } from "wouter";
 import StripeConnectOnboarding from "@/components/StripeConnectOnboarding";
 import ManualInvoiceModal from "@/components/ManualInvoiceModal";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface GigInvoice {
   id: string;
@@ -30,16 +34,89 @@ interface GigInvoice {
 
 export default function PaymentSettings() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isManualInvoiceModalOpen, setIsManualInvoiceModalOpen] = useState(false);
   
+  // Payment preference form state
+  const [paymentMethod, setPaymentMethod] = useState('bank');
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [sortCode, setSortCode] = useState('');
+  
   const chefId = user?.id;
+
+  // Query chef profile for payment preferences
+  const { data: chefProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ["/api/profiles/chef", chefId],
+    queryFn: () => apiRequest("GET", `/api/profiles/chef/${chefId}`).then(res => res.json()),
+    enabled: !!chefId,
+  });
+
+  // Update form state when profile data loads
+  if (chefProfile && !profileLoading) {
+    const currentMethod = chefProfile.preferredPaymentMethod || 'bank';
+    if (paymentMethod !== currentMethod) {
+      setPaymentMethod(currentMethod);
+      setBankName(chefProfile.bankName || '');
+      setAccountName(chefProfile.accountName || '');
+      setAccountNumber(chefProfile.accountNumber || '');
+      setSortCode(chefProfile.sortCode || '');
+    }
+  }
 
   // Query invoices for this chef
   const { data: invoices, isLoading: invoicesLoading } = useQuery<GigInvoice[]>({
     queryKey: ["/api/invoices/chef", chefId],
     queryFn: () => apiRequest("GET", `/api/invoices/chef/${chefId}`).then(res => res.json()),
-    enabled: !!chefId, // Only run query when chefId is available
+    enabled: !!chefId,
   });
+
+  // Mutation to update payment preferences
+  const updatePaymentPreferences = useMutation({
+    mutationFn: async (preferences: any) => {
+      return apiRequest("PUT", `/api/chefs/payment-preferences/${chefId}`, preferences);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Payment preferences updated",
+        description: "Your payment method has been saved successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", chefId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating preferences",
+        description: error.message || "Failed to update payment preferences",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSavePaymentPreferences = async () => {
+    const preferences = {
+      preferredPaymentMethod: paymentMethod,
+      bankName: paymentMethod === 'bank' ? bankName : undefined,
+      accountName: paymentMethod === 'bank' ? accountName : undefined,
+      accountNumber: paymentMethod === 'bank' ? accountNumber : undefined,
+      sortCode: paymentMethod === 'bank' ? sortCode : undefined,
+    };
+
+    // Validate bank details if bank transfer is selected
+    if (paymentMethod === 'bank') {
+      if (!bankName || !accountName || !accountNumber || !sortCode) {
+        toast({
+          title: "Validation Error",
+          description: "All bank details are required for bank transfer",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    updatePaymentPreferences.mutate(preferences);
+  };
   
   if (!user || !chefId) {
     return (
@@ -112,8 +189,123 @@ export default function PaymentSettings() {
         </div>
 
         <div className="space-y-6">
-          {/* Stripe Connect Onboarding */}
-          <StripeConnectOnboarding chefId={chefId} />
+          {/* Payment Method Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment Method
+              </CardTitle>
+              <CardDescription>
+                Choose how you would like to receive payments for your gig invoices
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+                <div className="space-y-4">
+                  {/* Stripe Connect Option */}
+                  <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                    <RadioGroupItem value="stripe" id="stripe" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="stripe" className="text-base font-medium cursor-pointer">
+                        Stripe Connect
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Fast, secure payments directly to your account. 2.9% + 30p per transaction.
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <CreditCard className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm text-blue-600">Instant payouts available</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bank Transfer Option */}
+                  <div className="flex items-start space-x-3 p-4 border rounded-lg">
+                    <RadioGroupItem value="bank" id="bank" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="bank" className="text-base font-medium cursor-pointer">
+                        Bank Transfer
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Traditional bank transfer. No transaction fees, but payment timing depends on the business.
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Building className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-green-600">No transaction fees</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </RadioGroup>
+
+              {/* Bank Details Form - Only show when bank transfer is selected */}
+              {paymentMethod === 'bank' && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900">Bank Account Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="bankName">Bank Name</Label>
+                      <Input
+                        id="bankName"
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        placeholder="e.g., Barclays"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="accountName">Account Name</Label>
+                      <Input
+                        id="accountName"
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder="Account holder name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <Input
+                        id="accountNumber"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        placeholder="12345678"
+                        maxLength={8}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sortCode">Sort Code</Label>
+                      <Input
+                        id="sortCode"
+                        value={sortCode}
+                        onChange={(e) => setSortCode(e.target.value)}
+                        placeholder="12-34-56"
+                        maxLength={8}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Stripe Connect Setup - Only show when Stripe is selected */}
+              {paymentMethod === 'stripe' && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">Stripe Connect Setup</h4>
+                  <p className="text-sm text-blue-700 mb-4">
+                    Set up your Stripe Connect account to receive payments instantly.
+                  </p>
+                  <StripeConnectOnboarding chefId={chefId} />
+                </div>
+              )}
+
+              <Button 
+                onClick={handleSavePaymentPreferences} 
+                disabled={updatePaymentPreferences.isPending}
+                className="w-full"
+              >
+                {updatePaymentPreferences.isPending ? "Saving..." : "Save Payment Method"}
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Earnings Overview */}
           <Card>
