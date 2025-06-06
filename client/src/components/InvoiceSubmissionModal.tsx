@@ -75,9 +75,9 @@ export default function InvoiceSubmissionModal({
   }, [gig]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return "Date not provided";
+    
     try {
-      if (!startDate || !endDate) return "Date not provided";
-      
       const start = new Date(startDate);
       const end = new Date(endDate);
       
@@ -85,23 +85,16 @@ export default function InvoiceSubmissionModal({
         return "Date not provided";
       }
       
-      if (startDate === endDate) {
-        return start.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric"
-        });
-      } else {
-        return `${start.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric"
-        })} - ${end.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric"
-        })}`;
-      }
-    } catch (error) {
+      const options: Intl.DateTimeFormatOptions = {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      };
+      
+      return startDate === endDate 
+        ? start.toLocaleDateString("en-GB", options)
+        : `${start.toLocaleDateString("en-GB", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-GB", options)}`;
+    } catch {
       return "Date not provided";
     }
   };

@@ -43,26 +43,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
-        res.status(400).json({ 
+        return res.status(400).json({ 
           message: "Validation error", 
           errors: validationError.details
         });
-      } else {
-        console.error("Error saving contact message:", error);
-        res.status(500).json({ message: "Failed to save contact message" });
       }
+      console.error("Error saving contact message:", error);
+      res.status(500).json({ message: "Failed to save contact message" });
     }
   });
   
-  // Chef registration endpoint stub
-  apiRouter.post("/chefs", (req: Request, res: Response) => {
-    res.status(501).json({ message: "Chef registration endpoint coming soon" });
-  });
-  
-  // Business registration endpoint stub
-  apiRouter.post("/businesses", (req: Request, res: Response) => {
-    res.status(501).json({ message: "Business registration endpoint coming soon" });
-  });
+
   
   // Profile Management Endpoints
   
