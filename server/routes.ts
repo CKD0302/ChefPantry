@@ -63,6 +63,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body
       const profileData = insertChefProfileSchema.parse(req.body);
       
+      // Check if profile already exists
+      const existingProfile = await storage.getChefProfile(profileData.id);
+      if (existingProfile) {
+        return res.status(409).json({
+          message: "Chef profile already exists. Use the update endpoint to modify your profile.",
+          data: existingProfile
+        });
+      }
+      
       // Create chef profile in DB
       const profile = await storage.createChefProfile(profileData);
       
@@ -74,14 +83,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
-        res.status(400).json({ 
+        return res.status(400).json({ 
           message: "Validation error", 
           errors: validationError.details
         });
-      } else {
-        console.error("Error creating chef profile:", error);
-        res.status(500).json({ message: "Failed to create chef profile" });
       }
+      console.error("Error creating chef profile:", error);
+      res.status(500).json({ message: "Failed to create chef profile" });
     }
   });
 
@@ -150,6 +158,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body
       const profileData = insertBusinessProfileSchema.parse(req.body);
       
+      // Check if profile already exists
+      const existingProfile = await storage.getBusinessProfile(profileData.id);
+      if (existingProfile) {
+        return res.status(409).json({
+          message: "Business profile already exists. Use the update endpoint to modify your profile.",
+          data: existingProfile
+        });
+      }
+      
       // Create business profile in DB
       const profile = await storage.createBusinessProfile(profileData);
       
@@ -161,14 +178,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
-        res.status(400).json({ 
+        return res.status(400).json({ 
           message: "Validation error", 
           errors: validationError.details
         });
-      } else {
-        console.error("Error creating business profile:", error);
-        res.status(500).json({ message: "Failed to create business profile" });
       }
+      console.error("Error creating business profile:", error);
+      res.status(500).json({ message: "Failed to create business profile" });
     }
   });
 

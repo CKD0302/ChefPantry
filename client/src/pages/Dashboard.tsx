@@ -22,7 +22,7 @@ export default function Dashboard() {
   const userRole = user?.user_metadata?.role || "chef";
   
   // Check if profile exists using API
-  const { data: profile, isLoading: isCheckingProfile } = useQuery({
+  const { data: profileResponse, isLoading: isCheckingProfile } = useQuery({
     queryKey: userRole === "chef" ? ["/api/profiles/chef", user?.id] : ["/api/profiles/business", user?.id],
     queryFn: () => {
       const endpoint = userRole === "chef" ? `/api/profiles/chef/${user!.id}` : `/api/profiles/business/${user!.id}`;
@@ -31,7 +31,7 @@ export default function Dashboard() {
     enabled: !!user && (userRole === "chef" || userRole === "business"),
   });
   
-  const hasProfile = !!profile;
+  const hasProfile = !!(profileResponse?.data || profileResponse?.id);
 
   // Fetch accepted applications that need confirmation (for chefs)
   const { data: acceptedApplications, isLoading: loadingAccepted } = useQuery({
