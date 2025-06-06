@@ -70,6 +70,13 @@ export interface IStorage {
   createChefProfile(profile: InsertChefProfile): Promise<ChefProfile>;
   updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined>;
   updateChefStripeAccountId(id: string, stripeAccountId: string): Promise<ChefProfile | undefined>;
+  updateChefPaymentPreferences(id: string, preferences: {
+    preferredPaymentMethod: string;
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    sortCode?: string;
+  }): Promise<ChefProfile | undefined>;
   
   // Business Profiles methods (Supabase)
   getBusinessProfile(id: string): Promise<BusinessProfile | undefined>;
@@ -267,6 +274,23 @@ export class DBStorage implements IStorage {
     const result = await db.update(chefProfiles)
       .set({ 
         stripeAccountId,
+        updatedAt: new Date()
+      })
+      .where(eq(chefProfiles.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateChefPaymentPreferences(id: string, preferences: {
+    preferredPaymentMethod: string;
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    sortCode?: string;
+  }): Promise<ChefProfile | undefined> {
+    const result = await db.update(chefProfiles)
+      .set({
+        ...preferences,
         updatedAt: new Date()
       })
       .where(eq(chefProfiles.id, id))

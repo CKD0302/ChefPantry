@@ -81,6 +81,12 @@ export const chefProfiles = pgTable("chef_profiles", {
   certifications: text("certifications").array(),
   isAvailable: boolean("is_available").default(true),
   stripeAccountId: text("stripe_account_id"), // Stripe Connect account ID
+  // Payment preferences
+  preferredPaymentMethod: text("preferred_payment_method").default("bank"), // 'stripe' or 'bank'
+  bankName: text("bank_name"), // Bank name for payment
+  accountName: text("account_name"), // Account holder name
+  accountNumber: text("account_number"), // Bank account number
+  sortCode: text("sort_code"), // Bank sort code
   // isApproved field removed per user request
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
