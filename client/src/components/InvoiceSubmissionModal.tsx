@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,8 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, Clock, MapPin, Calendar } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { Calculator, Clock, MapPin, Calendar, CreditCard, Building } from "lucide-react";
 
 interface GigData {
   id: string;
@@ -52,6 +55,13 @@ export default function InvoiceSubmissionModal({
   const { toast } = useToast();
 
   const gig = application.gig;
+
+  // Query chef profile for payment preferences
+  const { data: chefProfile } = useQuery({
+    queryKey: ["/api/profiles/chef", application.chefId],
+    queryFn: () => apiRequest("GET", `/api/profiles/chef/${application.chefId}`).then(res => res.json()),
+    enabled: !!application.chefId,
+  });
 
   // Calculate default hours worked from start_time and end_time
   useEffect(() => {
@@ -244,6 +254,32 @@ export default function InvoiceSubmissionModal({
                 rows={3}
               />
             </div>
+
+            {/* Payment Method Display */}
+            {chefProfile && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                  {chefProfile.preferredPaymentMethod === 'stripe' ? (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      Payment via Stripe Connect
+                    </>
+                  ) : (
+                    <>
+                      <Building className="h-4 w-4" />
+                      Payment via Bank Transfer
+                    </>
+                  )}
+                </h4>
+                <div className="text-sm text-blue-600">
+                  {chefProfile.preferredPaymentMethod === 'stripe' ? (
+                    "Payment will be processed instantly through Stripe Connect"
+                  ) : (
+                    `Payment will be sent to ${chefProfile.bankName || 'your bank account'} (${chefProfile.accountNumber ? `****${chefProfile.accountNumber.slice(-4)}` : 'Account on file'})`
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Total Calculation */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
