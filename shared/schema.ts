@@ -87,6 +87,9 @@ export const chefProfiles = pgTable("chef_profiles", {
   accountName: text("account_name"), // Account holder name
   accountNumber: text("account_number"), // Bank account number
   sortCode: text("sort_code"), // Bank sort code
+  // Disclaimer acceptance
+  chefDisclaimerAccepted: boolean("chef_disclaimer_accepted").default(false).notNull(),
+  chefDisclaimerAcceptedAt: timestamp("chef_disclaimer_accepted_at"),
   // isApproved field removed per user request
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

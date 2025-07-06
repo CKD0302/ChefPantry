@@ -29,6 +29,8 @@ import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/ImageUpload";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Define the chef profile schema
 const chefProfileSchema = z.object({
@@ -68,6 +70,17 @@ export default function CreateProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  // Check disclaimer acceptance for chefs
+  const { data: chefProfile } = useQuery({
+    queryKey: ["/api/profiles/chef", user?.id],
+    queryFn: () => {
+      return apiRequest("GET", `/api/profiles/chef/${user!.id}`)
+        .then(res => res.json())
+        .catch(() => null);
+    },
+    enabled: !!user && userRole === "chef",
+  });
 
   // Initialize chef profile form
   const chefForm = useForm<ChefProfileFormValues>({
@@ -359,12 +372,27 @@ export default function CreateProfile() {
     chefForm.setValue("profileImageUrl", url);
   };
 
-  // Redirect if user is not logged in
+  // Redirect if user is not logged in or chef hasn't accepted disclaimer
   useEffect(() => {
     if (!user) {
       navigate("/auth/signin");
+      return;
     }
-  }, [user, navigate]);
+
+    // For chefs, check if they have accepted the disclaimer
+    if (userRole === "chef" && chefProfile !== undefined) {
+      const profileData = chefProfile?.data || chefProfile;
+      if (!profileData?.chefDisclaimerAccepted) {
+        toast({
+          title: "Disclaimer Required",
+          description: "You must accept the disclaimer before creating your profile.",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+    }
+  }, [user, userRole, chefProfile, navigate, toast]);
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">

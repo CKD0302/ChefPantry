@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalDocuments from "@/components/ProfessionalDocuments";
+import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function Dashboard() {
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const [isDisclaimerModalOpen, setIsDisclaimerModalOpen] = useState(false);
   
   const userRole = user?.user_metadata?.role || "chef";
   
@@ -32,6 +34,30 @@ export default function Dashboard() {
   });
   
   const hasProfile = !!(profileResponse?.data || profileResponse?.id);
+
+  // Disclaimer acceptance mutation
+  const disclaimerMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/profiles/chef/${user!.id}/accept-disclaimer`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Disclaimer Accepted",
+        description: "You can now complete your profile.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user?.id] });
+      setIsDisclaimerModalOpen(false);
+      navigate("/profile/chef");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to accept disclaimer. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch accepted applications that need confirmation (for chefs)
   const { data: acceptedApplications, isLoading: loadingAccepted } = useQuery({
@@ -186,7 +212,7 @@ export default function Dashboard() {
                 <div className="flex justify-center mt-4">
                   <Button 
                     className="bg-primary hover:bg-primary-dark text-white"
-                    onClick={() => navigate("/profile/create")}
+                    onClick={() => setIsDisclaimerModalOpen(true)}
                   >
                     Complete Your Profile
                   </Button>
@@ -464,6 +490,14 @@ export default function Dashboard() {
         </div>
       </main>
       <Footer />
+      
+      {/* Chef Disclaimer Modal */}
+      <ChefDisclaimerModal
+        isOpen={isDisclaimerModalOpen}
+        onClose={() => setIsDisclaimerModalOpen(false)}
+        onConfirm={() => disclaimerMutation.mutate()}
+        isLoading={disclaimerMutation.isPending}
+      />
     </div>
   );
 }

@@ -152,6 +152,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Accept chef disclaimer
+  apiRouter.post("/profiles/chef/:id/accept-disclaimer", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      // Update chef profile with disclaimer acceptance
+      const updatedProfile = await storage.updateChefProfile(id, {
+        chefDisclaimerAccepted: true,
+        chefDisclaimerAcceptedAt: new Date()
+      });
+      
+      if (!updatedProfile) {
+        return res.status(404).json({
+          message: "Chef profile not found"
+        });
+      }
+      
+      res.status(200).json({
+        message: "Disclaimer accepted successfully",
+        data: updatedProfile
+      });
+    } catch (error) {
+      console.error("Error accepting disclaimer:", error);
+      res.status(500).json({ message: "Failed to accept disclaimer" });
+    }
+  });
+
   // Create business profile
   apiRouter.post("/profiles/business", async (req: Request, res: Response) => {
     try {
