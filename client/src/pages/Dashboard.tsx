@@ -36,18 +36,6 @@ export default function Dashboard() {
   const hasProfile = !!(profileResponse?.data || profileResponse?.id);
   const profileData = profileResponse?.data || profileResponse;
   const hasAcceptedDisclaimer = userRole === "chef" ? profileData?.chefDisclaimerAccepted : true;
-  
-  // Debug logging
-  console.log("Dashboard debug:", { 
-    userRole, 
-    hasProfile, 
-    profileData, 
-    hasAcceptedDisclaimer,
-    isCheckingProfile: isCheckingProfile,
-    profileResponse: profileResponse
-  });
-
-
 
   // Fetch accepted applications that need confirmation (for chefs)
   const { data: acceptedApplications, isLoading: loadingAccepted } = useQuery({
@@ -146,9 +134,12 @@ export default function Dashboard() {
   }
 
   // Redirect chefs to disclaimer page if they haven't accepted it
-  if (userRole === "chef" && !isCheckingProfile && !hasAcceptedDisclaimer) {
-    navigate("/disclaimer");
-    return null;
+  // This covers both cases: no profile yet, or profile exists but disclaimer not accepted
+  if (userRole === "chef" && !isCheckingProfile) {
+    if (!profileData || profileData.chefDisclaimerAccepted === false) {
+      navigate("/disclaimer");
+      return null;
+    }
   }
 
   // If profile check is in progress, show loading

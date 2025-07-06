@@ -19,8 +19,29 @@ export default function DisclaimerPage() {
 
   const disclaimerMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/profiles/chef/${user!.id}/accept-disclaimer`);
-      return response.json();
+      // First check if chef profile exists
+      try {
+        const response = await apiRequest("POST", `/api/profiles/chef/${user!.id}/accept-disclaimer`);
+        return response.json();
+      } catch (error: any) {
+        // If profile doesn't exist, create one with disclaimer accepted
+        if (error.message?.includes("not found") || error.status === 404) {
+          const createProfileResponse = await apiRequest("POST", "/api/profiles/chef", {
+            id: user!.id,
+            fullName: "New Chef",
+            bio: "Please update your profile",
+            skills: ["Cooking"],
+            experienceYears: 0,
+            location: "Please update",
+            travelRadiusKm: 50,
+            isAvailable: true,
+            chefDisclaimerAccepted: true,
+            chefDisclaimerAcceptedAt: new Date().toISOString()
+          });
+          return createProfileResponse.json();
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -31,7 +52,8 @@ export default function DisclaimerPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user?.id] });
       navigate("/dashboard");
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Disclaimer acceptance error:", error);
       toast({
         title: "Error",
         description: "Failed to accept disclaimer. Please try again.",
