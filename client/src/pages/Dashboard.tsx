@@ -34,6 +34,8 @@ export default function Dashboard() {
   });
   
   const hasProfile = !!(profileResponse?.data || profileResponse?.id);
+  const profileData = profileResponse?.data || profileResponse;
+  const hasAcceptedDisclaimer = userRole === "chef" ? profileData?.chefDisclaimerAccepted : true;
 
 
 
@@ -131,6 +133,12 @@ export default function Dashboard() {
         <Footer />
       </div>
     );
+  }
+
+  // Redirect chefs to disclaimer page if they haven't accepted it
+  if (userRole === "chef" && !isCheckingProfile && !hasAcceptedDisclaimer) {
+    navigate("/disclaimer");
+    return null;
   }
 
   // If profile check is in progress, show loading

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/utils/supabaseClient";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +48,23 @@ interface Application {
 
 export default function MyApplications() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check disclaimer acceptance for chefs
+  const { data: chefProfile } = useQuery({
+    queryKey: ["/api/profiles/chef", user?.id],
+    queryFn: () => apiRequest("GET", `/api/profiles/chef/${user!.id}`).then(res => res.json()),
+    enabled: !!user,
+  });
+
+  // Redirect chefs to disclaimer page if they haven't accepted it
+  if (chefProfile && !chefProfile.chefDisclaimerAccepted) {
+    navigate("/disclaimer");
+    return null;
+  }
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);

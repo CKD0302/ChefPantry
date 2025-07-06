@@ -17,6 +17,7 @@ import EditProfile from "@/pages/profile/Edit";
 import PaymentSettings from "@/pages/profile/PaymentSettings";
 import BusinessInvoices from "@/pages/BusinessInvoices";
 import AdminDashboard from "@/pages/admin/Dashboard";
+import DisclaimerPage from "@/pages/DisclaimerPage";
 
 // Gig Management Pages
 import CreateGig from "@/pages/gigs/Create";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth/signin" component={SignIn} />
       <Route path="/auth/signup" component={SignUp} />
+      <Route path="/disclaimer" component={DisclaimerPage} />
       <Route path="/dashboard" component={Dashboard} />
       
       {/* Profile Management Routes */}

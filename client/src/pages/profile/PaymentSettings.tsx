@@ -14,6 +14,7 @@ import ManualInvoiceModal from "@/components/ManualInvoiceModal";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface GigInvoice {
   id: string;
@@ -36,6 +37,7 @@ export default function PaymentSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [isManualInvoiceModalOpen, setIsManualInvoiceModalOpen] = useState(false);
   
   // Payment preference form state
@@ -53,6 +55,12 @@ export default function PaymentSettings() {
     queryFn: () => apiRequest("GET", `/api/profiles/chef/${chefId}`).then(res => res.json()),
     enabled: !!chefId,
   });
+
+  // Redirect chefs to disclaimer page if they haven't accepted it
+  if (chefProfile && !chefProfile.chefDisclaimerAccepted) {
+    navigate("/disclaimer");
+    return null;
+  }
 
   // Update form state when profile data loads
   useEffect(() => {

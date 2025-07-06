@@ -88,6 +88,12 @@ export default function CreateProfile() {
     enabled: !!user && userRole === "chef",
   });
 
+  // Redirect chefs to disclaimer page if they haven't accepted it
+  if (userRole === "chef" && chefProfile && !chefProfile.chefDisclaimerAccepted) {
+    navigate("/disclaimer");
+    return null;
+  }
+
   // Initialize chef profile form
   const chefForm = useForm<ChefProfileFormValues>({
     resolver: zodResolver(chefProfileSchema),

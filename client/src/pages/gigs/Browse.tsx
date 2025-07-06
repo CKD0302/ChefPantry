@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/utils/supabaseClient";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -90,6 +92,19 @@ export default function BrowseGigs() {
   const [roleFilter, setRoleFilter] = useState("");
   const [venueFilter, setVenueFilter] = useState("");
   const { toast } = useToast();
+
+  // Check disclaimer acceptance for chefs
+  const { data: chefProfile } = useQuery({
+    queryKey: ["/api/profiles/chef", user?.id],
+    queryFn: () => apiRequest("GET", `/api/profiles/chef/${user!.id}`).then(res => res.json()),
+    enabled: !!user,
+  });
+
+  // Redirect chefs to disclaimer page if they haven't accepted it
+  if (chefProfile && !chefProfile.chefDisclaimerAccepted) {
+    navigate("/disclaimer");
+    return null;
+  }
 
   // Check if the user's profile exists before allowing them to browse gigs
   const [profileExists, setProfileExists] = useState<boolean | null>(null);
