@@ -15,6 +15,8 @@ export function ChefDisclaimerModal({
   onConfirm, 
   isLoading = false 
 }: ChefDisclaimerModalProps) {
+  console.log("ChefDisclaimerModal props:", { isOpen, isLoading });
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">

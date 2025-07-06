@@ -212,7 +212,10 @@ export default function Dashboard() {
                 <div className="flex justify-center mt-4">
                   <Button 
                     className="bg-primary hover:bg-primary-dark text-white"
-                    onClick={() => setIsDisclaimerModalOpen(true)}
+                    onClick={() => {
+                      console.log("Complete Your Profile button clicked");
+                      setIsDisclaimerModalOpen(true);
+                    }}
                   >
                     Complete Your Profile
                   </Button>
