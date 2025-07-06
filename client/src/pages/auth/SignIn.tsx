@@ -48,8 +48,8 @@ export default function SignIn() {
         description: "You have been signed in successfully!",
       });
       
-      // Redirect to dashboard or home
-      navigate("/");
+      // Redirect to dashboard after successful login
+      navigate("/dashboard");
       
     } catch (error: any) {
       toast({

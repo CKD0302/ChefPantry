@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ export default function SignUp() {
   
   const { signUp } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +65,11 @@ export default function SignUp() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
+      
+      // Redirect to sign in page after successful signup
+      setTimeout(() => {
+        navigate("/auth/signin");
+      }, 2000);
       
     } catch (error: any) {
       toast({

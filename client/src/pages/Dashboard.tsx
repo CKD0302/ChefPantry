@@ -36,6 +36,16 @@ export default function Dashboard() {
   const hasProfile = !!(profileResponse?.data || profileResponse?.id);
   const profileData = profileResponse?.data || profileResponse;
   const hasAcceptedDisclaimer = userRole === "chef" ? profileData?.chefDisclaimerAccepted : true;
+  
+  // Debug logging
+  console.log("Dashboard debug:", { 
+    userRole, 
+    hasProfile, 
+    profileData, 
+    hasAcceptedDisclaimer,
+    isCheckingProfile: isCheckingProfile,
+    profileResponse: profileResponse
+  });
 
 
 
