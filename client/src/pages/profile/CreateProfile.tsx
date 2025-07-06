@@ -29,8 +29,9 @@ import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/ImageUpload";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 
 // Define the chef profile schema
 const chefProfileSchema = z.object({
@@ -70,6 +71,9 @@ export default function CreateProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [isDisclaimerModalOpen, setIsDisclaimerModalOpen] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const queryClient = useQueryClient();
 
   // Check disclaimer acceptance for chefs
   const { data: chefProfile } = useQuery({
@@ -116,6 +120,29 @@ export default function CreateProfile() {
     },
   });
 
+  // Handle disclaimer acceptance
+  const handleDisclaimerAccept = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await apiRequest("POST", `/api/profiles/chef/${user.id}/accept-disclaimer`);
+      if (response.ok) {
+        setDisclaimerAccepted(true);
+        setIsDisclaimerModalOpen(false);
+        toast({
+          title: "Disclaimer Accepted",
+          description: "You can now create your profile.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to accept disclaimer. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle chef profile submission
   const onChefSubmit = async (data: ChefProfileFormValues) => {
     if (!user) {
@@ -124,6 +151,12 @@ export default function CreateProfile() {
         description: "You must be logged in to create a profile",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check if disclaimer has been accepted
+    if (!disclaimerAccepted) {
+      setIsDisclaimerModalOpen(true);
       return;
     }
 
@@ -145,6 +178,8 @@ export default function CreateProfile() {
         instagramUrl: data.instagramUrl || null,
         linkedinUrl: data.linkedinUrl || null,
         portfolioUrl: data.portfolioUrl || null,
+        chefDisclaimerAccepted: true, // Since disclaimer was accepted to reach this point
+        chefDisclaimerAcceptedAt: new Date().toISOString(),
       };
 
       let profileCreated = false;
@@ -237,6 +272,9 @@ export default function CreateProfile() {
         title: "Profile Created",
         description: "Your chef profile has been created successfully!",
       });
+
+      // Invalidate cache to ensure Dashboard updates immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user.id] });
 
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
@@ -351,6 +389,9 @@ export default function CreateProfile() {
         description: "Your business profile has been created successfully!",
       });
 
+      // Invalidate cache to ensure Dashboard updates immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/business", user.id] });
+
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
         navigate("/dashboard");
@@ -372,39 +413,13 @@ export default function CreateProfile() {
     chefForm.setValue("profileImageUrl", url);
   };
 
-  // Redirect if user is not logged in or chef hasn't accepted disclaimer
+  // Redirect if user is not logged in
   useEffect(() => {
     if (!user) {
       navigate("/auth/signin");
       return;
     }
-
-    // For chefs, check if they have accepted the disclaimer
-    if (userRole === "chef") {
-      // If no profile exists yet, they definitely haven't accepted the disclaimer
-      if (!chefProfile) {
-        toast({
-          title: "Disclaimer Required",
-          description: "You must accept the disclaimer before creating your profile.",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-        return;
-      }
-      
-      // If profile exists but disclaimer not accepted
-      const profileData = chefProfile?.data || chefProfile;
-      if (!profileData?.chefDisclaimerAccepted) {
-        toast({
-          title: "Disclaimer Required",
-          description: "You must accept the disclaimer before creating your profile.",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-        return;
-      }
-    }
-  }, [user, userRole, chefProfile, navigate, toast]);
+  }, [user, navigate]);
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
@@ -774,6 +789,14 @@ export default function CreateProfile() {
           </CardContent>
         </Card>
       )}
+      
+      {/* Chef Disclaimer Modal */}
+      <ChefDisclaimerModal
+        isOpen={isDisclaimerModalOpen}
+        onClose={() => setIsDisclaimerModalOpen(false)}
+        onConfirm={handleDisclaimerAccept}
+        isLoading={false}
+      />
     </div>
   );
 }
