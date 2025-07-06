@@ -380,7 +380,19 @@ export default function CreateProfile() {
     }
 
     // For chefs, check if they have accepted the disclaimer
-    if (userRole === "chef" && chefProfile !== undefined) {
+    if (userRole === "chef") {
+      // If no profile exists yet, they definitely haven't accepted the disclaimer
+      if (!chefProfile) {
+        toast({
+          title: "Disclaimer Required",
+          description: "You must accept the disclaimer before creating your profile.",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+      
+      // If profile exists but disclaimer not accepted
       const profileData = chefProfile?.data || chefProfile;
       if (!profileData?.chefDisclaimerAccepted) {
         toast({
