@@ -28,15 +28,16 @@ export default function DisclaimerPage() {
         if (error.message?.includes("not found") || error.status === 404) {
           const createProfileResponse = await apiRequest("POST", "/api/profiles/chef", {
             id: user!.id,
-            fullName: "New Chef",
-            bio: "Please update your profile",
+            fullName: user!.user_metadata?.full_name || user!.email?.split('@')[0] || "New Chef",
+            email: user!.email,
+            bio: "Professional chef ready to take on new challenges.",
             skills: ["Cooking"],
-            experienceYears: 0,
-            location: "Please update",
+            experienceYears: 1,
+            location: "Available for travel",
             travelRadiusKm: 50,
             isAvailable: true,
             chefDisclaimerAccepted: true,
-            chefDisclaimerAcceptedAt: new Date().toISOString()
+            chefDisclaimerAcceptedAt: new Date()
           });
           return createProfileResponse.json();
         }
