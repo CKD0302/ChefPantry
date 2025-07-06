@@ -36,13 +36,6 @@ export default function Dashboard() {
   });
   
   const hasProfile = !!(profileResponse?.data || profileResponse?.id);
-  
-  console.log("Dashboard profile check:", {
-    userRole,
-    userId: user?.id,
-    profileResponse,
-    hasProfile
-  });
 
   // Disclaimer acceptance mutation
   const disclaimerMutation = useMutation({
