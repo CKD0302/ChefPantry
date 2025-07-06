@@ -73,6 +73,8 @@ export default function CreateProfile() {
   const { toast } = useToast();
   const [isDisclaimerModalOpen, setIsDisclaimerModalOpen] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  
+  console.log("CreateProfile render - isDisclaimerModalOpen:", isDisclaimerModalOpen, "disclaimerAccepted:", disclaimerAccepted);
   const queryClient = useQueryClient();
 
   // Check disclaimer acceptance for chefs
@@ -145,6 +147,8 @@ export default function CreateProfile() {
 
   // Handle chef profile submission
   const onChefSubmit = async (data: ChefProfileFormValues) => {
+    console.log("onChefSubmit called, disclaimerAccepted:", disclaimerAccepted);
+    
     if (!user) {
       toast({
         title: "Error",
@@ -156,9 +160,12 @@ export default function CreateProfile() {
 
     // Check if disclaimer has been accepted
     if (!disclaimerAccepted) {
+      console.log("Disclaimer not accepted, showing modal");
       setIsDisclaimerModalOpen(true);
       return;
     }
+
+    console.log("Disclaimer accepted, proceeding with profile creation");
 
     setIsSubmitting(true);
 
@@ -793,8 +800,14 @@ export default function CreateProfile() {
       {/* Chef Disclaimer Modal */}
       <ChefDisclaimerModal
         isOpen={isDisclaimerModalOpen}
-        onClose={() => setIsDisclaimerModalOpen(false)}
-        onConfirm={handleDisclaimerAccept}
+        onClose={() => {
+          console.log("Disclaimer modal closed");
+          setIsDisclaimerModalOpen(false);
+        }}
+        onConfirm={() => {
+          console.log("Disclaimer confirm button clicked");
+          handleDisclaimerAccept();
+        }}
         isLoading={false}
       />
     </div>
