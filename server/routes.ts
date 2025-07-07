@@ -65,21 +65,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if profile already exists
       const existingProfile = await storage.getChefProfile(profileData.id);
+      
+      let profile;
       if (existingProfile) {
-        return res.status(409).json({
-          message: "Chef profile already exists. Use the update endpoint to modify your profile.",
-          data: existingProfile
+        // Update existing profile (upsert behavior)
+        profile = await storage.updateChefProfile(profileData.id, profileData);
+        
+        if (!profile) {
+          return res.status(500).json({
+            message: "Failed to update chef profile"
+          });
+        }
+        
+        return res.status(200).json({
+          message: "Chef profile updated successfully!",
+          data: profile
+        });
+      } else {
+        // Create new chef profile
+        profile = await storage.createChefProfile(profileData);
+        
+        return res.status(201).json({
+          message: "Chef profile created successfully!",
+          data: profile
         });
       }
-      
-      // Create chef profile in DB
-      const profile = await storage.createChefProfile(profileData);
-      
-      // Return success response
-      res.status(201).json({
-        message: "Chef profile created successfully!",
-        data: profile
-      });
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
@@ -157,21 +167,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      // Update chef profile with disclaimer acceptance
-      const updatedProfile = await storage.updateChefProfile(id, {
-        chefDisclaimerAccepted: true,
-        chefDisclaimerAcceptedAt: new Date()
-      });
+      // Check if profile exists first
+      let profile = await storage.getChefProfile(id);
       
-      if (!updatedProfile) {
-        return res.status(404).json({
-          message: "Chef profile not found"
+      if (!profile) {
+        // Create a minimal profile with disclaimer acceptance and default values
+        profile = await storage.createChefProfile({
+          id,
+          fullName: "Placeholder Name", // Will be updated during profile creation
+          bio: "Profile being created...", // Will be updated during profile creation
+          skills: ["cooking"], // Will be updated during profile creation
+          experienceYears: 0, // Will be updated during profile creation
+          location: "TBD", // Will be updated during profile creation
+          chefDisclaimerAccepted: true,
+          chefDisclaimerAcceptedAt: new Date()
+        });
+      } else {
+        // Update existing profile with disclaimer acceptance
+        profile = await storage.updateChefProfile(id, {
+          chefDisclaimerAccepted: true,
+          chefDisclaimerAcceptedAt: new Date()
+        });
+      }
+      
+      if (!profile) {
+        return res.status(500).json({
+          message: "Failed to process disclaimer acceptance"
         });
       }
       
       res.status(200).json({
         message: "Disclaimer accepted successfully",
-        data: updatedProfile
+        data: profile
       });
     } catch (error) {
       console.error("Error accepting disclaimer:", error);

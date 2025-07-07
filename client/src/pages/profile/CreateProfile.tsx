@@ -187,7 +187,8 @@ export default function CreateProfile() {
             : [];
 
           // Convert to Supabase field naming convention (snake_case)
-          const { error } = await supabase.from("chef_profiles").insert({
+          // Use upsert to handle the case where a placeholder profile already exists
+          const { error } = await supabase.from("chef_profiles").upsert({
             id: user.id,
             full_name: data.fullName,
             bio: data.bio,
