@@ -71,17 +71,7 @@ export default function CreateProfile() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // Check disclaimer acceptance for chefs
-  const { data: chefProfile } = useQuery({
-    queryKey: ["/api/profiles/chef", user?.id],
-    queryFn: () => {
-      return apiRequest("GET", `/api/profiles/chef/${user!.id}`)
-        .then(res => res.json())
-        .catch(() => null);
-    },
-    enabled: !!user && userRole === "chef",
-    staleTime: 0, // Always fetch fresh data
-  });
+  // No need to check disclaimer - user accessed this page through the disclaimer flow
 
   // Initialize chef profile form
   const chefForm = useForm<ChefProfileFormValues>({
@@ -206,7 +196,10 @@ export default function CreateProfile() {
             // New fields
             languages: languagesArray,
             certifications: certificationsArray,
-            is_available: data.isAvailable
+            is_available: data.isAvailable,
+            // Mark disclaimer as accepted since user went through the disclaimer flow
+            chef_disclaimer_accepted: true,
+            chef_disclaimer_accepted_at: new Date().toISOString()
           });
 
           if (error) {
@@ -381,33 +374,8 @@ export default function CreateProfile() {
       return;
     }
 
-    // For chefs, check if they have accepted the disclaimer
-    if (userRole === "chef") {
-      // If no profile exists yet, they definitely haven't accepted the disclaimer
-      if (!chefProfile) {
-        toast({
-          title: "Disclaimer Required",
-          description: "You must accept the disclaimer before creating your profile.",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-        return;
-      }
-      
-      // If profile exists but disclaimer not accepted
-      const profileData = chefProfile?.data || chefProfile;
-      console.log("Profile data for disclaimer check:", profileData);
-      if (!profileData?.chefDisclaimerAccepted) {
-        toast({
-          title: "Disclaimer Required",
-          description: "You must accept the disclaimer before creating your profile.",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-        return;
-      }
-    }
-  }, [user, userRole, chefProfile, navigate, toast]);
+    // User has reached this page through the disclaimer flow, so no need to check disclaimer again
+  }, [user, navigate, toast]);
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">

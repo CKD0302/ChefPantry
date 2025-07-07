@@ -167,38 +167,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      // Check if profile exists first
-      let profile = await storage.getChefProfile(id);
-      
-      if (!profile) {
-        // Create a minimal profile with disclaimer acceptance and default values
-        profile = await storage.createChefProfile({
-          id,
-          fullName: "Placeholder Name", // Will be updated during profile creation
-          bio: "Profile being created...", // Will be updated during profile creation
-          skills: ["cooking"], // Will be updated during profile creation
-          experienceYears: 0, // Will be updated during profile creation
-          location: "TBD", // Will be updated during profile creation
-          chefDisclaimerAccepted: true,
-          chefDisclaimerAcceptedAt: new Date()
-        });
-      } else {
-        // Update existing profile with disclaimer acceptance
-        profile = await storage.updateChefProfile(id, {
-          chefDisclaimerAccepted: true,
-          chefDisclaimerAcceptedAt: new Date()
-        });
-      }
-      
-      if (!profile) {
-        return res.status(500).json({
-          message: "Failed to process disclaimer acceptance"
-        });
-      }
-      
+      // Simply return success - no need to create placeholder profile
+      // The disclaimer acceptance is implicit by the user actively choosing to create their profile
       res.status(200).json({
         message: "Disclaimer accepted successfully",
-        data: profile
+        data: { disclaimerAccepted: true }
       });
     } catch (error) {
       console.error("Error accepting disclaimer:", error);
