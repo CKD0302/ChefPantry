@@ -48,7 +48,7 @@ export default function Dashboard() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user?.id] });
       setIsDisclaimerModalOpen(false);
-      navigate("/profile/chef");
+      navigate("/profile/create");
     },
     onError: (error) => {
       toast({
