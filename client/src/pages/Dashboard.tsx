@@ -30,19 +30,10 @@ export default function Dashboard() {
       const endpoint = userRole === "chef" ? `/api/profiles/chef/${user!.id}` : `/api/profiles/business/${user!.id}`;
       return apiRequest("GET", endpoint).then(res => res.json()).catch(() => null);
     },
-    enabled: !!user && (userRole === "chef" || userRole === "business"),
-    staleTime: 0, // Force fresh data
-    cacheTime: 0, // Don't cache
+    enabled: !!user && (userRole === "chef" || userRole === "business")
   });
   
   const hasProfile = !!(profileResponse?.data || profileResponse?.id);
-  
-  console.log("Dashboard profile check:", {
-    userRole,
-    userId: user?.id,
-    profileResponse,
-    hasProfile
-  });
 
   // Disclaimer acceptance mutation
   const disclaimerMutation = useMutation({
