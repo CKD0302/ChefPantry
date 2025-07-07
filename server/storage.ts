@@ -246,8 +246,6 @@ export class DBStorage implements IStorage {
       instagramUrl: profile.instagramUrl || null,
       linkedinUrl: profile.linkedinUrl || null,
       portfolioUrl: profile.portfolioUrl || null,
-      // Auto-set disclaimer acceptance timestamp if disclaimer is accepted
-      chefDisclaimerAcceptedAt: profile.chefDisclaimerAccepted ? new Date() : profile.chefDisclaimerAcceptedAt,
     };
     
     const result = await db.insert(chefProfiles).values(chefProfile).returning();

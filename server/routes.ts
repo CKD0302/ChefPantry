@@ -83,17 +83,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
-        console.error("Chef profile validation error:", validationError.details);
         return res.status(400).json({ 
           message: "Validation error", 
           errors: validationError.details
         });
       }
       console.error("Error creating chef profile:", error);
-      res.status(500).json({ 
-        message: "Failed to create chef profile",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
+      res.status(500).json({ message: "Failed to create chef profile" });
     }
   });
 

@@ -29,9 +29,8 @@ import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/ImageUpload";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 
 // Define the chef profile schema
 const chefProfileSchema = z.object({
@@ -71,11 +70,6 @@ export default function CreateProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [isDisclaimerModalOpen, setIsDisclaimerModalOpen] = useState(false);
-  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
-  
-  console.log("CreateProfile render - isDisclaimerModalOpen:", isDisclaimerModalOpen, "disclaimerAccepted:", disclaimerAccepted);
-  const queryClient = useQueryClient();
 
   // Check disclaimer acceptance for chefs
   const { data: chefProfile } = useQuery({
@@ -87,12 +81,6 @@ export default function CreateProfile() {
     },
     enabled: !!user && userRole === "chef",
   });
-
-  // Redirect chefs to disclaimer page if they haven't accepted it
-  if (userRole === "chef" && chefProfile && !chefProfile.chefDisclaimerAccepted) {
-    navigate("/disclaimer");
-    return null;
-  }
 
   // Initialize chef profile form
   const chefForm = useForm<ChefProfileFormValues>({
@@ -128,33 +116,8 @@ export default function CreateProfile() {
     },
   });
 
-  // Handle disclaimer acceptance
-  const handleDisclaimerAccept = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const response = await apiRequest("POST", `/api/profiles/chef/${user.id}/accept-disclaimer`);
-      if (response.ok) {
-        setDisclaimerAccepted(true);
-        setIsDisclaimerModalOpen(false);
-        toast({
-          title: "Disclaimer Accepted",
-          description: "You can now create your profile.",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to accept disclaimer. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Handle chef profile submission
   const onChefSubmit = async (data: ChefProfileFormValues) => {
-    console.log("onChefSubmit called, disclaimerAccepted:", disclaimerAccepted);
-    
     if (!user) {
       toast({
         title: "Error",
@@ -163,15 +126,6 @@ export default function CreateProfile() {
       });
       return;
     }
-
-    // Check if disclaimer has been accepted
-    if (!disclaimerAccepted) {
-      console.log("Disclaimer not accepted, showing modal");
-      setIsDisclaimerModalOpen(true);
-      return;
-    }
-
-    console.log("Disclaimer accepted, proceeding with profile creation");
 
     setIsSubmitting(true);
 
@@ -191,8 +145,6 @@ export default function CreateProfile() {
         instagramUrl: data.instagramUrl || null,
         linkedinUrl: data.linkedinUrl || null,
         portfolioUrl: data.portfolioUrl || null,
-        chefDisclaimerAccepted: true, // Since disclaimer was accepted to reach this point
-        chefDisclaimerAcceptedAt: new Date().toISOString(),
       };
 
       let profileCreated = false;
@@ -285,9 +237,6 @@ export default function CreateProfile() {
         title: "Profile Created",
         description: "Your chef profile has been created successfully!",
       });
-
-      // Invalidate cache to ensure Dashboard updates immediately
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user.id] });
 
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
@@ -402,9 +351,6 @@ export default function CreateProfile() {
         description: "Your business profile has been created successfully!",
       });
 
-      // Invalidate cache to ensure Dashboard updates immediately
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/business", user.id] });
-
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
         navigate("/dashboard");
@@ -426,13 +372,39 @@ export default function CreateProfile() {
     chefForm.setValue("profileImageUrl", url);
   };
 
-  // Redirect if user is not logged in
+  // Redirect if user is not logged in or chef hasn't accepted disclaimer
   useEffect(() => {
     if (!user) {
       navigate("/auth/signin");
       return;
     }
-  }, [user, navigate]);
+
+    // For chefs, check if they have accepted the disclaimer
+    if (userRole === "chef") {
+      // If no profile exists yet, they definitely haven't accepted the disclaimer
+      if (!chefProfile) {
+        toast({
+          title: "Disclaimer Required",
+          description: "You must accept the disclaimer before creating your profile.",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+      
+      // If profile exists but disclaimer not accepted
+      const profileData = chefProfile?.data || chefProfile;
+      if (!profileData?.chefDisclaimerAccepted) {
+        toast({
+          title: "Disclaimer Required",
+          description: "You must accept the disclaimer before creating your profile.",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+    }
+  }, [user, userRole, chefProfile, navigate, toast]);
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
@@ -802,20 +774,6 @@ export default function CreateProfile() {
           </CardContent>
         </Card>
       )}
-      
-      {/* Chef Disclaimer Modal */}
-      <ChefDisclaimerModal
-        isOpen={isDisclaimerModalOpen}
-        onClose={() => {
-          console.log("Disclaimer modal closed");
-          setIsDisclaimerModalOpen(false);
-        }}
-        onConfirm={() => {
-          console.log("Disclaimer confirm button clicked");
-          handleDisclaimerAccept();
-        }}
-        isLoading={false}
-      />
     </div>
   );
 }
