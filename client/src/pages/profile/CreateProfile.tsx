@@ -80,6 +80,7 @@ export default function CreateProfile() {
         .catch(() => null);
     },
     enabled: !!user && userRole === "chef",
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Initialize chef profile form
@@ -395,6 +396,7 @@ export default function CreateProfile() {
       
       // If profile exists but disclaimer not accepted
       const profileData = chefProfile?.data || chefProfile;
+      console.log("Profile data for disclaimer check:", profileData);
       if (!profileData?.chefDisclaimerAccepted) {
         toast({
           title: "Disclaimer Required",
