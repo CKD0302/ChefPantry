@@ -170,12 +170,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simply return success - no need to create placeholder profile
       // The disclaimer acceptance is implicit by the user actively choosing to create their profile
       res.status(200).json({
-        message: "Disclaimer accepted successfully",
+        message: "Chef disclaimer accepted successfully",
         data: { disclaimerAccepted: true }
       });
     } catch (error) {
-      console.error("Error accepting disclaimer:", error);
-      res.status(500).json({ message: "Failed to accept disclaimer" });
+      console.error("Error accepting chef disclaimer:", error);
+      res.status(500).json({ message: "Failed to accept chef disclaimer" });
+    }
+  });
+
+  // Accept business disclaimer
+  apiRouter.post("/profiles/business/:id/accept-disclaimer", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      // Simply return success - no need to create placeholder profile
+      // The disclaimer acceptance is implicit by the user actively choosing to create their profile
+      res.status(200).json({
+        message: "Business disclaimer accepted successfully",
+        data: { disclaimerAccepted: true }
+      });
+    } catch (error) {
+      console.error("Error accepting business disclaimer:", error);
+      res.status(500).json({ message: "Failed to accept business disclaimer" });
     }
   });
 
@@ -187,21 +204,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if profile already exists
       const existingProfile = await storage.getBusinessProfile(profileData.id);
+      
+      let profile;
       if (existingProfile) {
-        return res.status(409).json({
-          message: "Business profile already exists. Use the update endpoint to modify your profile.",
-          data: existingProfile
+        // Update existing profile (upsert behavior)
+        profile = await storage.updateBusinessProfile(profileData.id, profileData);
+        
+        if (!profile) {
+          return res.status(500).json({
+            message: "Failed to update business profile"
+          });
+        }
+        
+        return res.status(200).json({
+          message: "Business profile updated successfully!",
+          data: profile
+        });
+      } else {
+        // Create new business profile
+        profile = await storage.createBusinessProfile(profileData);
+        
+        return res.status(201).json({
+          message: "Business profile created successfully!",
+          data: profile
         });
       }
-      
-      // Create business profile in DB
-      const profile = await storage.createBusinessProfile(profileData);
-      
-      // Return success response
-      res.status(201).json({
-        message: "Business profile created successfully!",
-        data: profile
-      });
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);

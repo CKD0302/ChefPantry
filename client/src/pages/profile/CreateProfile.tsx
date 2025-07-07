@@ -305,14 +305,17 @@ export default function CreateProfile() {
       if (!profileCreated) {
         try {
           // Convert to Supabase field naming convention (snake_case)
-          const { error } = await supabase.from("business_profiles").insert({
+          const { error } = await supabase.from("business_profiles").upsert({
             id: user.id,
             business_name: data.businessName,
             description: data.description,
             location: data.location,
             website_url: data.websiteUrl || null,
             instagram_url: data.instagramUrl || null,
-            linkedin_url: data.linkedinUrl || null
+            linkedin_url: data.linkedinUrl || null,
+            // Mark disclaimer as accepted since user went through the disclaimer flow
+            business_disclaimer_accepted: true,
+            business_disclaimer_accepted_at: new Date().toISOString(),
           });
 
           if (error) {

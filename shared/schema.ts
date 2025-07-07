@@ -112,6 +112,9 @@ export const businessProfiles = pgTable("business_profiles", {
   businessSize: text("business_size"),
   isHiring: boolean("is_hiring").default(false),
   availabilityNotes: text("availability_notes"),
+  // Disclaimer acceptance
+  businessDisclaimerAccepted: boolean("business_disclaimer_accepted").default(false).notNull(),
+  businessDisclaimerAcceptedAt: timestamp("business_disclaimer_accepted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
