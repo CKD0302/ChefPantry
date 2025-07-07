@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/ImageUpload";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 // Define the chef profile schema
@@ -70,6 +70,7 @@ export default function CreateProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // No need to check disclaimer - user accessed this page through the disclaimer flow
 
@@ -233,6 +234,9 @@ export default function CreateProfile() {
         description: "Your chef profile has been created successfully!",
       });
 
+      // Invalidate the profile query to ensure dashboard shows updated data
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user.id] });
+
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
         navigate("/dashboard");
@@ -348,6 +352,9 @@ export default function CreateProfile() {
         title: "Profile Created",
         description: "Your business profile has been created successfully!",
       });
+
+      // Invalidate the profile query to ensure dashboard shows updated data
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/business", user.id] });
 
       // Add a short delay to ensure data is persisted before redirecting
       setTimeout(() => {
