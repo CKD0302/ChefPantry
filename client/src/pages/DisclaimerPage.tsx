@@ -26,7 +26,8 @@ export default function DisclaimerPage() {
       } catch (error: any) {
         // If profile doesn't exist, create one with disclaimer accepted
         if (error.message?.includes("not found") || error.status === 404) {
-          const createProfileResponse = await apiRequest("POST", "/api/profiles/chef", {
+          console.log("Creating new chef profile for:", user!.id);
+          const profileData = {
             id: user!.id,
             fullName: user!.user_metadata?.full_name || user!.email?.split('@')[0] || "New Chef",
             email: user!.email,
@@ -36,9 +37,11 @@ export default function DisclaimerPage() {
             location: "Available for travel",
             travelRadiusKm: 50,
             isAvailable: true,
-            chefDisclaimerAccepted: true,
-            chefDisclaimerAcceptedAt: new Date()
-          });
+            chefDisclaimerAccepted: true
+          };
+          console.log("Profile data being sent:", profileData);
+          
+          const createProfileResponse = await apiRequest("POST", "/api/profiles/chef", profileData);
           return createProfileResponse.json();
         }
         throw error;
