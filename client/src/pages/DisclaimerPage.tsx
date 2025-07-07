@@ -19,11 +19,14 @@ export default function DisclaimerPage() {
 
   const disclaimerMutation = useMutation({
     mutationFn: async () => {
+      console.log("Starting disclaimer mutation for user:", user!.id);
       // First check if chef profile exists
       try {
         const response = await apiRequest("POST", `/api/profiles/chef/${user!.id}/accept-disclaimer`);
+        console.log("Disclaimer acceptance successful for existing profile");
         return response.json();
       } catch (error: any) {
+        console.log("Error accepting disclaimer for existing profile:", error);
         // If profile doesn't exist, create one with disclaimer accepted
         if (error.message?.includes("not found") || error.status === 404) {
           console.log("Creating new chef profile for:", user!.id);
@@ -42,18 +45,21 @@ export default function DisclaimerPage() {
           console.log("Profile data being sent:", profileData);
           
           const createProfileResponse = await apiRequest("POST", "/api/profiles/chef", profileData);
+          console.log("Profile creation response:", createProfileResponse);
           return createProfileResponse.json();
         }
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Disclaimer mutation success:", data);
       toast({
         title: "Disclaimer Accepted",
         description: "Thank you! You can now access all chef features.",
       });
       // Invalidate cache to ensure dashboard updates
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", user?.id] });
+      console.log("Navigating to dashboard...");
       navigate("/dashboard");
     },
     onError: (error: any) => {
