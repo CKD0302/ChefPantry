@@ -126,4 +126,5 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 07, 2025. Implemented comprehensive disclaimer flow for both chef and business profiles with role-specific disclaimer text and validation
 - July 06, 2025. Initial setup
