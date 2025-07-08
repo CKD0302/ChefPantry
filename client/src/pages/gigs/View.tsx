@@ -248,7 +248,7 @@ export default function ViewGig() {
   };
 
   // Helper functions for displaying data
-  const formatDateRange = (startDate: string, endDate: string): { dateRange: string; duration: string } => {
+  const formatDateRange = (startDate: string, endDate: string, startTime?: string, endTime?: string): { dateRange: string; duration: string } => {
     if (!startDate || !endDate) return { dateRange: "N/A", duration: "" };
     try {
       const start = new Date(startDate);
@@ -258,17 +258,24 @@ export default function ViewGig() {
       const timeDiff = end.getTime() - start.getTime();
       const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end days
       
-      // Format the date range
-      const startFormatted = format(start, "MMM d");
-      const endFormatted = format(end, "MMM d, yyyy");
-      
       let dateRange;
       if (startDate === endDate) {
-        // Single day gig
-        dateRange = format(start, "EEEE, MMMM d, yyyy");
+        // Single day gig - show date with time range
+        const dateStr = format(start, "EEEE, MMMM d, yyyy");
+        if (startTime && endTime) {
+          dateRange = `${dateStr} (${startTime.substring(0, 5)} - ${endTime.substring(0, 5)})`;
+        } else {
+          dateRange = dateStr;
+        }
       } else {
-        // Multi-day gig
-        dateRange = `${startFormatted} - ${endFormatted}`;
+        // Multi-day gig - show date range with times
+        const startFormatted = format(start, "MMM d");
+        const endFormatted = format(end, "MMM d, yyyy");
+        if (startTime && endTime) {
+          dateRange = `${startFormatted} ${startTime.substring(0, 5)} - ${endFormatted} ${endTime.substring(0, 5)}`;
+        } else {
+          dateRange = `${startFormatted} - ${endFormatted}`;
+        }
       }
       
       const duration = dayDiff === 1 ? "1 day" : `${dayDiff} days`;
@@ -314,10 +321,12 @@ export default function ViewGig() {
     return venueMap[venueValue] || venueValue;
   };
 
-  const isPastGig = (endDate: string) => {
+  const isPastGig = (endDate: string, endTime?: string) => {
     if (!endDate) return false;
     try {
-      return isBefore(new Date(endDate), new Date());
+      // Combine end date and time to get the full expiry datetime
+      const endDateTime = new Date(`${endDate}T${endTime || '23:59:59'}`);
+      return isBefore(endDateTime, new Date());
     } catch (error) {
       return false;
     }
@@ -386,8 +395,8 @@ export default function ViewGig() {
     );
   }
 
-  const { dateRange: formattedDateRange, duration } = formatDateRange(gig.startDate, gig.endDate);
-  const isPast = isPastGig(gig.endDate);
+  const { dateRange: formattedDateRange, duration } = formatDateRange(gig.startDate, gig.endDate, gig.startTime, gig.endTime);
+  const isPast = isPastGig(gig.endDate, gig.endTime);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -418,20 +427,13 @@ export default function ViewGig() {
                 </Badge>
               </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center">
                   <CalendarCheck className="h-5 w-5 text-neutral-500 mr-2" />
                   <div>
-                    <p className="text-sm text-neutral-500">Date Range</p>
+                    <p className="text-sm text-neutral-500">Date & Time</p>
                     <p className="font-medium">{formattedDateRange}</p>
                     {duration && <p className="text-sm text-neutral-500">({duration})</p>}
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-neutral-500 mr-2" />
-                  <div>
-                    <p className="text-sm text-neutral-500">Time</p>
-                    <p className="font-medium">{gig.startTime.substring(0, 5)} - {gig.endTime.substring(0, 5)}</p>
                   </div>
                 </div>
                 <div className="flex items-center">

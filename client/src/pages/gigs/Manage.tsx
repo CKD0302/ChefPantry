@@ -250,9 +250,10 @@ export default function ManageGigs() {
       // If no dates are set, consider it current if it's active
       return gig.is_active;
     }
-    const today = new Date();
-    const endDate = new Date(gig.end_date);
-    return endDate >= today && gig.is_active;
+    const now = new Date();
+    // Combine end date and time to get the full expiry datetime
+    const endDateTime = new Date(`${gig.end_date}T${gig.end_time || '23:59:59'}`);
+    return endDateTime >= now && gig.is_active;
   };
 
   const isPastGig = (gig: Gig) => {
@@ -260,20 +261,32 @@ export default function ManageGigs() {
       // If no dates are set, consider it past if it's inactive
       return !gig.is_active;
     }
-    const today = new Date();
-    const endDate = new Date(gig.end_date);
-    return endDate < today || !gig.is_active;
+    const now = new Date();
+    // Combine end date and time to get the full expiry datetime
+    const endDateTime = new Date(`${gig.end_date}T${gig.end_time || '23:59:59'}`);
+    return endDateTime < now || !gig.is_active;
   };
 
-  const formatDateRange = (startDate: string, endDate: string) => {
+  const formatDateRange = (startDate: string, endDate: string, startTime?: string, endTime?: string) => {
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       if (startDate === endDate) {
-        return format(start, "MMM d, yyyy");
+        // Single day gig - show date with time range
+        const dateStr = format(start, "MMM d, yyyy");
+        if (startTime && endTime) {
+          return `${dateStr} (${startTime.substring(0, 5)} - ${endTime.substring(0, 5)})`;
+        }
+        return dateStr;
       } else {
-        return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+        // Multi-day gig - show date range with times
+        const startStr = format(start, "MMM d");
+        const endStr = format(end, "MMM d, yyyy");
+        if (startTime && endTime) {
+          return `${startStr} ${startTime.substring(0, 5)} - ${endStr} ${endTime.substring(0, 5)}`;
+        }
+        return `${startStr} - ${endStr}`;
       }
     } catch (error) {
       return "Invalid date";
@@ -528,21 +541,12 @@ function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, o
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div className="flex items-center">
             <CalendarCheck className="h-4 w-4 text-neutral-500 mr-2" />
             <div>
-              <p className="text-sm text-neutral-500">Date</p>
-              <p className="font-medium">{formatDateRange(gig.start_date, gig.end_date)}</p>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <Clock className="h-4 w-4 text-neutral-500 mr-2" />
-            <div>
-              <p className="text-sm text-neutral-500">Time</p>
-              <p className="font-medium">
-                {gig.start_time.substring(0, 5)} - {gig.end_time.substring(0, 5)}
-              </p>
+              <p className="text-sm text-neutral-500">Date & Time</p>
+              <p className="font-medium">{formatDateRange(gig.start_date, gig.end_date, gig.start_time, gig.end_time)}</p>
             </div>
           </div>
           <div className="flex items-center">

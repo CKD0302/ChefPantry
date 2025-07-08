@@ -228,9 +228,21 @@ export default function BrowseGigs() {
         createdBy: gig.created_by,
         gigDate: gig.start_date || gig.created_at
       }));
+
+      // Filter out gigs that have expired (past end date and time)
+      const now = new Date();
+      const activeGigs = formattedGigs.filter(gig => {
+        if (!gig.endDate) return true;
+        try {
+          const endDateTime = new Date(`${gig.endDate}T${gig.endTime || '23:59:59'}`);
+          return endDateTime >= now;
+        } catch (error) {
+          return true; // Keep gigs with invalid dates for manual review
+        }
+      });
       
-      setGigs(formattedGigs || []);
-      setFilteredGigs(formattedGigs || []);
+      setGigs(activeGigs || []);
+      setFilteredGigs(activeGigs || []);
     } catch (error) {
       console.error("Error fetching gigs:", error);
       setError("Failed to load available gigs. Please try again later.");
@@ -254,7 +266,7 @@ export default function BrowseGigs() {
     try {
       const formattedDate = format(new Date(date), "MMM d, yyyy");
       // Convert time from HH:MM:SS to HH:MM format
-      const formattedTime = time ? ` at ${time.substring(0, 5)}` : "";
+      const formattedTime = time ? ` ${time.substring(0, 5)}` : "";
       return `${formattedDate}${formattedTime}`;
     } catch (error) {
       return "Invalid date";
