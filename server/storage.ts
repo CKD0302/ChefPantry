@@ -113,6 +113,7 @@ export interface IStorage {
   getGigInvoiceByGigAndChef(gigId: string, chefId: string): Promise<GigInvoice | undefined>;
   getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]>;
   getGigInvoicesByBusiness(businessId: string): Promise<GigInvoice[]>;
+  updateInvoiceStatus(invoiceId: string, status: string): Promise<GigInvoice | undefined>;
   
   // Review methods
   createReview(review: InsertReview): Promise<Review>;
@@ -779,6 +780,15 @@ export class DBStorage implements IStorage {
     .where(eq(reviews.recipientId, recipientId));
     
     return result[0]?.avgRating || 0;
+  }
+
+  async updateInvoiceStatus(invoiceId: string, status: string): Promise<GigInvoice | undefined> {
+    const result = await db.update(gigInvoices)
+      .set({ status })
+      .where(eq(gigInvoices.id, invoiceId))
+      .returning();
+    
+    return result[0];
   }
 }
 

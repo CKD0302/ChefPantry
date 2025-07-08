@@ -775,6 +775,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark invoice as paid
+  apiRouter.put("/invoices/:invoiceId/mark-paid", async (req: Request, res: Response) => {
+    try {
+      const { invoiceId } = req.params;
+      
+      if (!invoiceId) {
+        return res.status(400).json({ message: "Invoice ID is required" });
+      }
+      
+      const updatedInvoice = await storage.updateInvoiceStatus(invoiceId, "paid");
+      
+      if (!updatedInvoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      res.status(200).json(updatedInvoice);
+    } catch (error) {
+      console.error("Error marking invoice as paid:", error);
+      res.status(500).json({ message: "Failed to mark invoice as paid" });
+    }
+  });
+
   // Create Stripe Connect account for chef
   apiRouter.post("/stripe/connect/account", async (req: Request, res: Response) => {
     try {

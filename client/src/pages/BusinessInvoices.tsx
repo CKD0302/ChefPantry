@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ReviewSubmissionModal from "@/components/ReviewSubmissionModal";
@@ -56,6 +57,7 @@ interface InvoiceData {
 
 export default function BusinessInvoices() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("pending");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
@@ -129,6 +131,27 @@ export default function BusinessInvoices() {
   const handleReviewClick = (invoice: InvoiceData) => {
     setSelectedInvoice(invoice);
     setReviewModalOpen(true);
+  };
+
+  const handleMarkAsPaid = async (invoice: InvoiceData) => {
+    try {
+      await apiRequest("PUT", `/api/invoices/${invoice.id}/mark-paid`);
+      
+      // Invalidate and refetch invoices
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
+      
+      toast({
+        title: "Invoice Updated",
+        description: "Invoice has been marked as paid successfully.",
+      });
+    } catch (error) {
+      console.error("Error marking invoice as paid:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark invoice as paid. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filterInvoicesByStatus = (status: string) => {
@@ -250,6 +273,8 @@ export default function BusinessInvoices() {
                         key={invoice.id} 
                         invoice={invoice} 
                         onPayClick={handlePayInvoice}
+                        onMarkAsPaid={handleMarkAsPaid}
+                        currentUserId={user.id}
                       />
                     ))}
                   </div>
@@ -279,6 +304,8 @@ export default function BusinessInvoices() {
                         key={invoice.id} 
                         invoice={invoice} 
                         onPayClick={handlePayInvoice}
+                        onMarkAsPaid={handleMarkAsPaid}
+                        currentUserId={user.id}
                       />
                     ))}
                   </div>
@@ -309,6 +336,7 @@ export default function BusinessInvoices() {
                         invoice={invoice} 
                         onPayClick={handlePayInvoice}
                         onReviewClick={handleReviewClick}
+                        onMarkAsPaid={handleMarkAsPaid}
                         currentUserId={user.id}
                       />
                     ))}
@@ -345,10 +373,11 @@ interface InvoiceCardProps {
   invoice: InvoiceData;
   onPayClick: (invoice: InvoiceData) => void;
   onReviewClick?: (invoice: InvoiceData) => void;
+  onMarkAsPaid?: (invoice: InvoiceData) => void;
   currentUserId?: string;
 }
 
-function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: InvoiceCardProps) {
+function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, currentUserId }: InvoiceCardProps) {
   // Check if review exists for this gig and reviewer
   const { data: reviewCheck } = useQuery({
     queryKey: ["/api/reviews/check", invoice.gigId, currentUserId],
@@ -492,9 +521,21 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, currentUserId }: Invo
       <div className="flex items-center justify-between pt-4 border-t">
         <div className="flex items-center gap-4">
           {/* Show bank payment message for manual invoices with bank details */}
-          {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode ? (
-            <div className="text-sm text-blue-600 font-medium">
-              Pay via bank transfer using details above
+          {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode && invoice.status.toLowerCase() === 'pending' ? (
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-blue-600 font-medium">
+                Pay via bank transfer using details above
+              </div>
+              {onMarkAsPaid && (
+                <Button 
+                  onClick={() => onMarkAsPaid(invoice)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Mark as Paid
+                </Button>
+              )}
             </div>
           ) : !invoice.chef.stripeAccountId ? (
             <Alert className="flex-1">
