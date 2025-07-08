@@ -253,7 +253,13 @@ export default function ManageGigs() {
     const now = new Date();
     // Combine end date and time to get the full expiry datetime
     const endDateTime = new Date(`${gig.end_date}T${gig.end_time || '23:59:59'}`);
-    return endDateTime >= now && gig.is_active;
+    console.log('DEBUG - Current time:', now.toISOString());
+    console.log('DEBUG - End datetime:', endDateTime.toISOString());
+    console.log('DEBUG - Is active:', gig.is_active);
+    console.log('DEBUG - End >= now:', endDateTime >= now);
+    const result = endDateTime >= now && gig.is_active;
+    console.log('DEBUG - isCurrent result:', result);
+    return result;
   };
 
   const isPastGig = (gig: Gig) => {
