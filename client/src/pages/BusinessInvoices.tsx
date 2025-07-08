@@ -63,7 +63,14 @@ export default function BusinessInvoices() {
   // Query invoices for this business
   const { data: invoices, isLoading } = useQuery<InvoiceData[]>({
     queryKey: ["/api/invoices/business", user?.id],
-    queryFn: () => apiRequest("GET", `/api/invoices/business/${user?.id}`).then(res => res.json()),
+    queryFn: async () => {
+      console.log("DEBUG - Fetching invoices for user:", user?.id);
+      console.log("DEBUG - User email:", user?.email);
+      const response = await apiRequest("GET", `/api/invoices/business/${user?.id}`);
+      const data = await response.json();
+      console.log("DEBUG - Invoice API response:", data);
+      return data;
+    },
     enabled: !!user?.id,
   });
 
