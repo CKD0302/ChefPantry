@@ -197,10 +197,14 @@ export const gigInvoices = pgTable("gig_invoices", {
   serviceTitle: text("service_title"), // For manual invoices
   serviceDescription: text("service_description"), // For manual invoices
   paymentType: text("payment_type").default("hourly").notNull(), // 'hourly', 'fixed'
+  // Legacy bank fields (keeping for backward compatibility)
   bankName: text("bank_name"), // Bank name for payment
   accountName: text("account_name"), // Account holder name
   accountNumber: text("account_number"), // Bank account number
   sortCode: text("sort_code"), // Bank sort code
+  // New payment method fields
+  paymentMethod: text("payment_method"), // 'stripe' or 'bank'
+  paymentLink: text("payment_link"), // Stripe payment link if using Stripe
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

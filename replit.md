@@ -126,6 +126,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 09, 2025. **MAJOR ARCHITECTURE CHANGE**: Removed complex Stripe Connect integration and replaced with simplified direct payment model. Added payment_method and payment_link fields to gigInvoices table. Invoice creation now auto-fetches payment method details from chef profiles. Updated BusinessInvoices component to display payment method information with "Pay Now" buttons for Stripe payments and "Mark as Paid" for bank transfers.
 - July 09, 2025. Added new payment method fields to chef_profiles table: payment_method, stripe_payment_link, bank_sort_code, bank_account_number with corresponding API endpoints and storage methods
 - July 09, 2025. Enhanced invoice management with "Mark as Paid" functionality for manual invoices with bank transfer details, allowing businesses to manually mark invoices as paid after completing bank transfers
 - July 09, 2025. Fixed UUID validation error in review checking system to prevent database errors when null values are passed

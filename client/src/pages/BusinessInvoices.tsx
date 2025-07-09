@@ -39,10 +39,14 @@ interface InvoiceData {
   serviceTitle?: string;
   serviceDescription?: string;
   paymentType?: string;
+  // Legacy bank fields (for backward compatibility)
   bankName?: string;
   accountName?: string;
   accountNumber?: string;
   sortCode?: string;
+  // New payment method fields
+  paymentMethod?: string;
+  paymentLink?: string;
   gig?: {
     title: string;
     location: string;
@@ -119,13 +123,14 @@ export default function BusinessInvoices() {
   };
 
   const handlePayInvoice = (invoice: InvoiceData) => {
-    if (!invoice.chef.stripeAccountId) {
-      return;
+    if (invoice.paymentMethod === 'stripe' && invoice.paymentLink) {
+      // Open Stripe payment link
+      window.open(invoice.paymentLink, '_blank');
+    } else if (invoice.chef.stripeAccountId) {
+      // Fallback to old behavior for backward compatibility
+      const stripePaymentUrl = `https://dashboard.stripe.com/payments?recipient=${invoice.chef.stripeAccountId}`;
+      window.open(stripePaymentUrl, '_blank');
     }
-    
-    // Open Stripe Dashboard with payment link
-    const stripePaymentUrl = `https://dashboard.stripe.com/payments?recipient=${invoice.chef.stripeAccountId}`;
-    window.open(stripePaymentUrl, '_blank');
   };
 
   const handleReviewClick = (invoice: InvoiceData) => {
@@ -487,30 +492,38 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, current
         </div>
       )}
 
-      {/* Bank Details Section for Manual Invoices */}
-      {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode && (
+      {/* Payment Method Section */}
+      {invoice.paymentMethod === 'bank' && (invoice.bankName || invoice.accountName || invoice.accountNumber || invoice.sortCode) && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h5 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
             <Receipt className="h-4 w-4" />
             Bank Details for Payment
           </h5>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-blue-700 font-medium">Bank Name:</span>
-              <p className="text-blue-900">{invoice.bankName}</p>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">Account Name:</span>
-              <p className="text-blue-900">{invoice.accountName}</p>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">Sort Code:</span>
-              <p className="text-blue-900">{invoice.sortCode}</p>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">Account Number:</span>
-              <p className="text-blue-900">{invoice.accountNumber}</p>
-            </div>
+            {invoice.bankName && (
+              <div>
+                <span className="text-blue-700 font-medium">Bank Name:</span>
+                <p className="text-blue-900">{invoice.bankName}</p>
+              </div>
+            )}
+            {invoice.accountName && (
+              <div>
+                <span className="text-blue-700 font-medium">Account Name:</span>
+                <p className="text-blue-900">{invoice.accountName}</p>
+              </div>
+            )}
+            {invoice.sortCode && (
+              <div>
+                <span className="text-blue-700 font-medium">Sort Code:</span>
+                <p className="text-blue-900">{invoice.sortCode}</p>
+              </div>
+            )}
+            {invoice.accountNumber && (
+              <div>
+                <span className="text-blue-700 font-medium">Account Number:</span>
+                <p className="text-blue-900">{invoice.accountNumber}</p>
+              </div>
+            )}
           </div>
           <p className="text-xs text-blue-600 mt-2">
             Please use bank transfer to pay this invoice using the details above.
@@ -518,40 +531,104 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, current
         </div>
       )}
 
+      {/* Stripe Payment Link Section */}
+      {invoice.paymentMethod === 'stripe' && invoice.paymentLink && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h5 className="font-medium text-green-900 mb-3 flex items-center gap-2">
+            <PoundSterling className="h-4 w-4" />
+            Stripe Payment Available
+          </h5>
+          <p className="text-sm text-green-700 mb-3">
+            Click the "Pay with Stripe" button below to complete payment securely.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-4 border-t">
         <div className="flex items-center gap-4">
-          {/* Show bank payment message for manual invoices with bank details */}
-          {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode && invoice.status.toLowerCase() === 'pending' ? (
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-blue-600 font-medium">
-                Pay via bank transfer using details above
-              </div>
-              {onMarkAsPaid && (
+          {invoice.status.toLowerCase() === 'pending' ? (
+            <>
+              {/* Bank Transfer Payment */}
+              {invoice.paymentMethod === 'bank' && (
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-blue-600 font-medium">
+                    Pay via bank transfer using details above
+                  </div>
+                  {onMarkAsPaid && (
+                    <Button 
+                      onClick={() => onMarkAsPaid(invoice)}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Mark as Paid
+                    </Button>
+                  )}
+                </div>
+              )}
+              
+              {/* Stripe Payment */}
+              {invoice.paymentMethod === 'stripe' && invoice.paymentLink && (
                 <Button 
-                  onClick={() => onMarkAsPaid(invoice)}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                  size="sm"
+                  onClick={() => onPayClick(invoice)}
+                  className="flex items-center gap-2"
                 >
-                  <CheckCircle className="h-4 w-4" />
-                  Mark as Paid
+                  <ExternalLink className="h-4 w-4" />
+                  Pay with Stripe
                 </Button>
               )}
-            </div>
-          ) : !invoice.chef.stripeAccountId ? (
-            <Alert className="flex-1">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                This chef has not connected their payment account yet. Payment cannot be processed.
-              </AlertDescription>
-            </Alert>
-          ) : invoice.status.toLowerCase() === 'pending' ? (
-            <Button 
-              onClick={() => onPayClick(invoice)}
-              className="flex items-center gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Pay with Stripe
-            </Button>
+              
+              {/* Fallback for old invoices without payment method */}
+              {!invoice.paymentMethod && (
+                <>
+                  {/* Show bank payment if we have bank details */}
+                  {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode ? (
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm text-blue-600 font-medium">
+                        Pay via bank transfer using details above
+                      </div>
+                      {onMarkAsPaid && (
+                        <Button 
+                          onClick={() => onMarkAsPaid(invoice)}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          size="sm"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Mark as Paid
+                        </Button>
+                      )}
+                    </div>
+                  ) : invoice.chef.stripeAccountId ? (
+                    <Button 
+                      onClick={() => onPayClick(invoice)}
+                      className="flex items-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Pay with Stripe
+                    </Button>
+                  ) : (
+                    <Alert className="flex-1">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        This chef has not set up their payment method yet. Payment cannot be processed.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </>
+              )}
+              
+              {/* No payment method available */}
+              {invoice.paymentMethod && 
+               invoice.paymentMethod !== 'stripe' && 
+               invoice.paymentMethod !== 'bank' && (
+                <Alert className="flex-1">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Payment method not properly configured. Please contact support.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
           ) : (
             <div className="text-sm text-gray-500">
               Payment {invoice.status.toLowerCase() === 'paid' ? 'completed' : 'in progress'}

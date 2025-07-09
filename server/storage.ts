@@ -740,10 +740,14 @@ export class DBStorage implements IStorage {
       serviceTitle: gigInvoices.serviceTitle,
       serviceDescription: gigInvoices.serviceDescription,
       paymentType: gigInvoices.paymentType,
+      // Legacy bank fields
       bankName: gigInvoices.bankName,
       accountName: gigInvoices.accountName,
       accountNumber: gigInvoices.accountNumber,
       sortCode: gigInvoices.sortCode,
+      // New payment method fields
+      paymentMethod: gigInvoices.paymentMethod,
+      paymentLink: gigInvoices.paymentLink,
       gig: {
         title: gigs.title,
         location: gigs.location,

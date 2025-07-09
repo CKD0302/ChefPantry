@@ -666,8 +666,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Fetch chef profile to get payment method details
+      const chefProfile = await storage.getChefProfile(validatedData.chefId);
+      if (!chefProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
+      }
+      
+      // Add payment method details to the invoice data
+      const invoiceWithPaymentDetails = {
+        ...validatedData,
+        paymentMethod: chefProfile.paymentMethod || 'bank',
+        paymentLink: chefProfile.paymentMethod === 'stripe' ? chefProfile.stripePaymentLink : null,
+        sortCode: chefProfile.paymentMethod === 'bank' ? chefProfile.bankSortCode : null,
+        accountNumber: chefProfile.paymentMethod === 'bank' ? chefProfile.bankAccountNumber : null,
+      };
+      
       // Create the invoice
-      const invoice = await storage.createGigInvoice(validatedData);
+      const invoice = await storage.createGigInvoice(invoiceWithPaymentDetails);
       
       // Create notification for the business
       await storage.createNotification({
@@ -797,155 +812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create Stripe Connect account for chef
-  apiRouter.post("/stripe/connect/account", async (req: Request, res: Response) => {
-    try {
-      const { chefId } = req.body;
-      
-      if (!chefId || typeof chefId !== 'string') {
-        return res.status(400).json({ message: "Chef ID is required" });
-      }
-      
-      // Check if chef already has a Stripe account
-      const chefProfile = await storage.getChefProfile(chefId);
-      if (!chefProfile) {
-        return res.status(404).json({ message: "Chef profile not found" });
-      }
-      
-      if (chefProfile.stripeAccountId) {
-        return res.status(400).json({ message: "Chef already has a Stripe account" });
-      }
-      
-      // Create Stripe Connect account
-      const account = await stripe.accounts.create({
-        type: 'standard'
-      });
-      
-      // Update chef profile with Stripe account ID
-      await storage.updateChefStripeAccountId(chefId, account.id);
-      
-      res.status(201).json({
-        message: "Stripe account created successfully",
-        accountId: account.id
-      });
-    } catch (error) {
-      console.error("Error creating Stripe account:", error);
-      res.status(500).json({ message: "Failed to create Stripe account" });
-    }
-  });
 
-  // Generate Stripe Connect onboarding link
-  apiRouter.post("/stripe/connect/onboarding", async (req: Request, res: Response) => {
-    try {
-      const { chefId } = req.body;
-      
-      if (!chefId || typeof chefId !== 'string') {
-        return res.status(400).json({ message: "Chef ID is required" });
-      }
-      
-      const chefProfile = await storage.getChefProfile(chefId);
-      if (!chefProfile) {
-        return res.status(404).json({ message: "Chef profile not found" });
-      }
-      
-      if (!chefProfile.stripeAccountId) {
-        return res.status(400).json({ message: "Chef must have a Stripe account first" });
-      }
-      
-      // Create account link for onboarding
-      const accountLink = await stripe.accountLinks.create({
-        account: chefProfile.stripeAccountId,
-        refresh_url: `${req.protocol}://${req.get('host')}/profile/stripe-connect?refresh=true`,
-        return_url: `${req.protocol}://${req.get('host')}/profile/stripe-connect?success=true`,
-        type: 'account_onboarding',
-      });
-      
-      res.status(200).json({
-        onboardingUrl: accountLink.url
-      });
-    } catch (error) {
-      console.error("Error creating onboarding link:", error);
-      res.status(500).json({ message: "Failed to create onboarding link" });
-    }
-  });
 
-  // Check Stripe account status
-  apiRouter.get("/stripe/connect/status/:chefId", async (req: Request, res: Response) => {
-    try {
-      const { chefId } = req.params;
-      
-      const chefProfile = await storage.getChefProfile(chefId);
-      if (!chefProfile) {
-        return res.status(404).json({ message: "Chef profile not found" });
-      }
-      
-      if (!chefProfile.stripeAccountId) {
-        return res.status(200).json({
-          hasAccount: false,
-          accountConnected: false
-        });
-      }
-      
-      // Get account details from Stripe
-      const account = await stripe.accounts.retrieve(chefProfile.stripeAccountId);
-      
-      res.status(200).json({
-        hasAccount: true,
-        accountConnected: account.details_submitted,
-        accountId: account.id,
-        chargesEnabled: account.charges_enabled,
-        payoutsEnabled: account.payouts_enabled
-      });
-    } catch (error) {
-      console.error("Error checking Stripe account status:", error);
-      res.status(500).json({ message: "Failed to check account status" });
-    }
-  });
 
-  // Update chef payment preferences
-  apiRouter.put("/chefs/payment-preferences/:chefId", async (req: Request, res: Response) => {
-    try {
-      const { chefId } = req.params;
-      const { preferredPaymentMethod, bankName, accountName, accountNumber, sortCode } = req.body;
-      
-      if (!chefId) {
-        return res.status(400).json({ message: "Chef ID is required" });
-      }
-
-      if (!preferredPaymentMethod || !['stripe', 'bank'].includes(preferredPaymentMethod)) {
-        return res.status(400).json({ message: "Valid payment method is required (stripe or bank)" });
-      }
-
-      // If bank transfer is selected, validate bank details
-      if (preferredPaymentMethod === 'bank') {
-        if (!bankName || !accountName || !accountNumber || !sortCode) {
-          return res.status(400).json({ message: "All bank details are required for bank transfer" });
-        }
-      }
-
-      const preferences = {
-        preferredPaymentMethod,
-        bankName: preferredPaymentMethod === 'bank' ? bankName : null,
-        accountName: preferredPaymentMethod === 'bank' ? accountName : null,
-        accountNumber: preferredPaymentMethod === 'bank' ? accountNumber : null,
-        sortCode: preferredPaymentMethod === 'bank' ? sortCode : null,
-      };
-
-      const updatedProfile = await storage.updateChefPaymentPreferences(chefId, preferences);
-      
-      if (!updatedProfile) {
-        return res.status(404).json({ message: "Chef profile not found" });
-      }
-
-      res.status(200).json({
-        message: "Payment preferences updated successfully",
-        data: updatedProfile
-      });
-    } catch (error) {
-      console.error("Error updating payment preferences:", error);
-      res.status(500).json({ message: "Failed to update payment preferences" });
-    }
-  });
 
   // Update chef payment method (new payment fields)
   apiRouter.put("/chefs/payment-method/:chefId", async (req: Request, res: Response) => {

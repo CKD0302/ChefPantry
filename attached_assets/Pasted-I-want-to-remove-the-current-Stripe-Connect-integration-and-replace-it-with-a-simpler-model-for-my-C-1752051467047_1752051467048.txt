@@ -1,0 +1,71 @@
+I want to remove the current Stripe Connect integration and replace it with a simpler model for my Chef Pantry app.
+
+Here’s what I need you to do:
+
+---
+
+🎯 GOAL  
+Chefs get paid **directly** by businesses using their own Stripe Payment Link or Bank Details. The platform (Chef Pantry) does **not** handle payments or take any cut.
+
+---
+
+🔧 PART 1: Chef Profile Update
+
+Update the `chef_profiles` Supabase table and frontend UI to include:
+
+- `payment_method`: text (`'stripe'` or `'bank'`)
+- `stripe_payment_link`: text (if Stripe is selected)
+- `bank_sort_code`: text (if Bank is selected)
+- `bank_account_number`: text (if Bank is selected)
+
+On the profile setup or edit page for chefs:
+
+- Add a dropdown or radio buttons:
+  - Stripe Payment Link
+  - Bank Transfer
+
+- If **Stripe** is selected:
+  - Show input for Stripe Payment Link (`https://buy.stripe.com/...`)
+  - Save it to Supabase
+
+- If **Bank** is selected:
+  - Show inputs for Sort Code + Account Number
+  - Save to Supabase
+
+---
+
+📤 PART 2: Invoice Submission Flow
+
+When a chef submits an invoice for a gig:
+
+- Auto-fetch the chef’s `payment_method` and relevant fields from Supabase
+- Save those in the invoice record (`gig_invoices` table):
+  - `payment_method`
+  - `payment_link` (if Stripe)
+  - `sort_code` and `account_number` (if Bank)
+
+- Do **not** require the chef to re-enter this info each time
+
+---
+
+📥 PART 3: Business View of Invoice
+
+When a business views the invoice:
+
+- If the invoice uses Stripe:
+  - Display a “Pay Now” button linking to the `payment_link`
+- If the invoice uses Bank:
+  - Show the sort code and account number in a clear layout
+- Add a button to “Mark as Paid” (optional: updates `status` in Supabase)
+
+---
+
+🧹 PART 4: Clean-up
+
+- Remove any existing Stripe Connect code
+  - Delete `stripe.accounts.create`, `accountLinks.create`, or `transfers.create` logic
+- Remove any unused `stripe_account_id` or Connect flow references
+
+---
+
+Let me know if you need to see or modify any specific file (e.g., dashboard, profile setup, invoice submission).
