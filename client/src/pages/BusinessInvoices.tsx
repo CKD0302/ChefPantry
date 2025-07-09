@@ -382,7 +382,7 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, current
   const { data: reviewCheck } = useQuery({
     queryKey: ["/api/reviews/check", invoice.gigId, currentUserId],
     queryFn: () => apiRequest("GET", `/api/reviews/check?gigId=${invoice.gigId}&reviewerId=${currentUserId}`).then(res => res.json()),
-    enabled: !!currentUserId && invoice.status.toLowerCase() === 'paid',
+    enabled: !!currentUserId && !!invoice.gigId && invoice.status.toLowerCase() === 'paid',
   });
 
   const formatCurrency = (amount: number) => {
