@@ -758,11 +758,31 @@ export class DBStorage implements IStorage {
     return result[0];
   }
 
-  async getReviewsForRecipient(recipientId: string): Promise<Review[]> {
-    return db.select()
-      .from(reviews)
-      .where(eq(reviews.recipientId, recipientId))
-      .orderBy(desc(reviews.createdAt));
+  async getReviewsForRecipient(recipientId: string): Promise<any[]> {
+    return db.select({
+      id: reviews.id,
+      gigId: reviews.gigId,
+      reviewerId: reviews.reviewerId,
+      recipientId: reviews.recipientId,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      createdAt: reviews.createdAt,
+      reviewer: {
+        id: sql`COALESCE(${chefProfiles.id}, ${businessProfiles.id})`.as('reviewer_id'),
+        fullName: sql`COALESCE(${chefProfiles.fullName}, ${businessProfiles.businessName})`.as('reviewer_name'),
+      },
+      gig: {
+        id: gigs.id,
+        title: gigs.title,
+        startDate: gigs.startDate,
+      }
+    })
+    .from(reviews)
+    .leftJoin(chefProfiles, eq(reviews.reviewerId, chefProfiles.id))
+    .leftJoin(businessProfiles, eq(reviews.reviewerId, businessProfiles.id))
+    .leftJoin(gigs, eq(reviews.gigId, gigs.id))
+    .where(eq(reviews.recipientId, recipientId))
+    .orderBy(desc(reviews.createdAt));
   }
 
   async getReviewsForGig(gigId: string): Promise<Review[]> {

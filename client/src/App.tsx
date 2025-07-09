@@ -16,6 +16,7 @@ import ViewChefProfile from "@/pages/profile/ViewChefProfile";
 import EditProfile from "@/pages/profile/Edit";
 import PaymentSettings from "@/pages/profile/PaymentSettings";
 import BusinessInvoices from "@/pages/BusinessInvoices";
+import ChefInvoices from "@/pages/ChefInvoices";
 import AdminDashboard from "@/pages/admin/Dashboard";
 
 // Gig Management Pages
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/profile/payment-settings" component={PaymentSettings} />
       <Route path="/business/invoices" component={BusinessInvoices} />
+      <Route path="/chef/invoices" component={ChefInvoices} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       
       {/* Gig Management Routes */}

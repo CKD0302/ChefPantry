@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ReviewsSection from "@/components/ReviewsSection";
 
 // Business profile interface
 interface BusinessProfile {
@@ -488,6 +489,15 @@ export default function ViewProfile() {
                 </div>
               </CardFooter>
             </Card>
+            
+            {/* Reviews Section */}
+            <div className="mt-6">
+              <ReviewsSection 
+                recipientId={businessProfile?.id || ""}
+                recipientName={businessProfile?.business_name || ""}
+                recipientType="business"
+              />
+            </div>
           </div>
         </main>
         <Footer />
@@ -722,6 +732,15 @@ export default function ViewProfile() {
                 </div>
               </CardFooter>
             </Card>
+            
+            {/* Reviews Section */}
+            <div className="mt-6">
+              <ReviewsSection 
+                recipientId={chefProfile?.id || ""}
+                recipientName={chefProfile?.full_name || ""}
+                recipientType="chef"
+              />
+            </div>
           </div>
         </main>
         <Footer />

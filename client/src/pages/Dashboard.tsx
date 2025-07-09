@@ -274,6 +274,14 @@ export default function Dashboard() {
                     </Button>
                     <Button 
                       variant="outline"
+                      onClick={() => navigate("/chef/invoices")}
+                      className="flex items-center gap-2"
+                    >
+                      <PoundSterling className="h-4 w-4 text-green-600" />
+                      My Invoices
+                    </Button>
+                    <Button 
+                      variant="outline"
                       onClick={() => navigate("/profile/payment-settings")}
                     >
                       Payments
