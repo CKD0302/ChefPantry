@@ -126,6 +126,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 09, 2025. Added new payment method fields to chef_profiles table: payment_method, stripe_payment_link, bank_sort_code, bank_account_number with corresponding API endpoints and storage methods
 - July 09, 2025. Enhanced invoice management with "Mark as Paid" functionality for manual invoices with bank transfer details, allowing businesses to manually mark invoices as paid after completing bank transfers
 - July 09, 2025. Fixed UUID validation error in review checking system to prevent database errors when null values are passed
 - July 07, 2025. Implemented comprehensive disclaimer flow for both chef and business profiles with role-specific disclaimer text and validation

@@ -947,6 +947,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update chef payment method (new payment fields)
+  apiRouter.put("/chefs/payment-method/:chefId", async (req: Request, res: Response) => {
+    try {
+      const { chefId } = req.params;
+      const { paymentMethod, stripePaymentLink, bankSortCode, bankAccountNumber } = req.body;
+      
+      if (!chefId) {
+        return res.status(400).json({ message: "Chef ID is required" });
+      }
+
+      if (paymentMethod && !['stripe', 'bank'].includes(paymentMethod)) {
+        return res.status(400).json({ message: "Valid payment method is required (stripe or bank)" });
+      }
+
+      // If bank transfer is selected, validate bank details
+      if (paymentMethod === 'bank') {
+        if (!bankSortCode || !bankAccountNumber) {
+          return res.status(400).json({ message: "Bank sort code and account number are required for bank transfer" });
+        }
+      }
+
+      const paymentData = {
+        paymentMethod,
+        stripePaymentLink: paymentMethod === 'stripe' ? stripePaymentLink : null,
+        bankSortCode: paymentMethod === 'bank' ? bankSortCode : null,
+        bankAccountNumber: paymentMethod === 'bank' ? bankAccountNumber : null,
+      };
+
+      const updatedProfile = await storage.updateChefPaymentMethod(chefId, paymentData);
+      
+      if (!updatedProfile) {
+        return res.status(404).json({ message: "Chef profile not found" });
+      }
+
+      res.status(200).json({
+        message: "Payment method updated successfully",
+        data: updatedProfile
+      });
+    } catch (error) {
+      console.error("Error updating payment method:", error);
+      res.status(500).json({ message: "Failed to update payment method" });
+    }
+  });
+
   // Create a review
   apiRouter.post("/reviews", async (req: Request, res: Response) => {
     try {

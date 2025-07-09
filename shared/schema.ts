@@ -87,6 +87,11 @@ export const chefProfiles = pgTable("chef_profiles", {
   accountName: text("account_name"), // Account holder name
   accountNumber: text("account_number"), // Bank account number
   sortCode: text("sort_code"), // Bank sort code
+  // New payment fields as requested
+  paymentMethod: text("payment_method"), // 'stripe' or 'bank'
+  stripePaymentLink: text("stripe_payment_link"), // Stripe Payment URL if using Stripe
+  bankSortCode: text("bank_sort_code"), // UK sort code if using manual method
+  bankAccountNumber: text("bank_account_number"), // UK account number if using manual method
   // Disclaimer acceptance
   chefDisclaimerAccepted: boolean("chef_disclaimer_accepted").default(false).notNull(),
   chefDisclaimerAcceptedAt: timestamp("chef_disclaimer_accepted_at"),
