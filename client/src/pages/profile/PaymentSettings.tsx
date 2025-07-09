@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, CreditCard, PoundSterling, Clock, CheckCircle, Plus, Building } from "lucide-react";
 import { Link } from "wouter";
-import StripeConnectOnboarding from "@/components/StripeConnectOnboarding";
 import ManualInvoiceModal from "@/components/ManualInvoiceModal";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,16 +37,15 @@ export default function PaymentSettings() {
   const queryClient = useQueryClient();
   const [isManualInvoiceModalOpen, setIsManualInvoiceModalOpen] = useState(false);
   
-  // Payment preference form state
+  // Payment method form state
   const [paymentMethod, setPaymentMethod] = useState('bank');
-  const [bankName, setBankName] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [sortCode, setSortCode] = useState('');
+  const [stripePaymentLink, setStripePaymentLink] = useState('');
+  const [bankSortCode, setBankSortCode] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
   
   const chefId = user?.id;
 
-  // Query chef profile for payment preferences
+  // Query chef profile for payment method
   const { data: chefProfile, isLoading: profileLoading } = useQuery({
     queryKey: ["/api/profiles/chef", chefId],
     queryFn: () => apiRequest("GET", `/api/profiles/chef/${chefId}`).then(res => res.json()),
@@ -57,11 +55,10 @@ export default function PaymentSettings() {
   // Update form state when profile data loads
   useEffect(() => {
     if (chefProfile && !profileLoading) {
-      setPaymentMethod(chefProfile.preferredPaymentMethod || 'bank');
-      setBankName(chefProfile.bankName || '');
-      setAccountName(chefProfile.accountName || '');
-      setAccountNumber(chefProfile.accountNumber || '');
-      setSortCode(chefProfile.sortCode || '');
+      setPaymentMethod(chefProfile.paymentMethod || 'bank');
+      setStripePaymentLink(chefProfile.stripePaymentLink || '');
+      setBankSortCode(chefProfile.bankSortCode || '');
+      setBankAccountNumber(chefProfile.bankAccountNumber || '');
     }
   }, [chefProfile, profileLoading]);
 
@@ -72,55 +69,62 @@ export default function PaymentSettings() {
     enabled: !!chefId,
   });
 
-  // Mutation to update payment preferences
-  const updatePaymentPreferences = useMutation({
-    mutationFn: async (preferences: {
-      preferredPaymentMethod: string;
-      bankName?: string;
-      accountName?: string;
-      accountNumber?: string;
-      sortCode?: string;
+  // Mutation to update payment method
+  const updatePaymentMethod = useMutation({
+    mutationFn: async (paymentData: {
+      paymentMethod: string;
+      stripePaymentLink?: string;
+      bankSortCode?: string;
+      bankAccountNumber?: string;
     }) => {
-      return apiRequest("PUT", `/api/chefs/payment-preferences/${chefId}`, preferences);
+      return apiRequest("PUT", `/api/chefs/payment-method/${chefId}`, paymentData);
     },
     onSuccess: () => {
       toast({
-        title: "Payment preferences updated",
+        title: "Payment method updated",
         description: "Your payment method has been saved successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/chef", chefId] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error updating preferences",
-        description: error.message || "Failed to update payment preferences",
+        title: "Error updating payment method",
+        description: error.message || "Failed to update payment method",
         variant: "destructive",
       });
     }
   });
 
-  const handleSavePaymentPreferences = async () => {
-    const preferences = {
-      preferredPaymentMethod: paymentMethod,
-      bankName: paymentMethod === 'bank' ? bankName : undefined,
-      accountName: paymentMethod === 'bank' ? accountName : undefined,
-      accountNumber: paymentMethod === 'bank' ? accountNumber : undefined,
-      sortCode: paymentMethod === 'bank' ? sortCode : undefined,
+  const handleSavePaymentMethod = async () => {
+    const paymentData = {
+      paymentMethod,
+      stripePaymentLink: paymentMethod === 'stripe' ? stripePaymentLink : undefined,
+      bankSortCode: paymentMethod === 'bank' ? bankSortCode : undefined,
+      bankAccountNumber: paymentMethod === 'bank' ? bankAccountNumber : undefined,
     };
 
-    // Validate bank details if bank transfer is selected
+    // Validate required fields
     if (paymentMethod === 'bank') {
-      if (!bankName || !accountName || !accountNumber || !sortCode) {
+      if (!bankSortCode || !bankAccountNumber) {
         toast({
           title: "Validation Error",
-          description: "All bank details are required for bank transfer",
+          description: "Bank sort code and account number are required for bank transfer",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (paymentMethod === 'stripe') {
+      if (!stripePaymentLink) {
+        toast({
+          title: "Validation Error",
+          description: "Stripe payment link is required for Stripe payments",
           variant: "destructive",
         });
         return;
       }
     }
 
-    updatePaymentPreferences.mutate(preferences);
+    updatePaymentMethod.mutate(paymentData);
   };
   
   if (!user || !chefId) {
@@ -208,19 +212,19 @@ export default function PaymentSettings() {
             <CardContent className="space-y-6">
               <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                 <div className="space-y-4">
-                  {/* Stripe Connect Option */}
+                  {/* Stripe Payment Link Option */}
                   <div className="flex items-start space-x-3 p-4 border rounded-lg">
                     <RadioGroupItem value="stripe" id="stripe" className="mt-1" />
                     <div className="flex-1">
                       <Label htmlFor="stripe" className="text-base font-medium cursor-pointer">
-                        Stripe Connect
+                        Stripe Payment Link
                       </Label>
                       <p className="text-sm text-gray-600 mt-1">
-                        Fast, secure payments directly to your account. 2.9% + 30p per transaction.
+                        Use your own Stripe payment link for instant payments. You manage your own Stripe account.
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <CreditCard className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm text-blue-600">Instant payouts available</span>
+                        <span className="text-sm text-blue-600">Instant payments with your own link</span>
                       </div>
                     </div>
                   </div>
@@ -244,46 +248,50 @@ export default function PaymentSettings() {
                 </div>
               </RadioGroup>
 
+              {/* Stripe Payment Link Form - Only show when Stripe is selected */}
+              {paymentMethod === 'stripe' && (
+                <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900">Stripe Payment Link</h4>
+                  <p className="text-sm text-blue-700 mb-4">
+                    Enter your Stripe payment link to receive payments instantly.
+                  </p>
+                  <div>
+                    <Label htmlFor="stripePaymentLink">Payment Link</Label>
+                    <Input
+                      id="stripePaymentLink"
+                      value={stripePaymentLink}
+                      onChange={(e) => setStripePaymentLink(e.target.value)}
+                      placeholder="https://buy.stripe.com/..."
+                    />
+                    <p className="text-xs text-blue-600 mt-1">
+                      Create a payment link in your Stripe Dashboard
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Bank Details Form - Only show when bank transfer is selected */}
               {paymentMethod === 'bank' && (
                 <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                   <h4 className="font-medium text-gray-900">Bank Account Details</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="bankName">Bank Name</Label>
+                      <Label htmlFor="bankSortCode">Sort Code</Label>
                       <Input
-                        id="bankName"
-                        value={bankName}
-                        onChange={(e) => setBankName(e.target.value)}
-                        placeholder="e.g., Barclays"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="accountName">Account Name</Label>
-                      <Input
-                        id="accountName"
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="Account holder name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="accountNumber">Account Number</Label>
-                      <Input
-                        id="accountNumber"
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="12345678"
+                        id="bankSortCode"
+                        value={bankSortCode}
+                        onChange={(e) => setBankSortCode(e.target.value)}
+                        placeholder="12-34-56"
                         maxLength={8}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="sortCode">Sort Code</Label>
+                      <Label htmlFor="bankAccountNumber">Account Number</Label>
                       <Input
-                        id="sortCode"
-                        value={sortCode}
-                        onChange={(e) => setSortCode(e.target.value)}
-                        placeholder="12-34-56"
+                        id="bankAccountNumber"
+                        value={bankAccountNumber}
+                        onChange={(e) => setBankAccountNumber(e.target.value)}
+                        placeholder="12345678"
                         maxLength={8}
                       />
                     </div>
@@ -291,23 +299,12 @@ export default function PaymentSettings() {
                 </div>
               )}
 
-              {/* Stripe Connect Setup - Only show when Stripe is selected */}
-              {paymentMethod === 'stripe' && (
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Stripe Connect Setup</h4>
-                  <p className="text-sm text-blue-700 mb-4">
-                    Set up your Stripe Connect account to receive payments instantly.
-                  </p>
-                  <StripeConnectOnboarding chefId={chefId} />
-                </div>
-              )}
-
               <Button 
-                onClick={handleSavePaymentPreferences} 
-                disabled={updatePaymentPreferences.isPending}
+                onClick={handleSavePaymentMethod} 
+                disabled={updatePaymentMethod.isPending}
                 className="w-full"
               >
-                {updatePaymentPreferences.isPending ? "Saving..." : "Save Payment Method"}
+                {updatePaymentMethod.isPending ? "Saving..." : "Save Payment Method"}
               </Button>
             </CardContent>
           </Card>

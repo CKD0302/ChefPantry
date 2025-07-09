@@ -928,6 +928,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEPRECATED: Old Stripe Connect API stub routes - return errors to prevent frontend loops
+  apiRouter.get("/stripe/connect/status/:chefId", (req: Request, res: Response) => {
+    res.status(410).json({ 
+      message: "Stripe Connect integration has been removed. Please use the new payment method settings." 
+    });
+  });
+
+  apiRouter.post("/stripe/connect/account", (req: Request, res: Response) => {
+    res.status(410).json({ 
+      message: "Stripe Connect integration has been removed. Please use the new payment method settings." 
+    });
+  });
+
+  apiRouter.post("/stripe/connect/onboarding", (req: Request, res: Response) => {
+    res.status(410).json({ 
+      message: "Stripe Connect integration has been removed. Please use the new payment method settings." 
+    });
+  });
+
   // Mount API routes
   app.use("/api", apiRouter);
 
