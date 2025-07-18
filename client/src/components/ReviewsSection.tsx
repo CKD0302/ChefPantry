@@ -27,9 +27,10 @@ interface ReviewsSectionProps {
   recipientId: string;
   recipientName: string;
   recipientType: "chef" | "business";
+  embedded?: boolean; // When true, doesn't render its own Card
 }
 
-export default function ReviewsSection({ recipientId, recipientName, recipientType }: ReviewsSectionProps) {
+export default function ReviewsSection({ recipientId, recipientName, recipientType, embedded = false }: ReviewsSectionProps) {
   // Fetch reviews for this recipient
   const { data: reviews, isLoading: reviewsLoading } = useQuery({
     queryKey: ["/api/reviews/recipient", recipientId],
@@ -72,17 +73,30 @@ export default function ReviewsSection({ recipientId, recipientName, recipientTy
   };
 
   if (reviewsLoading || ratingLoading) {
+    const loadingContent = (
+      <div className="animate-pulse space-y-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-20 bg-gray-200 rounded"></div>
+        <div className="h-20 bg-gray-200 rounded"></div>
+      </div>
+    );
+
+    if (embedded) {
+      return (
+        <div>
+          <h3 className="text-lg font-medium mb-4">Reviews</h3>
+          {loadingContent}
+        </div>
+      );
+    }
+
     return (
       <Card>
         <CardHeader>
           <CardTitle>Reviews</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-          </div>
+          {loadingContent}
         </CardContent>
       </Card>
     );
@@ -90,6 +104,83 @@ export default function ReviewsSection({ recipientId, recipientName, recipientTy
 
   const averageRating = parseFloat(ratingData?.averageRating?.toString() || '0');
   const reviewCount = reviews?.length || 0;
+
+  const reviewContent = (
+    <>
+      <div className="mb-4">
+        <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+          <Star className="h-5 w-5" />
+          Reviews ({reviewCount})
+        </h3>
+        {reviewCount > 0 ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              {renderStars(Math.round(averageRating), "sm")}
+              <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
+              <span className="text-sm text-gray-500">out of 5</span>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {reviewCount} review{reviewCount !== 1 ? 's' : ''}
+            </Badge>
+          </div>
+        ) : (
+          <p className="text-gray-600">{`No reviews yet for ${recipientName}`}</p>
+        )}
+      </div>
+      
+      {!reviews || reviews.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <Star className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p>No reviews yet</p>
+          <p className="text-sm mt-2">
+            Reviews will appear here after completed gigs
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reviews.map((review) => (
+            <div key={review.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+              <div className="flex items-start justify-between mb-2 flex-wrap gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {review.reviewer?.fullName || 'Anonymous'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatDate(review.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {renderStars(review.rating, "sm")}
+                  <span className="text-sm font-medium">{review.rating}</span>
+                </div>
+              </div>
+              
+              {review.gig && (
+                <div className="mb-2">
+                  <p className="text-xs text-blue-600 bg-blue-50 inline-block px-2 py-1 rounded">
+                    Gig: {review.gig.title}
+                  </p>
+                </div>
+              )}
+              
+              <p className="text-sm text-gray-700 leading-relaxed break-words">
+                {review.comment}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div>{reviewContent}</div>;
+  }
 
   return (
     <Card>

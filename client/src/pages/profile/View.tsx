@@ -472,6 +472,16 @@ export default function ViewProfile() {
                     </div>
                   </div>
                 )}
+                {/* Reviews Section - Inside the card for better mobile layout */}
+                <Separator className="my-6" />
+                <div className="mb-6">
+                  <ReviewsSection 
+                    recipientId={businessProfile?.id || ""}
+                    recipientName={businessProfile?.business_name || ""}
+                    recipientType="business"
+                    embedded={true}
+                  />
+                </div>
               </CardContent>
 
               <CardFooter className="pt-2 pb-6 flex flex-col items-start">
@@ -489,15 +499,6 @@ export default function ViewProfile() {
                 </div>
               </CardFooter>
             </Card>
-            
-            {/* Reviews Section */}
-            <div className="mt-6">
-              <ReviewsSection 
-                recipientId={businessProfile?.id || ""}
-                recipientName={businessProfile?.business_name || ""}
-                recipientType="business"
-              />
-            </div>
           </div>
         </main>
         <Footer />
@@ -715,6 +716,17 @@ export default function ViewProfile() {
                     </div>
                   </>
                 )}
+
+                {/* Reviews Section - Inside the card for better mobile layout */}
+                <Separator className="my-6" />
+                <div className="mb-6">
+                  <ReviewsSection 
+                    recipientId={chefProfile?.id || ""}
+                    recipientName={chefProfile?.full_name || ""}
+                    recipientType="chef"
+                    embedded={true}
+                  />
+                </div>
               </CardContent>
 
               <CardFooter className="pt-2 pb-6 flex flex-col items-start">
@@ -732,15 +744,6 @@ export default function ViewProfile() {
                 </div>
               </CardFooter>
             </Card>
-            
-            {/* Reviews Section */}
-            <div className="mt-6">
-              <ReviewsSection 
-                recipientId={chefProfile?.id || ""}
-                recipientName={chefProfile?.full_name || ""}
-                recipientType="chef"
-              />
-            </div>
           </div>
         </main>
         <Footer />
