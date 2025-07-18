@@ -88,7 +88,7 @@ export default function ReviewsSection({ recipientId, recipientName, recipientTy
     );
   }
 
-  const averageRating = ratingData?.averageRating || 0;
+  const averageRating = parseFloat(ratingData?.averageRating?.toString() || '0');
   const reviewCount = reviews?.length || 0;
 
   return (

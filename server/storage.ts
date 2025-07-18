@@ -835,7 +835,7 @@ export class DBStorage implements IStorage {
     .from(reviews)
     .where(eq(reviews.recipientId, recipientId));
     
-    return result[0]?.avgRating || 0;
+    return parseFloat(result[0]?.avgRating?.toString() || '0');
   }
 
   async updateInvoiceStatus(invoiceId: string, status: string): Promise<GigInvoice | undefined> {
