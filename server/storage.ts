@@ -126,8 +126,11 @@ export interface IStorage {
   getReview(id: string): Promise<Review | undefined>;
   getReviewByGigAndReviewer(gigId: string, reviewerId: string): Promise<Review | undefined>;
   getReviewsForRecipient(recipientId: string): Promise<Review[]>;
+  getReviewsGivenByUser(userId: string): Promise<Review[]>;
   getReviewsForGig(gigId: string): Promise<Review[]>;
   getAverageRating(recipientId: string): Promise<number>;
+  getReviewSummary(recipientId: string): Promise<any>;
+  getPendingReviewsForUser(userId: string): Promise<any[]>;
 }
 
 export class DBStorage implements IStorage {
@@ -790,8 +793,15 @@ export class DBStorage implements IStorage {
       gigId: reviews.gigId,
       reviewerId: reviews.reviewerId,
       recipientId: reviews.recipientId,
+      reviewerType: reviews.reviewerType,
       rating: reviews.rating,
       comment: reviews.comment,
+      organisationRating: reviews.organisationRating,
+      equipmentRating: reviews.equipmentRating,
+      welcomingRating: reviews.welcomingRating,
+      timekeepingRating: reviews.timekeepingRating,
+      appearanceRating: reviews.appearanceRating,
+      roleFulfilmentRating: reviews.roleFulfilmentRating,
       createdAt: reviews.createdAt,
       reviewer: {
         id: sql`COALESCE(${chefProfiles.id}, ${businessProfiles.id})`.as('reviewer_id'),
@@ -835,6 +845,150 @@ export class DBStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async getReviewsGivenByUser(userId: string): Promise<any[]> {
+    const result = await db.select({
+      id: reviews.id,
+      gigId: reviews.gigId,
+      reviewerId: reviews.reviewerId,
+      recipientId: reviews.recipientId,
+      reviewerType: reviews.reviewerType,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      organisationRating: reviews.organisationRating,
+      equipmentRating: reviews.equipmentRating,
+      welcomingRating: reviews.welcomingRating,
+      timekeepingRating: reviews.timekeepingRating,
+      appearanceRating: reviews.appearanceRating,
+      roleFulfilmentRating: reviews.roleFulfilmentRating,
+      createdAt: reviews.createdAt,
+      gigTitle: gigs.title,
+      gigStartDate: gigs.startDate,
+      recipientName: sql<string>`CASE 
+        WHEN ${reviews.reviewerType} = 'chef' THEN ${businessProfiles.businessName}
+        WHEN ${reviews.reviewerType} = 'business' THEN ${chefProfiles.fullName}
+        ELSE 'Unknown'
+      END`.as('recipientName')
+    })
+      .from(reviews)
+      .leftJoin(gigs, eq(reviews.gigId, gigs.id))
+      .leftJoin(chefProfiles, eq(reviews.recipientId, chefProfiles.id))
+      .leftJoin(businessProfiles, eq(reviews.recipientId, businessProfiles.id))
+      .where(eq(reviews.reviewerId, userId))
+      .orderBy(desc(reviews.createdAt));
+    
+    return result.map(review => ({
+      ...review,
+      gig: {
+        id: review.gigId,
+        title: review.gigTitle,
+        startDate: review.gigStartDate
+      },
+      recipient: {
+        id: review.recipientId,
+        fullName: review.recipientName
+      }
+    }));
+  }
+
+  async getReviewSummary(recipientId: string): Promise<any> {
+    // Get basic stats
+    const [statsResult] = await db.select({
+      averageRating: sql<number>`COALESCE(avg(${reviews.rating}), 0)`,
+      totalReviews: sql<number>`count(*)`,
+      // Category averages
+      organisationRating: sql<number>`COALESCE(avg(${reviews.organisationRating}), 0)`,
+      equipmentRating: sql<number>`COALESCE(avg(${reviews.equipmentRating}), 0)`,
+      welcomingRating: sql<number>`COALESCE(avg(${reviews.welcomingRating}), 0)`,
+      timekeepingRating: sql<number>`COALESCE(avg(${reviews.timekeepingRating}), 0)`,
+      appearanceRating: sql<number>`COALESCE(avg(${reviews.appearanceRating}), 0)`,
+      roleFulfilmentRating: sql<number>`COALESCE(avg(${reviews.roleFulfilmentRating}), 0)`
+    })
+      .from(reviews)
+      .where(eq(reviews.recipientId, recipientId));
+
+    // Get rating distribution
+    const distributionResult = await db.select({
+      rating: reviews.rating,
+      count: sql<number>`count(*)`
+    })
+      .from(reviews)
+      .where(eq(reviews.recipientId, recipientId))
+      .groupBy(reviews.rating);
+
+    const ratingDistribution = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0
+    };
+
+    distributionResult.forEach(row => {
+      if (row.rating >= 1 && row.rating <= 5) {
+        ratingDistribution[row.rating as keyof typeof ratingDistribution] = row.count;
+      }
+    });
+
+    return {
+      averageRating: statsResult.averageRating,
+      totalReviews: statsResult.totalReviews,
+      categoryAverages: {
+        organisationRating: statsResult.organisationRating > 0 ? statsResult.organisationRating : undefined,
+        equipmentRating: statsResult.equipmentRating > 0 ? statsResult.equipmentRating : undefined,
+        welcomingRating: statsResult.welcomingRating > 0 ? statsResult.welcomingRating : undefined,
+        timekeepingRating: statsResult.timekeepingRating > 0 ? statsResult.timekeepingRating : undefined,
+        appearanceRating: statsResult.appearanceRating > 0 ? statsResult.appearanceRating : undefined,
+        roleFulfilmentRating: statsResult.roleFulfilmentRating > 0 ? statsResult.roleFulfilmentRating : undefined,
+      },
+      ratingDistribution
+    };
+  }
+
+  async getPendingReviewsForUser(userId: string): Promise<any[]> {
+    // Get completed gigs where user hasn't left a review yet
+    const result = await db.select({
+      gigId: gigs.id,
+      gigTitle: gigs.title,
+      gigDate: gigs.startDate,
+      businessId: gigs.createdBy,
+      businessName: businessProfiles.businessName,
+      chefId: gigApplications.chefId,
+      chefName: chefProfiles.fullName,
+      userRole: sql<string>`CASE 
+        WHEN ${gigApplications.chefId} = ${userId} THEN 'chef'
+        WHEN ${gigs.createdBy} = ${userId} THEN 'business'
+        ELSE 'unknown'
+      END`.as('userRole')
+    })
+      .from(gigs)
+      .innerJoin(gigApplications, and(
+        eq(gigApplications.gigId, gigs.id),
+        eq(gigApplications.status, 'confirmed')
+      ))
+      .leftJoin(chefProfiles, eq(gigApplications.chefId, chefProfiles.id))
+      .leftJoin(businessProfiles, eq(gigs.createdBy, businessProfiles.id))
+      .where(and(
+        sql`${gigs.endDate} < NOW()`, // Gig is completed
+        sql`(${gigApplications.chefId} = ${userId} OR ${gigs.createdBy} = ${userId})`, // User was involved
+        not(sql`EXISTS (
+          SELECT 1 FROM ${reviews} 
+          WHERE ${reviews.gigId} = ${gigs.id} 
+          AND ${reviews.reviewerId} = ${userId}
+        )`) // No review exists yet
+      ))
+      .orderBy(desc(gigs.endDate));
+
+    return result.map(row => ({
+      gigId: row.gigId,
+      gigTitle: row.gigTitle,
+      gigDate: row.gigDate,
+      recipientId: row.userRole === 'chef' ? row.businessId : row.chefId,
+      recipientName: row.userRole === 'chef' ? row.businessName : row.chefName,
+      recipientType: row.userRole === 'chef' ? 'business' : 'chef',
+      businessName: row.businessName
+    }));
   }
 }
 

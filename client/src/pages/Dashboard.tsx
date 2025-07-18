@@ -286,6 +286,12 @@ export default function Dashboard() {
                     >
                       Payments
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/reviews")}
+                    >
+                      Reviews
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -384,6 +390,12 @@ export default function Dashboard() {
                     >
                       <PoundSterling className="h-4 w-4 text-blue-600" />
                       Invoices
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/reviews")}
+                    >
+                      Reviews
                     </Button>
                   </div>
                 </div>

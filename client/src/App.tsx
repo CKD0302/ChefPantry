@@ -26,6 +26,7 @@ import BrowseGigs from "@/pages/gigs/Browse";
 import ViewGig from "@/pages/gigs/View";
 import MyApplications from "@/pages/gigs/MyApplications";
 import GigApplications from "@/pages/gigs/applications/GigApplications";
+import Reviews from "@/pages/Reviews";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/gigs/view/:id" component={ViewGig} />
       <Route path="/gigs/my-applications" component={MyApplications} />
       <Route path="/gigs/applications/:gigId" component={GigApplications} />
+      <Route path="/reviews" component={Reviews} />
       
       <Route component={NotFound} />
     </Switch>

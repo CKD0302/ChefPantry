@@ -895,7 +895,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get average rating for a recipient
+  // Get reviews given by a user
+  apiRouter.get("/reviews/given/:userId", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const reviews = await storage.getReviewsGivenByUser(userId);
+      res.status(200).json(reviews);
+    } catch (error) {
+      console.error("Error fetching given reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // Get pending reviews for a user
+  apiRouter.get("/reviews/pending/:userId", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const pendingReviews = await storage.getPendingReviewsForUser(userId);
+      res.status(200).json(pendingReviews);
+    } catch (error) {
+      console.error("Error fetching pending reviews:", error);
+      res.status(500).json({ message: "Failed to fetch pending reviews" });
+    }
+  });
+
+  // Get review summary with category ratings
+  apiRouter.get("/reviews/summary/:recipientId", async (req: Request, res: Response) => {
+    try {
+      const { recipientId } = req.params;
+      const summary = await storage.getReviewSummary(recipientId);
+      res.status(200).json(summary);
+    } catch (error) {
+      console.error("Error fetching review summary:", error);
+      res.status(500).json({ message: "Failed to fetch review summary" });
+    }
+  });
+
+  // Get average rating for a recipient (legacy endpoint)
   apiRouter.get("/reviews/rating/:recipientId", async (req: Request, res: Response) => {
     try {
       const { recipientId } = req.params;

@@ -214,8 +214,17 @@ export const reviews = pgTable("reviews", {
   gigId: uuid("gig_id").notNull().references(() => gigs.id),
   reviewerId: text("reviewer_id").notNull(), // UUID from Supabase auth (chef or business)
   recipientId: text("recipient_id").notNull(), // UUID from Supabase auth (chef or business)
-  rating: integer("rating").notNull(), // 1-5 stars
-  comment: text("comment").notNull(),
+  reviewerType: text("reviewer_type").notNull(), // 'chef' or 'business'
+  rating: integer("rating").notNull(), // 1-5 stars (overall average)
+  comment: text("comment"),
+  // Category ratings for chefs reviewing venues
+  organisationRating: integer("organisation_rating"), // 1-5 stars
+  equipmentRating: integer("equipment_rating"), // 1-5 stars
+  welcomingRating: integer("welcoming_rating"), // 1-5 stars
+  // Category ratings for venues reviewing chefs
+  timekeepingRating: integer("timekeeping_rating"), // 1-5 stars
+  appearanceRating: integer("appearance_rating"), // 1-5 stars
+  roleFulfilmentRating: integer("role_fulfilment_rating"), // 1-5 stars
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

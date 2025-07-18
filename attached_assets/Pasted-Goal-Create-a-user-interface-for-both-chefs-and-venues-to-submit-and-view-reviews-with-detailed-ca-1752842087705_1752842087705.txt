@@ -1,0 +1,88 @@
+Goal:
+Create a user interface for both chefs and venues to submit and view reviews, with detailed category ratings and overall scores, plus a public profile summary display.
+
+Files/Components to Update:
+
+client/src/pages/Reviews.tsx — New main review page
+
+client/src/components/ReviewForm.tsx — Form for submitting reviews (stars + optional comments)
+
+client/src/components/ReviewSummary.tsx — Summary display of overall + category ratings
+
+client/src/components/ReviewList.tsx — List of past reviews
+
+Update relevant dashboard pages to link to Reviews page
+
+Features & Requirements:
+
+Review Submission Form (ReviewForm.tsx):
+
+Star rating inputs (1-5 stars) for each category
+
+For chefs reviewing venues: Organisation, Equipment, Welcoming
+
+For venues reviewing chefs: Timekeeping, Appearance, Role Fulfilment
+
+Optional text feedback
+
+Submit button
+
+Validation: all categories required, stars must be 1-5
+
+On submit, send data to backend API to save review
+
+Review Summary (ReviewSummary.tsx):
+
+Display average overall rating (calculated from categories)
+
+Display star breakdown by category (e.g. Timekeeping ★★★★☆)
+
+Show number of reviews used to calculate average
+
+Should support tooltip or dropdown to show/hide category details
+
+Review List (ReviewList.tsx):
+
+Show list of all reviews for a chef or venue
+
+Each review shows: rating breakdown, comment, date, reviewer (anonymized if needed)
+
+Dashboard Integration:
+
+Add links/buttons in chef and business dashboards to view and submit reviews
+
+Show latest review summary on public chef/venue profiles
+
+Styling:
+
+Use existing Chef Pantry branding and styles (orange stars, clean typography)
+
+Responsive design for desktop and mobile
+
+Backend Integration:
+
+Assume a RESTful API endpoint:
+
+POST /api/reviews to submit a review
+
+GET /api/reviews?chef_id=... or ?venue_id=... to fetch reviews
+
+GET /api/reviews/summary?chef_id=... or ?venue_id=... for summary ratings
+
+UX Flow:
+
+After gig completion, prompt user with “Leave a review” link/button
+
+Redirect to Reviews.tsx with appropriate context (chef or venue)
+
+User submits ratings and optional comment
+
+Show confirmation and update dashboard review summary
+
+Extras (Optional):
+
+Add a “Thank you” modal on submission
+
+Prevent multiple reviews per gig/user combo
+
+Add “Report inappropriate review” button per review (future)
