@@ -89,11 +89,11 @@ export default function Reviews() {
               Back to Dashboard
             </Button>
           </Link>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Reviews</h1>
-              <p className="text-gray-600 mt-2">Manage your reviews and feedback</p>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Reviews</h1>
+            <p className="text-gray-600 mt-2">Manage your reviews and feedback</p>
+          </div>
+          <div className="flex justify-start">
             <ReviewSummary recipientId={user.id} />
           </div>
         </div>
