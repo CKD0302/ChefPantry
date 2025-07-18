@@ -38,7 +38,8 @@ interface StarDisplayProps {
 }
 
 function StarDisplay({ rating, showNumber = true, size = 'md' }: StarDisplayProps) {
-  const roundedRating = Math.round(rating * 2) / 2; // Round to nearest 0.5
+  const safeRating = rating || 0;
+  const roundedRating = Math.round(safeRating * 2) / 2; // Round to nearest 0.5
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-5 w-5',
@@ -61,7 +62,7 @@ function StarDisplay({ rating, showNumber = true, size = 'md' }: StarDisplayProp
       ))}
       {showNumber && (
         <span className="text-sm text-gray-600 ml-1">
-          {rating.toFixed(1)}
+          {safeRating.toFixed(1)}
         </span>
       )}
     </div>
@@ -116,7 +117,8 @@ export default function ReviewSummary({ recipientId, showDetails = true }: Revie
     return { text: "Needs Improvement", variant: "destructive" as const };
   };
 
-  const badge = getRatingBadge(stats.averageRating);
+  const safeAverageRating = stats.averageRating || 0;
+  const badge = getRatingBadge(safeAverageRating);
   const hasCategories = Object.values(stats.categoryAverages).some(rating => rating && rating > 0);
 
   return (
@@ -132,11 +134,11 @@ export default function ReviewSummary({ recipientId, showDetails = true }: Revie
           {/* Overall Rating */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center gap-2">
-              <span className={`text-3xl font-bold ${getRatingColor(stats.averageRating)}`}>
-                {stats.averageRating.toFixed(1)}
+              <span className={`text-3xl font-bold ${getRatingColor(safeAverageRating)}`}>
+                {safeAverageRating.toFixed(1)}
               </span>
               <div className="flex flex-col items-start">
-                <StarDisplay rating={stats.averageRating} showNumber={false} />
+                <StarDisplay rating={safeAverageRating} showNumber={false} />
                 <Badge variant={badge.variant} className="text-xs mt-1">
                   {badge.text}
                 </Badge>

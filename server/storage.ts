@@ -927,20 +927,20 @@ export class DBStorage implements IStorage {
 
     distributionResult.forEach(row => {
       if (row.rating >= 1 && row.rating <= 5) {
-        ratingDistribution[row.rating as keyof typeof ratingDistribution] = row.count;
+        ratingDistribution[row.rating as keyof typeof ratingDistribution] = parseInt(row.count.toString());
       }
     });
 
     return {
-      averageRating: statsResult.averageRating,
-      totalReviews: statsResult.totalReviews,
+      averageRating: parseFloat(statsResult.averageRating.toString()),
+      totalReviews: parseInt(statsResult.totalReviews.toString()),
       categoryAverages: {
-        organisationRating: statsResult.organisationRating > 0 ? statsResult.organisationRating : undefined,
-        equipmentRating: statsResult.equipmentRating > 0 ? statsResult.equipmentRating : undefined,
-        welcomingRating: statsResult.welcomingRating > 0 ? statsResult.welcomingRating : undefined,
-        timekeepingRating: statsResult.timekeepingRating > 0 ? statsResult.timekeepingRating : undefined,
-        appearanceRating: statsResult.appearanceRating > 0 ? statsResult.appearanceRating : undefined,
-        roleFulfilmentRating: statsResult.roleFulfilmentRating > 0 ? statsResult.roleFulfilmentRating : undefined,
+        organisationRating: statsResult.organisationRating > 0 ? parseFloat(statsResult.organisationRating.toString()) : undefined,
+        equipmentRating: statsResult.equipmentRating > 0 ? parseFloat(statsResult.equipmentRating.toString()) : undefined,
+        welcomingRating: statsResult.welcomingRating > 0 ? parseFloat(statsResult.welcomingRating.toString()) : undefined,
+        timekeepingRating: statsResult.timekeepingRating > 0 ? parseFloat(statsResult.timekeepingRating.toString()) : undefined,
+        appearanceRating: statsResult.appearanceRating > 0 ? parseFloat(statsResult.appearanceRating.toString()) : undefined,
+        roleFulfilmentRating: statsResult.roleFulfilmentRating > 0 ? parseFloat(statsResult.roleFulfilmentRating.toString()) : undefined,
       },
       ratingDistribution
     };
