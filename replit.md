@@ -126,6 +126,9 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 18, 2025. **COMPREHENSIVE REVIEW SYSTEM IMPLEMENTATION**: Completed full bidirectional review system with category-based ratings. Chefs rate venues on Organisation, Equipment, and Welcoming; venues rate chefs on Timekeeping, Appearance, and Role Fulfilment. Added review summary components with star ratings, category breakdowns, and rating distributions. Fixed all data type conversion issues between server and client. Review system properly syncs between chefs and businesses with sample data created for testing.
+- July 18, 2025. Fixed Reviews page layout by moving Review Summary below main heading for better visual hierarchy and user experience
+- July 18, 2025. Resolved JavaScript errors in review components by implementing proper data type conversion from SQL string results to JavaScript numbers
 - July 09, 2025. **MAJOR ARCHITECTURE CHANGE**: Removed complex Stripe Connect integration and replaced with simplified direct payment model. Added payment_method and payment_link fields to gigInvoices table. Invoice creation now auto-fetches payment method details from chef profiles. Updated BusinessInvoices component to display payment method information with "Pay Now" buttons for Stripe payments and "Mark as Paid" for bank transfers.
 - July 09, 2025. Added new payment method fields to chef_profiles table: payment_method, stripe_payment_link, bank_sort_code, bank_account_number with corresponding API endpoints and storage methods
 - July 09, 2025. Enhanced invoice management with "Mark as Paid" functionality for manual invoices with bank transfer details, allowing businesses to manually mark invoices as paid after completing bank transfers
