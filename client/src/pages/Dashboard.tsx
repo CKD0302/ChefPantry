@@ -254,28 +254,30 @@ export default function Dashboard() {
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Your Chef Profile</h2>
               <div className="bg-white border border-neutral-200 rounded p-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div className="flex flex-col space-y-4">
                   <div>
                     <p className="text-green-600 font-medium mb-2">✓ Your profile is complete!</p>
                     <p className="text-neutral-600">You can now browse and apply for gigs.</p>
                   </div>
-                  <div className="flex gap-3 mt-4 md:mt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/gigs/browse")}
+                      className="w-full"
                     >
                       Browse Gigs
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/gigs/my-applications")}
+                      className="w-full"
                     >
                       Applied Gigs
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/chef/invoices")}
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2 w-full"
                     >
                       <PoundSterling className="h-4 w-4 text-green-600" />
                       My Invoices
@@ -283,12 +285,14 @@ export default function Dashboard() {
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/profile/payment-settings")}
+                      className="w-full"
                     >
                       Payments
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/reviews")}
+                      className="w-full"
                     >
                       Reviews
                     </Button>
@@ -365,14 +369,14 @@ export default function Dashboard() {
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Your Business Profile</h2>
               <div className="bg-white border border-neutral-200 rounded p-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div className="flex flex-col space-y-4">
                   <div>
                     <p className="text-green-600 font-medium mb-2">✓ Your business profile is complete!</p>
                     <p className="text-neutral-600">You can now post gigs and find chefs.</p>
                   </div>
-                  <div className="flex gap-3 mt-4 md:mt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <Button 
-                      className="bg-primary hover:bg-primary-dark text-white"
+                      className="bg-primary hover:bg-primary-dark text-white w-full"
                       onClick={() => navigate("/gigs/create")}
                     >
                       Post a Gig
@@ -380,13 +384,14 @@ export default function Dashboard() {
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/gigs/manage")}
+                      className="w-full"
                     >
                       Manage Gigs
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/business/invoices")}
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2 w-full"
                     >
                       <PoundSterling className="h-4 w-4 text-blue-600" />
                       Invoices
@@ -394,6 +399,7 @@ export default function Dashboard() {
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/reviews")}
+                      className="w-full"
                     >
                       Reviews
                     </Button>
