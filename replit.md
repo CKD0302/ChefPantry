@@ -34,6 +34,7 @@ Chef Pantry is a full-stack web application connecting freelance chefs with hosp
 - Supabase-based authentication with role-based access (Chef, Business, Admin)
 - JWT session management
 - Role-specific dashboard routing
+- Password reset functionality with email verification
 
 ### User Profile Management
 - Dual profile types: Chef profiles and Business profiles

@@ -9,6 +9,8 @@ import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import CreateProfile from "@/pages/profile/CreateProfile";
 import ViewProfile from "@/pages/profile/View";
@@ -34,6 +36,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth/signin" component={SignIn} />
       <Route path="/auth/signup" component={SignUp} />
+      <Route path="/auth/forgot-password" component={ForgotPassword} />
+      <Route path="/auth/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={Dashboard} />
       
       {/* Profile Management Routes */}
