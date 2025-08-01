@@ -83,12 +83,10 @@ export const chefProfiles = pgTable("chef_profiles", {
   // Payment preferences - Bank transfer only
   bankName: text("bank_name"), // Bank name for payment
   accountName: text("account_name"), // Account holder name
-  accountNumber: text("account_number"), // Bank account number
-  sortCode: text("sort_code"), // Bank sort code
+  bankAccountNumber: text("bank_account_number"), // Bank account number
+  bankSortCode: text("bank_sort_code"), // Bank sort code
   // Payment method - only bank transfer supported
   paymentMethod: text("payment_method").default("bank"), // Always 'bank'
-  bankSortCode: text("bank_sort_code"), // UK sort code if using manual method
-  bankAccountNumber: text("bank_account_number"), // UK account number if using manual method
   // Disclaimer acceptance
   chefDisclaimerAccepted: boolean("chef_disclaimer_accepted").default(false).notNull(),
   chefDisclaimerAcceptedAt: timestamp("chef_disclaimer_accepted_at"),
