@@ -37,9 +37,7 @@ export default function PaymentSettings() {
   const queryClient = useQueryClient();
   const [isManualInvoiceModalOpen, setIsManualInvoiceModalOpen] = useState(false);
   
-  // Payment method form state
-  const [paymentMethod, setPaymentMethod] = useState('bank');
-  const [stripePaymentLink, setStripePaymentLink] = useState('');
+  // Payment method form state - only bank transfer now
   const [bankSortCode, setBankSortCode] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   
@@ -55,8 +53,6 @@ export default function PaymentSettings() {
   // Update form state when profile data loads
   useEffect(() => {
     if (chefProfile && !profileLoading) {
-      setPaymentMethod(chefProfile.paymentMethod || 'bank');
-      setStripePaymentLink(chefProfile.stripePaymentLink || '');
       setBankSortCode(chefProfile.bankSortCode || '');
       setBankAccountNumber(chefProfile.bankAccountNumber || '');
     }
@@ -73,7 +69,6 @@ export default function PaymentSettings() {
   const updatePaymentMethod = useMutation({
     mutationFn: async (paymentData: {
       paymentMethod: string;
-      stripePaymentLink?: string;
       bankSortCode?: string;
       bankAccountNumber?: string;
     }) => {
@@ -97,31 +92,19 @@ export default function PaymentSettings() {
 
   const handleSavePaymentMethod = async () => {
     const paymentData = {
-      paymentMethod,
-      stripePaymentLink: paymentMethod === 'stripe' ? stripePaymentLink : undefined,
-      bankSortCode: paymentMethod === 'bank' ? bankSortCode : undefined,
-      bankAccountNumber: paymentMethod === 'bank' ? bankAccountNumber : undefined,
+      paymentMethod: 'bank', // Always bank transfer now
+      bankSortCode,
+      bankAccountNumber,
     };
 
-    // Validate required fields
-    if (paymentMethod === 'bank') {
-      if (!bankSortCode || !bankAccountNumber) {
-        toast({
-          title: "Validation Error",
-          description: "Bank sort code and account number are required for bank transfer",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else if (paymentMethod === 'stripe') {
-      if (!stripePaymentLink) {
-        toast({
-          title: "Validation Error",
-          description: "Stripe payment link is required for Stripe payments",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Validate required fields for bank transfer
+    if (!bankSortCode || !bankAccountNumber) {
+      toast({
+        title: "Validation Error",
+        description: "Bank sort code and account number are required",
+        variant: "destructive",
+      });
+      return;
     }
 
     updatePaymentMethod.mutate(paymentData);
@@ -210,86 +193,38 @@ export default function PaymentSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                <div className="space-y-4">
-                  {/* Stripe Payment Link Option */}
-                  <div className="flex items-start space-x-3 p-4 border rounded-lg">
-                    <RadioGroupItem value="stripe" id="stripe" className="mt-1" />
-                    <div className="flex-1">
-                      <Label htmlFor="stripe" className="text-base font-medium cursor-pointer">
-                        Stripe Payment Link
-                      </Label>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Use your own Stripe payment link for instant payments. You manage your own Stripe account.
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <CreditCard className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm text-blue-600">Instant payments with your own link</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bank Transfer Option */}
-                  <div className="flex items-start space-x-3 p-4 border rounded-lg">
-                    <RadioGroupItem value="bank" id="bank" className="mt-1" />
-                    <div className="flex-1">
-                      <Label htmlFor="bank" className="text-base font-medium cursor-pointer">
-                        Bank Transfer
-                      </Label>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Traditional bank transfer. No transaction fees, but payment timing depends on the business.
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Building className="h-4 w-4 text-green-600" />
-                        <span className="text-sm text-green-600">No transaction fees</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </RadioGroup>
-
-              {/* Stripe Payment Link Form - Only show when Stripe is selected */}
-              {paymentMethod === 'stripe' && (
-                <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900">Stripe Payment Link</h4>
-                  <p className="text-sm text-blue-700 mb-4">
-                    Enter your Stripe payment link to receive payments instantly.
-                  </p>
+              {/* Bank Transfer - Only Payment Method */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <Building className="h-6 w-6 text-blue-600" />
                   <div>
-                    <Label htmlFor="stripePaymentLink">Payment Link</Label>
-                    <Input
-                      id="stripePaymentLink"
-                      value={stripePaymentLink}
-                      onChange={(e) => setStripePaymentLink(e.target.value)}
-                      placeholder="https://buy.stripe.com/..."
-                    />
-                    <p className="text-xs text-blue-600 mt-1">
-                      Create a payment link in your Stripe Dashboard
+                    <h4 className="font-medium text-blue-900">Bank Transfer Only</h4>
+                    <p className="text-sm text-blue-700">
+                      All payments are now processed via bank transfer. No transaction fees.
                     </p>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Bank Details Form - Only show when bank transfer is selected */}
-              {paymentMethod === 'bank' && (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">Bank Account Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="bankSortCode">Sort Code</Label>
-                      <Input
-                        id="bankSortCode"
-                        value={bankSortCode}
-                        onChange={(e) => setBankSortCode(e.target.value)}
-                        placeholder="12-34-56"
-                        maxLength={8}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bankAccountNumber">Account Number</Label>
-                      <Input
-                        id="bankAccountNumber"
-                        value={bankAccountNumber}
+              {/* Bank Details Form */}
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900">Bank Account Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bankSortCode">Sort Code</Label>
+                    <Input
+                      id="bankSortCode"
+                      value={bankSortCode}
+                      onChange={(e) => setBankSortCode(e.target.value)}
+                      placeholder="12-34-56"
+                      maxLength={8}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bankAccountNumber">Account Number</Label>
+                    <Input
+                      id="bankAccountNumber"
+                      value={bankAccountNumber}
                         onChange={(e) => setBankAccountNumber(e.target.value)}
                         placeholder="12345678"
                         maxLength={8}
@@ -297,7 +232,6 @@ export default function PaymentSettings() {
                     </div>
                   </div>
                 </div>
-              )}
 
               <Button 
                 onClick={handleSavePaymentMethod} 
@@ -411,9 +345,9 @@ export default function PaymentSettings() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-medium">Automatic Processing</h4>
+                    <h4 className="font-medium">Manual Bank Transfer</h4>
                     <p className="text-sm text-gray-600">
-                      Payments are automatically processed when you submit invoices for completed gigs.
+                      Businesses pay invoices via bank transfer using your provided bank details.
                     </p>
                   </div>
                 </div>
@@ -421,9 +355,9 @@ export default function PaymentSettings() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-medium">Direct Deposit</h4>
+                    <h4 className="font-medium">No Transaction Fees</h4>
                     <p className="text-sm text-gray-600">
-                      Funds are deposited directly to your connected bank account within 2-7 business days.
+                      Direct bank transfers mean you receive 100% of your invoice amount with no platform fees.
                     </p>
                   </div>
                 </div>
@@ -431,9 +365,9 @@ export default function PaymentSettings() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-medium">Secure & Reliable</h4>
+                    <h4 className="font-medium">Professional Invoices</h4>
                     <p className="text-sm text-gray-600">
-                      All payments are processed securely through Stripe Connect with full fraud protection.
+                      Businesses can download professional PDF invoices with your bank details for their records.
                     </p>
                   </div>
                 </div>

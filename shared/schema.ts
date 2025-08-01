@@ -80,16 +80,13 @@ export const chefProfiles = pgTable("chef_profiles", {
   languages: text("languages").array(),
   certifications: text("certifications").array(),
   isAvailable: boolean("is_available").default(true),
-  stripeAccountId: text("stripe_account_id"), // Stripe Connect account ID
-  // Payment preferences
-  preferredPaymentMethod: text("preferred_payment_method").default("bank"), // 'stripe' or 'bank'
+  // Payment preferences - Bank transfer only
   bankName: text("bank_name"), // Bank name for payment
   accountName: text("account_name"), // Account holder name
   accountNumber: text("account_number"), // Bank account number
   sortCode: text("sort_code"), // Bank sort code
-  // New payment fields as requested
-  paymentMethod: text("payment_method"), // 'stripe' or 'bank'
-  stripePaymentLink: text("stripe_payment_link"), // Stripe Payment URL if using Stripe
+  // Payment method - only bank transfer supported
+  paymentMethod: text("payment_method").default("bank"), // Always 'bank'
   bankSortCode: text("bank_sort_code"), // UK sort code if using manual method
   bankAccountNumber: text("bank_account_number"), // UK account number if using manual method
   // Disclaimer acceptance
@@ -202,9 +199,8 @@ export const gigInvoices = pgTable("gig_invoices", {
   accountName: text("account_name"), // Account holder name
   accountNumber: text("account_number"), // Bank account number
   sortCode: text("sort_code"), // Bank sort code
-  // New payment method fields
-  paymentMethod: text("payment_method"), // 'stripe' or 'bank'
-  paymentLink: text("payment_link"), // Stripe payment link if using Stripe
+  // Payment method - only bank transfer supported
+  paymentMethod: text("payment_method").default("bank"), // Always 'bank'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

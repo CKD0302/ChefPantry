@@ -581,18 +581,7 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
         </div>
       )}
 
-      {/* Stripe Payment Link Section */}
-      {invoice.paymentMethod === 'stripe' && invoice.paymentLink && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h5 className="font-medium text-green-900 mb-3 flex items-center gap-2">
-            <PoundSterling className="h-4 w-4" />
-            Stripe Payment Available
-          </h5>
-          <p className="text-sm text-green-700 mb-3">
-            Click the "Pay with Stripe" button below to complete payment securely.
-          </p>
-        </div>
-      )}
+
 
       <div className="flex items-center justify-between pt-4 border-t">
         <div className="flex items-center gap-4">
@@ -617,16 +606,7 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
                 </div>
               )}
               
-              {/* Stripe Payment */}
-              {invoice.paymentMethod === 'stripe' && invoice.paymentLink && (
-                <Button 
-                  onClick={() => onPayClick(invoice)}
-                  className="flex items-center gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Pay with Stripe
-                </Button>
-              )}
+
               
               {/* Fallback for old invoices without payment method */}
               {!invoice.paymentMethod && (
@@ -648,14 +628,6 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
                         </Button>
                       )}
                     </div>
-                  ) : invoice.chef.stripeAccountId ? (
-                    <Button 
-                      onClick={() => onPayClick(invoice)}
-                      className="flex items-center gap-2"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Pay with Stripe
-                    </Button>
                   ) : (
                     <Alert className="flex-1">
                       <AlertTriangle className="h-4 w-4" />
@@ -669,7 +641,6 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
               
               {/* No payment method available */}
               {invoice.paymentMethod && 
-               invoice.paymentMethod !== 'stripe' && 
                invoice.paymentMethod !== 'bank' && (
                 <Alert className="flex-1">
                   <AlertTriangle className="h-4 w-4" />
