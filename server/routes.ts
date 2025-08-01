@@ -672,12 +672,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Chef profile not found" });
       }
       
-      // Add payment method details to the invoice data - bank transfer only
+      // For manual invoices, prioritize bank details from the form over profile
       const invoiceWithPaymentDetails = {
         ...validatedData,
         paymentMethod: 'bank', // Fixed to bank transfer only
-        sortCode: chefProfile.bankSortCode || null,
-        accountNumber: chefProfile.bankAccountNumber || null,
+        // Use bank details from invoice form if available (for manual invoices), otherwise from chef profile
+        sortCode: validatedData.isManual && validatedData.sortCode 
+          ? validatedData.sortCode 
+          : chefProfile.bankSortCode || null,
+        accountNumber: validatedData.isManual && validatedData.accountNumber 
+          ? validatedData.accountNumber 
+          : chefProfile.bankAccountNumber || null,
       };
       
       // Create the invoice
