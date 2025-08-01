@@ -69,7 +69,7 @@ export interface IStorage {
   getChefProfile(id: string): Promise<ChefProfile | undefined>;
   createChefProfile(profile: InsertChefProfile): Promise<ChefProfile>;
   updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined>;
-  updateChefStripeAccountId(id: string, stripeAccountId: string): Promise<ChefProfile | undefined>;
+  // Stripe integration removed
   updateChefPaymentPreferences(id: string, preferences: {
     preferredPaymentMethod: string;
     bankName?: string;
@@ -280,16 +280,7 @@ export class DBStorage implements IStorage {
     return result[0];
   }
 
-  async updateChefStripeAccountId(id: string, stripeAccountId: string): Promise<ChefProfile | undefined> {
-    const result = await db.update(chefProfiles)
-      .set({ 
-        stripeAccountId,
-        updatedAt: new Date()
-      })
-      .where(eq(chefProfiles.id, id))
-      .returning();
-    return result[0];
-  }
+  // Stripe integration removed - updateChefStripeAccountId function deleted
 
   async updateChefPaymentPreferences(id: string, preferences: {
     preferredPaymentMethod: string;
@@ -309,13 +300,12 @@ export class DBStorage implements IStorage {
   }
 
   async updateChefPaymentMethod(id: string, paymentData: {
-    paymentMethod?: string;
-    stripePaymentLink?: string;
     bankSortCode?: string;
     bankAccountNumber?: string;
   }): Promise<ChefProfile | undefined> {
     const result = await db.update(chefProfiles)
       .set({
+        paymentMethod: 'bank', // Fixed to bank transfer only
         ...paymentData,
         updatedAt: new Date()
       })
@@ -728,7 +718,7 @@ export class DBStorage implements IStorage {
   }
 
   async getGigInvoicesByBusiness(businessId: string): Promise<any[]> {
-    return db.select({
+    const result = await db.select({
       id: gigInvoices.id,
       gigId: gigInvoices.gigId,
       chefId: gigInvoices.chefId,
@@ -748,25 +738,34 @@ export class DBStorage implements IStorage {
       accountName: gigInvoices.accountName,
       accountNumber: gigInvoices.accountNumber,
       sortCode: gigInvoices.sortCode,
-      // New payment method fields
+      // Payment method field
       paymentMethod: gigInvoices.paymentMethod,
-      paymentLink: gigInvoices.paymentLink,
-      gig: {
-        title: gigs.title,
-        location: gigs.location,
-        startDate: gigs.startDate,
-        endDate: gigs.endDate,
-      },
-      chef: {
-        fullName: chefProfiles.fullName,
-        stripeAccountId: chefProfiles.stripeAccountId,
-      }
+      // Flat fields from joined tables
+      gigTitle: gigs.title,
+      gigLocation: gigs.location,
+      gigStartDate: gigs.startDate,
+      gigEndDate: gigs.endDate,
+      chefFullName: chefProfiles.fullName,
     })
     .from(gigInvoices)
     .leftJoin(gigs, eq(gigInvoices.gigId, gigs.id))
     .leftJoin(chefProfiles, eq(gigInvoices.chefId, chefProfiles.id))
     .where(eq(gigInvoices.businessId, businessId))
     .orderBy(desc(gigInvoices.createdAt));
+    
+    // Transform the result to include nested objects
+    return result.map(invoice => ({
+      ...invoice,
+      gig: invoice.gigId ? {
+        title: invoice.gigTitle,
+        location: invoice.gigLocation,
+        startDate: invoice.gigStartDate,
+        endDate: invoice.gigEndDate,
+      } : null,
+      chef: {
+        fullName: invoice.chefFullName,
+      }
+    }));
   }
 
   // Review methods

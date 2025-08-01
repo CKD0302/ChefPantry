@@ -26,7 +26,6 @@ interface InvoiceData {
   };
   chef: {
     fullName: string;
-    stripeAccountId: string | null;
   };
 }
 

@@ -58,7 +58,6 @@ interface InvoiceData {
   };
   chef: {
     fullName: string;
-    stripeAccountId: string | null;
   };
 }
 
@@ -135,15 +134,10 @@ export default function BusinessInvoices() {
     }
   };
 
+  // Payment handling removed - bank transfer only now
   const handlePayInvoice = (invoice: InvoiceData) => {
-    if (invoice.paymentMethod === 'stripe' && invoice.paymentLink) {
-      // Open Stripe payment link
-      window.open(invoice.paymentLink, '_blank');
-    } else if (invoice.chef.stripeAccountId) {
-      // Fallback to old behavior for backward compatibility
-      const stripePaymentUrl = `https://dashboard.stripe.com/payments?recipient=${invoice.chef.stripeAccountId}`;
-      window.open(stripePaymentUrl, '_blank');
-    }
+    // No longer used - bank transfer details are shown in invoice
+    console.log('Bank transfer details:', invoice.sortCode, invoice.accountNumber);
   };
 
   const handleReviewClick = (invoice: InvoiceData) => {
