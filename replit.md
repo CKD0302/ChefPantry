@@ -127,6 +127,8 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- August 01, 2025. **INVOICE PDF GENERATION AND DOWNLOAD SYSTEM**: Implemented comprehensive invoice PDF generation with downloadable copies for businesses. Added jsPDF library for client-side PDF creation with professional invoice formatting including business branding, Chef Pantry logo, itemized billing details, payment information, and proper styling. Download buttons available on all invoice cards across pending, processing, and paid tabs. Businesses can now download professional invoices for emailing to clients and record keeping purposes.
+- August 01, 2025. **PASSWORD RESET FUNCTIONALITY**: Implemented complete password reset system with forgot password page, reset password form, and email verification flow. Added resetPassword and updatePassword functions to authentication context. Users can now securely reset their passwords via email links.
 - July 18, 2025. **COMPREHENSIVE REVIEW SYSTEM IMPLEMENTATION**: Completed full bidirectional review system with category-based ratings. Chefs rate venues on Organisation, Equipment, and Welcoming; venues rate chefs on Timekeeping, Appearance, and Role Fulfilment. Added review summary components with star ratings, category breakdowns, and rating distributions. Fixed all data type conversion issues between server and client. Review system properly syncs between chefs and businesses with sample data created for testing.
 - July 18, 2025. Fixed Reviews page layout by moving Review Summary below main heading for better visual hierarchy and user experience
 - July 18, 2025. Resolved JavaScript errors in review components by implementing proper data type conversion from SQL string results to JavaScript numbers

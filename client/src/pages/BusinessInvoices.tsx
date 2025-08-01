@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Receipt,
-  Star
+  Star,
+  Download,
+  Mail
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -23,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ReviewSubmissionModal from "@/components/ReviewSubmissionModal";
+import { downloadInvoicePDF } from "@/utils/invoicePDF";
 
 interface InvoiceData {
   id: string;
@@ -76,6 +79,16 @@ export default function BusinessInvoices() {
       const data = await response.json();
       console.log("DEBUG - Invoice API response:", data);
       return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Query business profile for PDF generation
+  const { data: businessProfile } = useQuery({
+    queryKey: ["/api/profiles/business", user?.id],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/profiles/business/${user?.id}`);
+      return response.json();
     },
     enabled: !!user?.id,
   });
@@ -154,6 +167,39 @@ export default function BusinessInvoices() {
       toast({
         title: "Error",
         description: "Failed to mark invoice as paid. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadInvoice = (invoice: InvoiceData) => {
+    if (!businessProfile) {
+      toast({
+        title: "Error",
+        description: "Business profile not found. Cannot generate invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const businessData = {
+        businessName: businessProfile.businessName || 'Business',
+        location: businessProfile.location || 'Location not specified',
+        description: businessProfile.description || ''
+      };
+
+      downloadInvoicePDF(invoice, businessData);
+      
+      toast({
+        title: "Invoice Downloaded",
+        description: "Your invoice PDF has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download invoice. Please try again.",
         variant: "destructive",
       });
     }
@@ -279,6 +325,7 @@ export default function BusinessInvoices() {
                         invoice={invoice} 
                         onPayClick={handlePayInvoice}
                         onMarkAsPaid={handleMarkAsPaid}
+                        onDownload={handleDownloadInvoice}
                         currentUserId={user.id}
                       />
                     ))}
@@ -310,6 +357,7 @@ export default function BusinessInvoices() {
                         invoice={invoice} 
                         onPayClick={handlePayInvoice}
                         onMarkAsPaid={handleMarkAsPaid}
+                        onDownload={handleDownloadInvoice}
                         currentUserId={user.id}
                       />
                     ))}
@@ -342,6 +390,7 @@ export default function BusinessInvoices() {
                         onPayClick={handlePayInvoice}
                         onReviewClick={handleReviewClick}
                         onMarkAsPaid={handleMarkAsPaid}
+                        onDownload={handleDownloadInvoice}
                         currentUserId={user.id}
                       />
                     ))}
@@ -379,10 +428,11 @@ interface InvoiceCardProps {
   onPayClick: (invoice: InvoiceData) => void;
   onReviewClick?: (invoice: InvoiceData) => void;
   onMarkAsPaid?: (invoice: InvoiceData) => void;
+  onDownload?: (invoice: InvoiceData) => void;
   currentUserId?: string;
 }
 
-function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, currentUserId }: InvoiceCardProps) {
+function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownload, currentUserId }: InvoiceCardProps) {
   // Check if review exists for this gig and reviewer
   const { data: reviewCheck } = useQuery({
     queryKey: ["/api/reviews/check", invoice.gigId, currentUserId],
@@ -636,27 +686,43 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, current
           )}
         </div>
 
-        {/* Review Section for Paid Invoices */}
-        {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && (
-          <div className="flex items-center gap-2">
-            {reviewCheck?.exists ? (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <span className="text-sm font-medium">Review Submitted</span>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onReviewClick(invoice)}
-                className="flex items-center gap-2"
-              >
-                <Star className="h-4 w-4" />
-                Leave Review
-              </Button>
-            )}
-          </div>
-        )}
+        {/* Action buttons section */}
+        <div className="flex items-center gap-2">
+          {/* Download Invoice Button - Available for all invoices */}
+          {onDownload && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDownload(invoice)}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </Button>
+          )}
+          
+          {/* Review Section for Paid Invoices */}
+          {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && (
+            <>
+              {reviewCheck?.exists ? (
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Review Submitted</span>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onReviewClick(invoice)}
+                  className="flex items-center gap-2"
+                >
+                  <Star className="h-4 w-4" />
+                  Leave Review
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
