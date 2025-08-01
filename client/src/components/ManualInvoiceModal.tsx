@@ -51,8 +51,8 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
   const [fixedAmount, setFixedAmount] = useState('');
   const [notes, setNotes] = useState('');
   
-  // Payment method selection
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'bank'>('stripe');
+  // Payment method - bank transfer only
+  const paymentMethod = 'bank'; // Fixed to bank transfer only
   
   // Bank details fields
   const [bankName, setBankName] = useState('');
@@ -218,7 +218,7 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
     setHoursWorked('');
     setFixedAmount('');
     setNotes('');
-    setPaymentMethod('stripe');
+    // Payment method is fixed to bank transfer
     setBankName('');
     setAccountName('');
     setAccountNumber('');
@@ -430,19 +430,18 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
                 />
               </div>
 
-              {/* Payment Method Selection */}
+              {/* Payment Method - Bank Transfer Only */}
               <div className="border-t pt-4">
-                <Label>Payment Method *</Label>
-                <RadioGroup value={paymentMethod} onValueChange={(value: 'stripe' | 'bank') => setPaymentMethod(value)}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="stripe" id="stripe" />
-                    <Label htmlFor="stripe">Stripe Connect (Online Payment)</Label>
+                <Label>Payment Method</Label>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium text-blue-900">Bank Transfer (Manual Payment)</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="bank" id="bank" />
-                    <Label htmlFor="bank">Bank Transfer (Manual Payment)</Label>
-                  </div>
-                </RadioGroup>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Invoice will include your bank details for manual payment.
+                  </p>
+                </div>
               </div>
 
               {/* Bank Details Section - Only show if bank transfer is selected */}
