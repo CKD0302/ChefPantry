@@ -115,7 +115,8 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
       const hours = parseFloat(hoursWorked) || 0;
       return (rate * hours).toFixed(2);
     } else {
-      return parseFloat(fixedAmount) || 0;
+      const amount = parseFloat(fixedAmount) || 0;
+      return amount.toFixed(2);
     }
   };
 
