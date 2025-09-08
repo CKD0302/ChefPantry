@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, uuid, time, date, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uuid, time, date, numeric, jsonb, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 // Users table
 export const users = pgTable("users", {
@@ -169,13 +170,18 @@ export const chefDocuments = pgTable("chef_documents", {
 // Notifications table for system notifications
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
-  recipientId: text("recipient_id").notNull(), // UUID from Supabase auth
-  type: text("type").notNull(), // 'gig_confirmed', 'application_received', etc.
-  message: text("message").notNull(),
-  linkUrl: text("link_url"), // Optional link to relevant page
-  isRead: boolean("read").default(false).notNull(),
+  userId: text("user_id").notNull(), // UUID from Supabase auth
+  type: text("type").notNull(), // 'invoice_submitted', 'invoice_paid'
+  title: text("title").notNull(),
+  body: text("body"),
+  entityType: text("entity_type"), // e.g. 'invoice'
+  entityId: uuid("entity_id"), // e.g. gig_invoices.id
+  meta: jsonb("meta"), // extra: { amount, chef_name, venue_name }
+  readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  typeCheck: check("type_check", sql`type IN ('invoice_submitted', 'invoice_paid')`),
+}));
 
 // Gig Invoices table for post-gig billing
 export const gigInvoices = pgTable("gig_invoices", {

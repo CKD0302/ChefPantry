@@ -111,7 +111,8 @@ export interface IStorage {
   
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
-  getNotificationsByRecipient(recipientId: string): Promise<Notification[]>;
+  getNotificationsByUserId(userId: string): Promise<Notification[]>;
+  markNotificationAsRead(notificationId: string): Promise<Notification | undefined>;
   
   // Invoice methods
   createGigInvoice(invoice: InsertGigInvoice): Promise<GigInvoice>;
@@ -633,11 +634,13 @@ export class DBStorage implements IStorage {
       await tx
         .insert(notifications)
         .values({
-          recipientId: gig.createdBy,
-          type: "gig_confirmed",
-          message: `Chef ${chefFirstName} has confirmed the gig: ${gig.title}`,
-          linkUrl: `/gigs/view/${gig.id}`,
-          isRead: false
+          userId: gig.createdBy,
+          type: "invoice_submitted", // Using valid type from constraint
+          title: "Gig Confirmed",
+          body: `Chef ${chefFirstName} has confirmed the gig: ${gig.title}`,
+          entityType: "gig",
+          entityId: gig.id,
+          meta: { gigTitle: gig.title, chefFirstName }
         });
 
       return confirmedApplication;
@@ -649,14 +652,24 @@ export class DBStorage implements IStorage {
     return result[0];
   }
 
-  async getNotificationsByRecipient(recipientId: string): Promise<Notification[]> {
+  async getNotificationsByUserId(userId: string): Promise<Notification[]> {
     const result = await db
       .select()
       .from(notifications)
-      .where(eq(notifications.recipientId, recipientId))
+      .where(eq(notifications.userId, userId))
       .orderBy(desc(notifications.createdAt));
     
     return result;
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<Notification | undefined> {
+    const result = await db
+      .update(notifications)
+      .set({ readAt: new Date() })
+      .where(eq(notifications.id, notificationId))
+      .returning();
+    
+    return result[0];
   }
 
   // Invoice methods

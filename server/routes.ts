@@ -10,7 +10,8 @@ import {
   insertGigSchema,
   insertGigApplicationSchema,
   insertGigInvoiceSchema,
-  insertReviewSchema
+  insertReviewSchema,
+  insertNotificationSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -632,13 +633,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get notifications for a user
   apiRouter.get("/notifications", async (req: Request, res: Response) => {
     try {
-      const { recipientId } = req.query;
+      const { userId } = req.query;
       
-      if (!recipientId || typeof recipientId !== 'string') {
-        return res.status(400).json({ message: "Recipient ID is required" });
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: "User ID is required" });
       }
       
-      const notifications = await storage.getNotificationsByRecipient(recipientId);
+      const notifications = await storage.getNotificationsByUserId(userId);
       
       res.status(200).json({
         data: notifications
@@ -646,6 +647,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Mark notification as read
+  apiRouter.patch("/notifications/:id/read", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      const updatedNotification = await storage.markNotificationAsRead(id);
+      
+      if (!updatedNotification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      res.status(200).json({
+        message: "Notification marked as read",
+        data: updatedNotification
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 
@@ -690,13 +712,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create notification for the business
       await storage.createNotification({
-        recipientId: validatedData.businessId,
-        type: validatedData.isManual ? "manual_invoice_ready" : "invoice_ready",
-        message: validatedData.isManual 
+        userId: validatedData.businessId,
+        type: "invoice_submitted",
+        title: validatedData.isManual ? "Manual Invoice Submitted" : "Invoice Submitted",
+        body: validatedData.isManual 
           ? "A new invoice has been submitted for your review."
           : "An invoice has been submitted for your recent gig.",
-        linkUrl: "/business/invoices",
-        isRead: false
+        entityType: "invoice",
+        entityId: invoice.id,
+        meta: { invoiceAmount: validatedData.totalAmount }
       });
       
       res.status(201).json({
