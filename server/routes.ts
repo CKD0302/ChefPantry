@@ -740,6 +740,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { data: businessUser } = await supabaseService.auth.admin.getUserById(validatedData.businessId);
           businessEmail = businessUser?.user?.email;
           console.log(`Got email from Supabase: ${businessEmail || 'null'}`);
+          
+          // If we didn't get an email, use fallback
+          if (!businessEmail) {
+            console.log('No email returned from Supabase, using fallback');
+            businessEmail = 'chris@ckddigital.com';
+          }
         } catch (supabaseError) {
           console.log('Supabase auth unavailable, using fallback email approach');
           console.log('Supabase error:', supabaseError.message);
