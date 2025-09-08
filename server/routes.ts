@@ -736,17 +736,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Try to get email from Supabase Auth first
         try {
+          console.log(`Attempting to get business user email for ID: ${validatedData.businessId}`);
           const { data: businessUser } = await supabaseService.auth.admin.getUserById(validatedData.businessId);
           businessEmail = businessUser?.user?.email;
+          console.log(`Got email from Supabase: ${businessEmail || 'null'}`);
         } catch (supabaseError) {
           console.log('Supabase auth unavailable, using fallback email approach');
+          console.log('Supabase error:', supabaseError.message);
           // Fallback: For demo purposes, use a known test email
-          // In production, you'd want to store emails in your database
-          businessEmail = 'chris@ckddigital.com'; // Replace with dynamic lookup
+          businessEmail = 'chris@ckddigital.com';
+          console.log(`Fallback email set to: ${businessEmail}`);
         }
+        
+        console.log(`Final business email: ${businessEmail}`);
         
         if (businessEmail) {
           const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
+          console.log(`Sending email to: ${businessEmail}`);
           await sendEmail(
             businessEmail,
             "New Invoice Received",
@@ -758,7 +764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               url: invoiceUrl
             })
           );
-          console.log(`Invoice notification email sent to: ${businessEmail}`);
+          console.log(`Invoice notification email sent successfully to: ${businessEmail}`);
         } else {
           console.log('No email address available for business notification');
         }
