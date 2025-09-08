@@ -14,6 +14,7 @@ import {
   insertNotificationSchema
 } from "@shared/schema";
 import { createNotification } from "./lib/notify";
+import { sendEmail, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import Stripe from "stripe";
@@ -727,6 +728,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: invoice.id,
         meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
       });
+
+      // Send email notification to business
+      if (businessProfile?.email) {
+        try {
+          const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
+          await sendEmail(
+            businessProfile.email,
+            "New Invoice Received",
+            tplInvoiceSubmitted({
+              businessName,
+              chefName,
+              invoiceId: invoice.id,
+              amountGBP: Number(amount),
+              url: invoiceUrl
+            })
+          );
+        } catch (emailError) {
+          console.error('Failed to send invoice submitted email:', emailError);
+          // Don't fail the request if email fails
+        }
+      }
       
       res.status(201).json({
         message: "Invoice submitted successfully",
@@ -844,6 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (chefProfile && businessProfile) {
         const businessName = businessProfile.businessName;
+        const chefName = chefProfile.fullName;
         const amount = updatedInvoice.totalAmount;
         
         // Create notification for the chef
@@ -856,6 +879,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityId: invoiceId,
           meta: { amount: Number(amount), businessName, invoiceId }
         });
+
+        // Send email notification to chef
+        if (chefProfile.email) {
+          try {
+            const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
+            await sendEmail(
+              chefProfile.email,
+              "Invoice Paid",
+              tplInvoicePaid({
+                chefName,
+                businessName,
+                invoiceId,
+                amountGBP: Number(amount),
+                url: invoiceUrl
+              })
+            );
+          } catch (emailError) {
+            console.error('Failed to send invoice paid email:', emailError);
+            // Don't fail the request if email fails
+          }
+        }
       }
       
       res.status(200).json(updatedInvoice);
