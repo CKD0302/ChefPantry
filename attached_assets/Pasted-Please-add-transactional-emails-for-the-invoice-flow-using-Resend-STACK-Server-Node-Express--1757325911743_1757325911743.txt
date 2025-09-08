@@ -1,0 +1,158 @@
+Please add transactional emails for the invoice flow using Resend.
+
+STACK
+- Server: Node/Express (TypeScript) in /server
+- DB: Supabase
+- Client already calls our invoice create + mark-paid actions
+
+WHAT TO DO
+1) Install dependency:
+   npm i resend
+
+2) Add secrets in Replit (Environment):
+   RESEND_API_KEY=<I will paste>
+   EMAIL_FROM="Chef Pantry <no-reply@thechefpantry.co>"
+
+3) Create server/lib/email.ts with a small helper and two templates:
+
+   import { Resend } from "resend";
+   const resend = new Resend(process.env.RESEND_API_KEY!);
+   const FROM = process.env.EMAIL_FROM || "Chef Pantry <no-reply@thechefpantry.co>";
+
+   export async function sendEmail(to: string | string[], subject: string, html: string) {
+     await resend.emails.send({ from: FROM, to, subject, html });
+   }
+
+   export function tplInvoiceSubmitted(params: {
+     businessName: string; chefName: string; invoiceId: string; amountGBP: number; url: string;
+   }) {
+     const { businessName, chefName, invoiceId, amountGBP, url } = params;
+     return `
+       <div style="font-family:Arial,sans-serif;line-height:1.5">
+         <h2>New invoice from ${chefName}</h2>
+         <p>${chefName} has submitted an invoice.</p>
+         <p><strong>Invoice ID:</strong> ${invoiceId}<br/>
+            <strong>Amount:</strong> £${amountGBP.toFixed(2)}</p>
+         <p><a href="${url}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Review & Pay</a></p>
+         <p>— Chef Pantry</p>
+       </div>`;
+   }
+
+   export function tplInvoicePaid(params: {
+     chefName: string; businessName: string; invoiceId: string; amountGBP: number; url: string;
+   }) {
+     const { chefName, businessName, invoiceId, amountGBP, url } = params;
+     return `
+       <div style="font-family:Arial,sans-serif;line-height:1.5">
+         <h2>Invoice paid</h2>
+         <p>${businessName} marked your invoice as <strong>Paid</strong>.</p>
+         <p><strong>Invoice ID:</strong> ${invoiceId}<br/>
+            <strong>Amount:</strong> £${amountGBP.toFixed(2)}</p>
+         <p><a href="${url}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">View invoice</a></p>
+         <p>— Chef Pantry</p>
+       </div>`;
+   }
+
+4) Update server/routes/invoices.ts (or create if missing):
+
+   - On invoice CREATE:
+     • Insert into gig_invoices (status='pending').
+     • Fetch business email + names.
+     • sendEmail(businessEmail, "New Invoice Received", tplInvoiceSubmitted(...))
+
+   - On invoice MARK-PAID (manual):
+     • Update gig_invoices set status='paid', paid_at=now().
+     • Fetch chef email + names.
+     • sendEmail(chefEmail, "Invoice Paid", tplInvoicePaid(...))
+
+   Pseudocode to implement (adapt table/column names to our schema):
+
+   import { Router } from "express";
+   import { sendEmail, tplInvoiceSubmitted, tplInvoicePaid } from "../lib/email";
+   import { supabaseService as supabase } from "../lib/supabaseService";
+
+   const router = Router();
+
+   router.post("/", async (req, res) => {
+     const { gig_id, chef_id, business_id, amount } = req.body;
+     if (!gig_id || !chef_id || !business_id || !amount) return res.status(400).json({ error: "Missing fields" });
+
+     const { data: inv, error } = await supabase
+       .from("gig_invoices")
+       .insert({ gig_id, chef_id, business_id, amount, status: "pending" })
+       .select("id")
+       .single();
+     if (error) return res.status(500).json({ error: "Insert failed" });
+
+     const [{ data: biz }, { data: chef }] = await Promise.all([
+       supabase.from("businesses").select("name,email,owner_user_id").eq("id", business_id).single(),
+       supabase.from("chef_profiles").select("display_name").eq("id", chef_id).single(),
+     ]);
+
+     const businessEmail = biz?.email; // adjust if email is on users table
+     const url = `https://thechefpantry.co/business/invoices/${inv.id}`;
+     if (businessEmail) {
+       await sendEmail(
+         businessEmail,
+         "New Invoice Received",
+         tplInvoiceSubmitted({
+           businessName: biz?.name ?? "Your venue",
+           chefName: chef?.display_name ?? "Chef",
+           invoiceId: inv.id,
+           amountGBP: Number(amount),
+           url
+         })
+       );
+     }
+     res.json({ id: inv.id });
+   });
+
+   router.post("/:id/mark-paid", async (req, res) => {
+     const { id } = req.params;
+     const { data: inv, error } = await supabase
+       .from("gig_invoices")
+       .update({ status: "paid", paid_at: new Date().toISOString() })
+       .eq("id", id)
+       .select("id, amount, chef_id, business_id")
+       .single();
+     if (error) return res.status(500).json({ error: "Update failed" });
+
+     const [{ data: biz }, { data: chef }] = await Promise.all([
+       supabase.from("businesses").select("name").eq("id", inv.business_id).single(),
+       supabase.from("chef_profiles").select("display_name,email").eq("id", inv.chef_id).single(),
+     ]);
+
+     const chefEmail = chef?.email; // adjust if email is on users table
+     const url = `https://thechefpantry.co/chef/invoices/${id}`;
+     if (chefEmail) {
+       await sendEmail(
+         chefEmail,
+         "Invoice Paid",
+         tplInvoicePaid({
+           chefName: chef?.display_name ?? "Chef",
+           businessName: biz?.name ?? "Venue",
+           invoiceId: id,
+           amountGBP: Number(inv.amount),
+           url
+         })
+       );
+     }
+     res.json({ ok: true });
+   });
+
+   export default router;
+
+   // In server/index.ts:
+   // app.use("/api/invoices", invoicesRouter);
+
+5) Client: ensure the UI calls these routes:
+   - Creating an invoice calls POST /api/invoices (not direct Supabase insert).
+   - The "Mark as Paid" button calls POST /api/invoices/:id/mark-paid.
+
+6) Test route (optional)
+   Add GET /api/_test-email?to=you@domain.com that sends a hello email using sendEmail, so we can verify Resend works.
+
+NOTES
+- Use the service-role Supabase client on the server (`supabaseService`) with env:
+  SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (already configured).
+- Later we can add a Stripe webhook to also send the “paid” email automatically.
