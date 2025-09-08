@@ -11,14 +11,25 @@ type NotifyParams = {
 };
 
 export async function createNotification(p: NotifyParams) {
-  const { error } = await supabaseService.from('notifications').insert({
-    user_id: p.userId,
-    type: p.type,
-    title: p.title,
-    body: p.body ?? null,
-    entity_type: p.entityType ?? null,
-    entity_id: p.entityId ?? null,
-    meta: p.meta ?? null,
-  });
-  if (error) throw error;
+  try {
+    const { error } = await supabaseService.from('notifications').insert({
+      user_id: p.userId,
+      type: p.type,
+      title: p.title,
+      body: p.body ?? null,
+      entity_type: p.entityType ?? null,
+      entity_id: p.entityId ?? null,
+      meta: p.meta ?? null,
+    });
+    
+    if (error) {
+      console.error('Supabase notification error:', error);
+      return; // Don't throw - just log and continue
+    }
+    
+    console.log(`Notification created successfully for user ${p.userId}: ${p.title}`);
+  } catch (error) {
+    console.error('Failed to create notification (non-critical):', error);
+    // Don't throw - this allows invoice creation to continue even if notifications fail
+  }
 }
