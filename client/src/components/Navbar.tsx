@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 export default function Navbar() {
   const { isOpen, toggle } = useMobileMenu();
@@ -68,26 +69,29 @@ export default function Navbar() {
             
             {/* Auth Buttons */}
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="space-x-2 border-primary text-primary">
-                    <User className="h-4 w-4" />
-                    <span>Account</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
-                    Dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/profile/view")}>
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center space-x-2">
+                <NotificationsBell userId={user.id} />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="space-x-2 border-primary text-primary">
+                      <User className="h-4 w-4" />
+                      <span>Account</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/profile/view")}>
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
               <div className="space-x-2">
                 <Button 

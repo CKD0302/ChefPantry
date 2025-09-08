@@ -865,6 +865,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TODO: Optional Stripe webhook integration
+  // When implementing Stripe webhooks for payment confirmation, reuse the same notification pattern:
+  // await createNotification({
+  //   userId: chefUserId,
+  //   type: 'invoice_paid',
+  //   title: 'Invoice paid',
+  //   body: `${businessName} paid your invoice for £${Number(amount).toFixed(2)}.`,
+  //   entityType: 'invoice',
+  //   entityId: invoiceId,
+  //   meta: { amount: Number(amount), businessName, invoiceId }
+  // });
+
 
 
 
