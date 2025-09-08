@@ -15,6 +15,7 @@ import {
 } from "@shared/schema";
 import { createNotification } from "./lib/notify";
 import { sendEmail, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
+import { supabaseService } from "./lib/supabaseService";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import Stripe from "stripe";
@@ -730,11 +731,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send email notification to business
-      if (businessProfile?.email) {
-        try {
+      try {
+        const { data: businessUser } = await supabaseService.auth.admin.getUserById(validatedData.businessId);
+        if (businessUser?.user?.email) {
           const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
           await sendEmail(
-            businessProfile.email,
+            businessUser.user.email,
             "New Invoice Received",
             tplInvoiceSubmitted({
               businessName,
@@ -744,10 +746,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               url: invoiceUrl
             })
           );
-        } catch (emailError) {
-          console.error('Failed to send invoice submitted email:', emailError);
-          // Don't fail the request if email fails
         }
+      } catch (emailError) {
+        console.error('Failed to send invoice submitted email:', emailError);
+        // Don't fail the request if email fails
       }
       
       res.status(201).json({
@@ -881,11 +883,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Send email notification to chef
-        if (chefProfile.email) {
-          try {
+        try {
+          const { data: chefUser } = await supabaseService.auth.admin.getUserById(updatedInvoice.chefId);
+          if (chefUser?.user?.email) {
             const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
             await sendEmail(
-              chefProfile.email,
+              chefUser.user.email,
               "Invoice Paid",
               tplInvoicePaid({
                 chefName,
@@ -895,10 +898,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 url: invoiceUrl
               })
             );
-          } catch (emailError) {
-            console.error('Failed to send invoice paid email:', emailError);
-            // Don't fail the request if email fails
           }
+        } catch (emailError) {
+          console.error('Failed to send invoice paid email:', emailError);
+          // Don't fail the request if email fails
         }
       }
       
@@ -1073,9 +1076,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test email route (optional - for verification)
+  apiRouter.get("/_test-email", async (req: Request, res: Response) => {
+    try {
+      const { to } = req.query;
+      
+      if (!to || typeof to !== 'string') {
+        return res.status(400).json({ message: "Email address 'to' parameter is required" });
+      }
+      
+      await sendEmail(
+        to,
+        "Test Email from Chef Pantry",
+        `
+        <div style="font-family:Arial,sans-serif;line-height:1.5">
+          <h2>Hello from Chef Pantry!</h2>
+          <p>This is a test email to verify that our Resend integration is working correctly.</p>
+          <p>If you're seeing this, email notifications are set up properly.</p>
+          <p>— Chef Pantry Team</p>
+        </div>`
+      );
+      
+      res.status(200).json({ 
+        message: "Test email sent successfully",
+        to: to
+      });
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      res.status(500).json({ message: "Failed to send test email" });
+    }
+  });
 
-
-  // Mount API routes
   app.use("/api", apiRouter);
 
   const httpServer = createServer(app);
