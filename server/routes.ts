@@ -13,6 +13,7 @@ import {
   insertReviewSchema,
   insertNotificationSchema
 } from "@shared/schema";
+import { createNotification } from "./lib/notify";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import Stripe from "stripe";
@@ -710,17 +711,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the invoice
       const invoice = await storage.createGigInvoice(invoiceWithPaymentDetails);
       
+      // Get business profile for notification
+      const businessProfile = await storage.getBusinessProfile(validatedData.businessId);
+      const businessName = businessProfile?.businessName || "Business";
+      const chefName = chefProfile.fullName;
+      const amount = validatedData.totalAmount;
+      
       // Create notification for the business
-      await storage.createNotification({
+      await createNotification({
         userId: validatedData.businessId,
-        type: "invoice_submitted",
-        title: validatedData.isManual ? "Manual Invoice Submitted" : "Invoice Submitted",
-        body: validatedData.isManual 
-          ? "A new invoice has been submitted for your review."
-          : "An invoice has been submitted for your recent gig.",
-        entityType: "invoice",
+        type: 'invoice_submitted',
+        title: 'New invoice received',
+        body: `${chefName} submitted an invoice for £${Number(amount).toFixed(2)}.`,
+        entityType: 'invoice',
         entityId: invoice.id,
-        meta: { invoiceAmount: validatedData.totalAmount }
+        meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
       });
       
       res.status(201).json({
@@ -831,6 +836,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updatedInvoice) {
         return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      // Get chef and business details for notification
+      const chefProfile = await storage.getChefProfile(updatedInvoice.chefId);
+      const businessProfile = await storage.getBusinessProfile(updatedInvoice.businessId);
+      
+      if (chefProfile && businessProfile) {
+        const businessName = businessProfile.businessName;
+        const amount = updatedInvoice.totalAmount;
+        
+        // Create notification for the chef
+        await createNotification({
+          userId: updatedInvoice.chefId,
+          type: 'invoice_paid',
+          title: 'Invoice paid',
+          body: `${businessName} marked your invoice as paid for £${Number(amount).toFixed(2)}.`,
+          entityType: 'invoice',
+          entityId: invoiceId,
+          meta: { amount: Number(amount), businessName, invoiceId }
+        });
       }
       
       res.status(200).json(updatedInvoice);
