@@ -465,18 +465,26 @@ interface GigCardProps {
 }
 
 function GigCard({ gig, applications, onAcceptChef, onDeclineChef, onReuseGig, onNavigate, acceptingId, isCurrent }: GigCardProps) {
-  const formatDateRange = (startDate: string, endDate: string) => {
-    if (!startDate || !endDate) {
-      return "Date not set";
-    }
+  const formatDateRange = (startDate: string, endDate: string, startTime?: string, endTime?: string) => {
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       if (startDate === endDate) {
-        return format(start, "MMM d, yyyy");
+        // Single day gig - show date with time range
+        const dateStr = format(start, "MMM d, yyyy");
+        if (startTime && endTime) {
+          return `${dateStr} (${startTime.substring(0, 5)} - ${endTime.substring(0, 5)})`;
+        }
+        return dateStr;
       } else {
-        return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+        // Multi-day gig - show date range with times
+        const startStr = format(start, "MMM d");
+        const endStr = format(end, "MMM d, yyyy");
+        if (startTime && endTime) {
+          return `${startStr} ${startTime.substring(0, 5)} - ${endStr} ${endTime.substring(0, 5)}`;
+        }
+        return `${startStr} - ${endStr}`;
       }
     } catch (error) {
       return "Invalid date";
