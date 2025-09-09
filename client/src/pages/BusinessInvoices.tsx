@@ -147,19 +147,24 @@ export default function BusinessInvoices() {
 
   const handleMarkAsPaid = async (invoice: InvoiceData) => {
     try {
+      console.log("DEBUG - Marking invoice as paid:", invoice.id, "Current status:", invoice.status);
+      
       // Optimistically update the cache immediately
       queryClient.setQueryData(["/api/invoices/business", user?.id], (oldData: InvoiceData[] | undefined) => {
+        console.log("DEBUG - Old data:", oldData);
         if (!oldData) return oldData;
-        return oldData.map(inv => 
+        const newData = oldData.map(inv => 
           inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
         );
+        console.log("DEBUG - New data after optimistic update:", newData);
+        return newData;
       });
 
       // Make the API call
       await apiRequest("PUT", `/api/invoices/${invoice.id}/mark-paid`);
       
-      // Ensure cache is up to date with server response
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
+      // Force refetch to ensure we have latest data
+      await queryClient.refetchQueries({ queryKey: ["/api/invoices/business", user?.id] });
       
       toast({
         title: "Invoice Updated",
