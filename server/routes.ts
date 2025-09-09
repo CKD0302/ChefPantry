@@ -733,7 +733,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email notification to business
       try {
         // For testing purposes, force the email to be sent to your test email
-        const businessEmail = 'chris@ckddigital.com';
+        // Get the actual business user's email from Supabase
+        if (!businessProfile) {
+          console.error('Business profile not found - skipping email notification');
+          return;
+        }
+        
+        const { getUserEmail } = await import('./lib/supabaseService');
+        const businessEmail = await getUserEmail(businessProfile.id);
+        
+        if (!businessEmail) {
+          console.error('Could not get business email - skipping email notification');
+          return;
+        }
         
         console.log(`Sending invoice notification email to: ${businessEmail}`);
         const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
@@ -750,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
         );
         
-        console.log(`✓ Invoice notification email sent successfully to: ${businessEmail}`);
+        console.log(`✅ Invoice notification email sent successfully to: ${businessEmail}`);
       } catch (emailError) {
         console.error('Failed to send invoice submitted email:', emailError);
         // Don't fail the request if email fails

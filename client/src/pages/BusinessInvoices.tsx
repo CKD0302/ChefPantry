@@ -147,23 +147,11 @@ export default function BusinessInvoices() {
 
   const handleMarkAsPaid = async (invoice: InvoiceData) => {
     try {
-      console.log("DEBUG - Marking invoice as paid:", invoice.id, "Current status:", invoice.status);
-      
-      // Make the API call first
+      // Make the API call
       await apiRequest("PUT", `/api/invoices/${invoice.id}/mark-paid`);
-      console.log("DEBUG - API call successful");
       
-      // Clear the cache and force a fresh fetch
-      queryClient.removeQueries({ queryKey: ["/api/invoices/business", user?.id] });
-      const refetchResult = await queryClient.refetchQueries({ queryKey: ["/api/invoices/business", user?.id] });
-      
-      console.log("DEBUG - Cache cleared and refetched");
-      
-      // Check if our updated invoice is in the new data
-      const updatedInvoices = queryClient.getQueryData(["/api/invoices/business", user?.id]) as InvoiceData[];
-      const updatedInvoice = updatedInvoices?.find(inv => inv.id === invoice.id);
-      console.log("DEBUG - Updated invoice in fresh data:", updatedInvoice);
-      console.log("DEBUG - Updated invoice status:", updatedInvoice?.status);
+      // Force a complete refresh of the invoices data
+      await queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
       
       toast({
         title: "Invoice Updated",
