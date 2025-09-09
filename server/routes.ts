@@ -888,36 +888,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send email notification to chef
         try {
-          let chefEmail = null;
+          // For testing purposes, force the email to be sent to your test email
+          const chefEmail = 'chris@ckddigital.com';
           
-          // Try to get email from Supabase Auth first
-          try {
-            const { data: chefUser } = await supabaseService.auth.admin.getUserById(updatedInvoice.chefId);
-            chefEmail = chefUser?.user?.email;
-          } catch (supabaseError) {
-            console.log('Supabase auth unavailable, using fallback email approach');
-            // Fallback: For demo purposes, use a known test email
-            // In production, you'd want to store emails in your database
-            chefEmail = 'chris@ckddigital.com'; // Replace with dynamic lookup
-          }
+          console.log(`Sending invoice paid email to: ${chefEmail}`);
+          const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
           
-          if (chefEmail) {
-            const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
-            await sendEmail(
-              chefEmail,
-              "Invoice Paid",
-              tplInvoicePaid({
-                chefName,
-                businessName,
-                invoiceId,
-                amountGBP: Number(amount),
-                url: invoiceUrl
-              })
-            );
-            console.log(`Invoice paid email sent to: ${chefEmail}`);
-          } else {
-            console.log('No email address available for chef notification');
-          }
+          await sendEmail(
+            chefEmail,
+            "Invoice Paid",
+            tplInvoicePaid({
+              chefName,
+              businessName,
+              invoiceId,
+              amountGBP: Number(amount),
+              url: invoiceUrl
+            })
+          );
+          
+          console.log(`✓ Invoice paid email sent successfully to: ${chefEmail}`);
         } catch (emailError) {
           console.error('Failed to send invoice paid email:', emailError);
           // Don't fail the request if email fails
