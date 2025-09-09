@@ -1,0 +1,69 @@
+We’re seeing Node DNS resolution failures when sending emails (Resend). Please do the following diagnostics and fixes:
+
+A) QUICK DIAGNOSTICS
+1) Log Node version and runtime:
+   - run: node -p "process.version"
+2) Log the exact hostname the email client uses (expect https://api.resend.com). In our email util, log the URL before sending.
+3) Add a temp script to compare OS vs Node DNS:
+   - node -e "require('dns').promises.lookup('api.resend.com',{all:true}).then(console.log).catch(console.error)"
+   - node -e "const dns=require('dns'); dns.resolve4('api.resend.com',console.log); dns.resolve6('api.resend.com',console.log)"
+
+Print outputs to the build log.
+
+B) APPLY RELIABLE FIXES
+1) Force IPv4-first for Node DNS and set known resolvers. In server startup (server/index.ts or the earliest server entry), add **exactly at the top**:
+
+   import dns from 'node:dns';
+   dns.setDefaultResultOrder('ipv4first');  // prefer IPv4 over IPv6
+   dns.setServers(['1.1.1.1','8.8.8.8']);   // Cloudflare + Google
+
+2) Ensure our email util uses the shared HTTP stack (undici). If we use the Resend SDK, also set a global dispatcher that prefers IPv4:
+   - Install undici if not present:  npm i undici
+   - In server/index.ts (after the dns config), add:
+
+     import { Agent, setGlobalDispatcher } from 'undici';
+     setGlobalDispatcher(new Agent({ connect: { family: 4 } }));
+
+3) In server/lib/email.ts, keep our existing Resend client, but add clear logging around the send call:
+   console.log('[email] to=', to, 'subject=', subject);
+
+C) TEST ENDPOINT (prove end-to-end)
+Create a tiny route at server/routes/_email-health.ts:
+
+   import { Router } from 'express';
+   import { sendEmail } from '../lib/email';
+   const router = Router();
+   router.get('/', async (req,res) => {
+     try {
+       const to = (req.query.to as string) || 'you@example.com';
+       await sendEmail(to, 'Chef Pantry email health', '<b>ok</b>');
+       return res.json({ ok:true });
+     } catch (e:any) {
+       console.error('email-health failed:', e?.message || e);
+       return res.status(500).json({ ok:false, error: e?.message || 'send failed' });
+     }
+   });
+   export default router;
+
+Wire it in server/index.ts:
+   import emailHealth from './routes/_email-health';
+   app.use('/api/_email-health', emailHealth);
+
+D) REDEPLOY + SHOW OUTPUTS
+1) Restart the server so NODE picks up dns.setDefaultResultOrder and setGlobalDispatcher.
+2) Hit GET /api/_email-health?to=YOUR_EMAIL and paste the JSON response in the log.
+3) Print the results from the DNS diagnostic commands and confirm that:
+   - lookup list includes an IPv4 A record
+   - resolve6 may exist but IPv4 is chosen first
+4) If send still fails, log the exact error stack and the Resend Logs status for that attempt.
+
+E) REMOVE FALLBACKS
+Remove any code that sends to a “fallback” address when recipient lookup fails. Instead:
+   - If recipient email is null/undefined, throw an error and return 400/500 with a clear message.
+   - Keep our strict resolver that reads email from our tables or auth.users and backfills it.
+
+F) FINAL CHECK
+Run an actual invoice create → ensure business receives the email.
+Run mark-paid → ensure chef receives the email.
+
+Please commit all changes and post the relevant log snippets (Node version, DNS outputs, email-health response).
