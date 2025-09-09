@@ -16,6 +16,23 @@ export const supabaseService = createClient(
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    global: {
+      fetch: (url, options = {}) => {
+        // Use Node.js built-in fetch with better error handling
+        return fetch(url, {
+          ...options,
+          // Add timeout and better headers for Node.js compatibility
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+          headers: {
+            'User-Agent': 'Node.js/Supabase-Client',
+            ...(options.headers || {}),
+          }
+        }).catch(error => {
+          console.error('Supabase fetch error:', error);
+          throw error;
+        });
+      }
     }
   }
 );
