@@ -1,3 +1,7 @@
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');  // prefer IPv4 over IPv6
+dns.setServers(['1.1.1.1','8.8.8.8']);   // Cloudflare + Google
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";

@@ -5,6 +5,9 @@ const FROM = process.env.EMAIL_FROM || "Chef Pantry <no-reply@thechefpantry.co>"
 
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   try {
+    console.log('[email] to=', to, 'subject=', subject);
+    console.log('[email] sending via Resend API endpoint: https://api.resend.com');
+    
     await resend.emails.send({ from: FROM, to, subject, html });
     console.log(`Email sent to ${Array.isArray(to) ? to.join(', ') : to}: ${subject}`);
   } catch (error) {
