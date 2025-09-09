@@ -36,3 +36,20 @@ export const supabaseService = createClient(
     }
   }
 );
+
+// Helper function to get user email by user ID
+export async function getUserEmail(userId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseService.auth.admin.getUserById(userId);
+    
+    if (error) {
+      console.error('Error getting user email:', error);
+      return null;
+    }
+    
+    return data?.user?.email || null;
+  } catch (error) {
+    console.error('Failed to get user email:', error);
+    return null;
+  }
+}

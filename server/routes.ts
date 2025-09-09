@@ -888,9 +888,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send email notification to chef
         try {
-          // For testing purposes - this should be different from business email
-          // Using a different email to simulate chef's email
-          const chefEmail = 'chef.test@ckddigital.com';
+          // Get the actual chef's email from Supabase
+          const { getUserEmail } = await import('./lib/supabaseService');
+          const chefEmail = await getUserEmail(updatedInvoice.chefId);
+          
+          if (!chefEmail) {
+            console.error('Could not get chef email - skipping email notification');
+            return;
+          }
           
           console.log(`Sending invoice paid email to: ${chefEmail}`);
           const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
@@ -907,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             })
           );
           
-          console.log(`✓ Invoice paid email sent successfully to: ${chefEmail}`);
+          console.log(`✅ Invoice paid email sent successfully to: ${chefEmail}`);
         } catch (emailError) {
           console.error('Failed to send invoice paid email:', emailError);
           // Don't fail the request if email fails
