@@ -1,14 +1,29 @@
+// CRITICAL: DNS configuration must be FIRST before any other imports
 import dns from 'node:dns';
+
+// Configure DNS with multiple reliable servers for production resilience  
+dns.setServers([
+  '1.1.1.1',      // Cloudflare primary
+  '1.0.0.1',      // Cloudflare secondary  
+  '8.8.8.8',      // Google primary
+  '8.8.4.4'       // Google secondary
+]);
+
+// Set IPv4 preference for better compatibility
 dns.setDefaultResultOrder('ipv4first');
-dns.setServers(['1.1.1.1','8.8.8.8']);
 
 // Force IPv4 for all global fetch/HTTP in Node via undici
 import { Agent, setGlobalDispatcher } from 'undici';
 const ipv4Agent = new Agent({ connect: { family: 4 } });
 setGlobalDispatcher(ipv4Agent);
 
-// Also set via env for Node internals (defensive)
+// Set via env for Node internals (defensive)
 process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+
+// Log DNS configuration for debugging
+console.log('[DNS] Configured servers:', dns.getServers());
+console.log('[DNS] Result order:', dns.getDefaultResultOrder());
+console.log('[DNS] NODE_OPTIONS:', process.env.NODE_OPTIONS);
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
