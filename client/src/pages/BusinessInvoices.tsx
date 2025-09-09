@@ -147,9 +147,18 @@ export default function BusinessInvoices() {
 
   const handleMarkAsPaid = async (invoice: InvoiceData) => {
     try {
+      // Optimistically update the cache immediately
+      queryClient.setQueryData(["/api/invoices/business", user?.id], (oldData: InvoiceData[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(inv => 
+          inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
+        );
+      });
+
+      // Make the API call
       await apiRequest("PUT", `/api/invoices/${invoice.id}/mark-paid`);
       
-      // Invalidate and refetch invoices
+      // Ensure cache is up to date with server response
       queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
       
       toast({
@@ -158,6 +167,10 @@ export default function BusinessInvoices() {
       });
     } catch (error) {
       console.error("Error marking invoice as paid:", error);
+      
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
+      
       toast({
         title: "Error",
         description: "Failed to mark invoice as paid. Please try again.",
