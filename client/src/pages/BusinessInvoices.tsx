@@ -149,22 +149,15 @@ export default function BusinessInvoices() {
     try {
       console.log("DEBUG - Marking invoice as paid:", invoice.id, "Current status:", invoice.status);
       
-      // Optimistically update the cache immediately
-      queryClient.setQueryData(["/api/invoices/business", user?.id], (oldData: InvoiceData[] | undefined) => {
-        console.log("DEBUG - Old data:", oldData);
-        if (!oldData) return oldData;
-        const newData = oldData.map(inv => 
-          inv.id === invoice.id ? { ...inv, status: 'paid' } : inv
-        );
-        console.log("DEBUG - New data after optimistic update:", newData);
-        return newData;
-      });
-
-      // Make the API call
+      // Make the API call first
       await apiRequest("PUT", `/api/invoices/${invoice.id}/mark-paid`);
+      console.log("DEBUG - API call successful");
       
-      // Force refetch to ensure we have latest data
+      // Clear the cache and force a fresh fetch
+      queryClient.removeQueries({ queryKey: ["/api/invoices/business", user?.id] });
       await queryClient.refetchQueries({ queryKey: ["/api/invoices/business", user?.id] });
+      
+      console.log("DEBUG - Cache cleared and refetched");
       
       toast({
         title: "Invoice Updated",
@@ -172,10 +165,6 @@ export default function BusinessInvoices() {
       });
     } catch (error) {
       console.error("Error marking invoice as paid:", error);
-      
-      // Revert optimistic update on error
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
-      
       toast({
         title: "Error",
         description: "Failed to mark invoice as paid. Please try again.",
