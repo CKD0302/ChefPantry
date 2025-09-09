@@ -732,7 +732,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send email notification to business
       try {
-        // For testing purposes, force the email to be sent to your test email
         // Get the actual business user's email from Supabase
         if (!businessProfile) {
           console.error('Business profile not found - skipping email notification');
