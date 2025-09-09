@@ -730,42 +730,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
       });
 
-      // Send email notification to business
-      try {
-        // Get the actual business user's email from Supabase
-        if (!businessProfile) {
-          console.error('Business profile not found - skipping email notification');
-          return;
+      // Send email notification to business (non-blocking)
+      setTimeout(async () => {
+        try {
+          // Get the actual business user's email from Supabase
+          if (!businessProfile) {
+            console.error('Business profile not found - skipping email notification');
+            return;
+          }
+          
+          const { getUserEmail } = await import('./lib/supabaseService');
+          const businessEmail = await getUserEmail(businessProfile.id);
+          
+          if (!businessEmail) {
+            console.error('Could not get business email - skipping email notification');
+            return;
+          }
+          
+          console.log(`Sending invoice notification email to: ${businessEmail}`);
+          const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
+          
+          await sendEmail(
+            businessEmail,
+            "New Invoice Received",
+            tplInvoiceSubmitted({
+              businessName,
+              chefName,
+              invoiceId: invoice.id,
+              amountGBP: Number(amount),
+              url: invoiceUrl
+            })
+          );
+          
+          console.log(`✅ Invoice notification email sent successfully to: ${businessEmail}`);
+        } catch (emailError) {
+          console.error('Failed to send invoice submitted email:', emailError);
+          // Don't fail the request if email fails
         }
-        
-        const { getUserEmail } = await import('./lib/supabaseService');
-        const businessEmail = await getUserEmail(businessProfile.id);
-        
-        if (!businessEmail) {
-          console.error('Could not get business email - skipping email notification');
-          return;
-        }
-        
-        console.log(`Sending invoice notification email to: ${businessEmail}`);
-        const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
-        
-        await sendEmail(
-          businessEmail,
-          "New Invoice Received",
-          tplInvoiceSubmitted({
-            businessName,
-            chefName,
-            invoiceId: invoice.id,
-            amountGBP: Number(amount),
-            url: invoiceUrl
-          })
-        );
-        
-        console.log(`✅ Invoice notification email sent successfully to: ${businessEmail}`);
-      } catch (emailError) {
-        console.error('Failed to send invoice submitted email:', emailError);
-        // Don't fail the request if email fails
-      }
+      }, 0); // Run asynchronously without blocking the response
       
       res.status(201).json({
         message: "Invoice submitted successfully",
@@ -897,37 +899,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           meta: { amount: Number(amount), businessName, invoiceId }
         });
 
-        // Send email notification to chef
-        try {
-          // Get the actual chef's email from Supabase
-          const { getUserEmail } = await import('./lib/supabaseService');
-          const chefEmail = await getUserEmail(updatedInvoice.chefId);
-          
-          if (!chefEmail) {
-            console.error('Could not get chef email - skipping email notification');
-            return;
+        // Send email notification to chef (non-blocking)
+        setTimeout(async () => {
+          try {
+            // Get the actual chef's email from Supabase
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const chefEmail = await getUserEmail(updatedInvoice.chefId);
+            
+            if (!chefEmail) {
+              console.error('Could not get chef email - skipping email notification');
+              return;
+            }
+            
+            console.log(`Sending invoice paid email to: ${chefEmail}`);
+            const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
+            
+            await sendEmail(
+              chefEmail,
+              "Invoice Paid",
+              tplInvoicePaid({
+                chefName,
+                businessName,
+                invoiceId,
+                amountGBP: Number(amount),
+                url: invoiceUrl
+              })
+            );
+            
+            console.log(`✅ Invoice paid email sent successfully to: ${chefEmail}`);
+          } catch (emailError) {
+            console.error('Failed to send invoice paid email:', emailError);
+            // Don't fail the request if email fails
           }
-          
-          console.log(`Sending invoice paid email to: ${chefEmail}`);
-          const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
-          
-          await sendEmail(
-            chefEmail,
-            "Invoice Paid",
-            tplInvoicePaid({
-              chefName,
-              businessName,
-              invoiceId,
-              amountGBP: Number(amount),
-              url: invoiceUrl
-            })
-          );
-          
-          console.log(`✅ Invoice paid email sent successfully to: ${chefEmail}`);
-        } catch (emailError) {
-          console.error('Failed to send invoice paid email:', emailError);
-          // Don't fail the request if email fails
-        }
+        }, 0); // Run asynchronously without blocking the response
       }
       
       res.status(200).json(updatedInvoice);
