@@ -888,8 +888,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send email notification to chef
         try {
-          // For testing purposes, force the email to be sent to your test email
-          const chefEmail = 'chris@ckddigital.com';
+          // For testing purposes - this should be different from business email
+          // Using a different email to simulate chef's email
+          const chefEmail = 'chef.test@ckddigital.com';
           
           console.log(`Sending invoice paid email to: ${chefEmail}`);
           const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;

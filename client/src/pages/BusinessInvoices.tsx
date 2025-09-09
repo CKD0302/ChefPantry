@@ -155,9 +155,15 @@ export default function BusinessInvoices() {
       
       // Clear the cache and force a fresh fetch
       queryClient.removeQueries({ queryKey: ["/api/invoices/business", user?.id] });
-      await queryClient.refetchQueries({ queryKey: ["/api/invoices/business", user?.id] });
+      const refetchResult = await queryClient.refetchQueries({ queryKey: ["/api/invoices/business", user?.id] });
       
       console.log("DEBUG - Cache cleared and refetched");
+      
+      // Check if our updated invoice is in the new data
+      const updatedInvoices = queryClient.getQueryData(["/api/invoices/business", user?.id]) as InvoiceData[];
+      const updatedInvoice = updatedInvoices?.find(inv => inv.id === invoice.id);
+      console.log("DEBUG - Updated invoice in fresh data:", updatedInvoice);
+      console.log("DEBUG - Updated invoice status:", updatedInvoice?.status);
       
       toast({
         title: "Invoice Updated",
