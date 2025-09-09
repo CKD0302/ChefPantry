@@ -46,7 +46,15 @@ app.use((req, res, next) => {
   // Email health endpoint - add after registerRoutes
   app.get('/api/_email-health', async (req, res) => {
     try {
-      const to = (req.query.to as string) || 'you@example.com';
+      const to = req.query.to as string;
+      
+      if (!to) {
+        return res.status(400).json({ 
+          ok: false, 
+          error: 'Email address "to" parameter is required' 
+        });
+      }
+      
       const { sendEmail } = await import('./lib/email');
       await sendEmail(to, 'Chef Pantry email health', '<b>ok</b>');
       return res.json({ ok: true });
