@@ -123,11 +123,13 @@ class CustomDNSResolver {
       // Make the request with resolved IP using undici
       const { fetch: undiciFetch } = await import('undici');
       const response = await undiciFetch(resolvedUrl.toString(), {
-        ...init,
+        method: init?.method,
         headers: Object.fromEntries(headers.entries()),
+        body: init?.body as any,
+        signal: init?.signal,
       });
 
-      return response;
+      return response as any;
     };
   }
 }
