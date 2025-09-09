@@ -40,6 +40,9 @@ app.use((req, res, next) => {
   next();
 });
 
+import emailHealth from './routes/_email-health';
+app.use('/api/_email-health', emailHealth);
+
 (async () => {
   const server = await registerRoutes(app);
 
