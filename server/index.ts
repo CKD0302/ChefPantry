@@ -40,11 +40,21 @@ app.use((req, res, next) => {
   next();
 });
 
-import emailHealth from './routes/_email-health';
-app.use('/api/_email-health', emailHealth);
-
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Email health endpoint - add after registerRoutes
+  app.get('/api/_email-health', async (req, res) => {
+    try {
+      const to = (req.query.to as string) || 'you@example.com';
+      const { sendEmail } = await import('./lib/email');
+      await sendEmail(to, 'Chef Pantry email health', '<b>ok</b>');
+      return res.json({ ok: true });
+    } catch (e: any) {
+      console.error('email-health failed:', e?.message || e);
+      return res.status(500).json({ ok: false, error: e?.message || 'send failed' });
+    }
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
