@@ -1,6 +1,14 @@
 import dns from 'node:dns';
-dns.setDefaultResultOrder('ipv4first');  // prefer IPv4 over IPv6
-dns.setServers(['1.1.1.1','8.8.8.8']);   // Cloudflare + Google
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['1.1.1.1','8.8.8.8']);
+
+// Force IPv4 for all global fetch/HTTP in Node via undici
+import { Agent, setGlobalDispatcher } from 'undici';
+const ipv4Agent = new Agent({ connect: { family: 4 } });
+setGlobalDispatcher(ipv4Agent);
+
+// Also set via env for Node internals (defensive)
+process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
@@ -9,6 +17,10 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add Supabase health check endpoint
+import supabaseHealth from './routes/_supabase-health';
+app.use('/api/_supabase-health', supabaseHealth);
 
 app.use((req, res, next) => {
   const start = Date.now();

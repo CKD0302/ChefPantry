@@ -1,0 +1,110 @@
+We have intermittent DNS/IPv6 issues to Supabase in Replit. Please:
+
+A) ENFORCE IPV4 EVERYWHERE (first lines that run)
+1) Open server entry (e.g., server/index.ts). At the VERY TOP, before any other imports:
+
+   import dns from 'node:dns';
+   dns.setDefaultResultOrder('ipv4first');
+   dns.setServers(['1.1.1.1','8.8.8.8']);
+
+   // Force IPv4 for all global fetch/HTTP in Node via undici
+   import { Agent, setGlobalDispatcher } from 'undici';
+   const ipv4Agent = new Agent({ connect: { family: 4 } });
+   setGlobalDispatcher(ipv4Agent);
+
+   // Also set via env for Node internals (defensive)
+   process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+
+B) SUPABASE CLIENT: use custom IPv4 fetch
+2) Create server/lib/ipv4Fetch.ts:
+
+   import { fetch as undiciFetch, RequestInit, RequestInfo, Agent } from 'undici';
+   const agent = new Agent({ connect: { family: 4 } });
+   export async function ipv4Fetch(input: RequestInfo, init?: RequestInit) {
+     return undiciFetch(input as any, { ...init, dispatcher: agent } as any);
+   }
+
+3) Update server/lib/supabaseService.ts to inject the custom fetch and set auth/realtime options:
+
+   import { createClient } from '@supabase/supabase-js';
+   import { ipv4Fetch } from './ipv4Fetch';
+
+   const url = process.env.SUPABASE_URL!;
+   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+   export const supabaseService = createClient(url, key, {
+     global: { fetch: ipv4Fetch as any },
+     auth: { persistSession: false, autoRefreshToken: false },
+     realtime: {
+       // keep WS alive and reconnect sanely
+       params: { eventsPerSecond: 2 },
+       heartbeatIntervalMs: 10000,
+       retryInitialDelayMs: 500,
+       retryMaxDelayMs: 5000,
+     },
+   });
+
+   // If we also use an anon client server-side, apply the same config.
+
+C) REALTIME (WebSocket) PROBE
+4) Create server/routes/_supabase-health.ts:
+
+   import { Router } from 'express';
+   import { ipv4Fetch } from '../lib/ipv4Fetch';
+   import WebSocket from 'ws';
+
+   const router = Router();
+   const url = process.env.SUPABASE_URL!;
+   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+   // Simple REST/Auth/Storage HEAD checks
+   async function headOk(path: string) {
+     const r = await ipv4Fetch(`${url}${path}`, { method: 'HEAD', headers: { apikey: key } });
+     return r.ok;
+   }
+
+   router.get('/', async (req, res) => {
+     try {
+       const rest = await headOk('/rest/v1/');
+       const auth = await headOk('/auth/v1/');
+       const storage = await headOk('/storage/v1/');
+       res.json({ ok: rest && auth && storage, rest, auth, storage });
+     } catch (e:any) {
+       console.error('Supabase health error:', e?.message || e);
+       res.status(500).json({ ok:false, error: e?.message || 'health failed' });
+     }
+   });
+
+   // Realtime websocket probe (best-effort)
+   router.get('/realtime', async (req, res) => {
+     try {
+       const ref = (new URL(process.env.SUPABASE_URL!)).host.split('.')[0]; // project-ref
+       const wsUrl = `wss://${ref}.supabase.co/realtime/v1/websocket?apikey=${key}&vsn=1.0.0`;
+       const ws = new WebSocket(wsUrl, { family: 4 }); // ws supports `family` via Node lookup
+       let done = false;
+       ws.on('open', () => { done = true; ws.close(); res.json({ ok:true }); });
+       ws.on('error', (err) => { if (!done) { done = true; res.status(500).json({ ok:false, error: String(err) }); } });
+       setTimeout(() => { if (!done) { done = true; try { ws.terminate(); } catch {} res.status(504).json({ ok:false, error: 'timeout' }); } }, 5000);
+     } catch (e:any) {
+       res.status(500).json({ ok:false, error: e?.message || 'realtime failed' });
+     }
+   });
+
+   export default router;
+
+5) Wire routes in server/index.ts (after Express app is created):
+   import supabaseHealth from './routes/_supabase-health';
+   app.use('/api/_supabase-health', supabaseHealth);
+
+D) REBUILD / RESTART ORDER
+6) Ensure the DNS + undici lines are literally the first executed lines of the server entry before importing modules that might import supabase-js.
+7) Restart the Replit deployment.
+
+E) VERIFY
+8) Hit:
+   - GET /api/_supabase-health → expect { ok: true, rest: true, auth: true, storage: true }
+   - GET /api/_supabase-health/realtime → expect { ok: true }
+9) If any false, print the error stack and current values of SUPABASE_URL (masked) and Node version.
+
+F) CLEANUP
+10) Keep these settings committed. They’re safe and make our networking deterministic on Replit.
