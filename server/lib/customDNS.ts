@@ -123,22 +123,15 @@ class CustomDNSResolver {
       // Make the request with resolved IP using undici with proper SSL handling
       const { fetch: undiciFetch, Agent } = await import('undici');
       
-      // Create agent that connects to IP but validates certificate for original hostname
-      const agent = new Agent({
-        connect: (options: any) => ({
-          ...options,
-          hostname: resolvedIP,
-          port: url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 80),
-          servername: url.hostname, // This ensures SSL certificate validation for original hostname
-        })
-      });
+      // Use a simple approach - rely on the global IPv4 dispatcher we set in index.ts
+      // The DNS resolution is already cached, so just use the original URL
       
-      const response = await undiciFetch(url.toString(), { // Use original URL, not resolved IP
+      // Use original URL - the global IPv4 dispatcher handles the rest
+      const response = await undiciFetch(url.toString(), {
         method: init?.method,
         headers: Object.fromEntries(headers.entries()),
         body: init?.body as any,
         signal: init?.signal,
-        dispatcher: agent,
       });
 
       return response as any;
