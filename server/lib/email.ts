@@ -5,13 +5,9 @@ const FROM = process.env.EMAIL_FROM || "Chef Pantry <no-reply@thechefpantry.co>"
 
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   try {
-    console.log('[email] to=', to, 'subject=', subject);
-    console.log('[email] from=', FROM);
-    console.log('[email] sending via Resend API endpoint: https://api.resend.com');
+    console.log(`[email] Sending to: ${Array.isArray(to) ? to.join(', ') : to} | Subject: ${subject}`);
     
     const response = await resend.emails.send({ from: FROM, to, subject, html });
-    
-    console.log('[email] Resend API response:', JSON.stringify(response, null, 2));
     
     if (response.error) {
       console.error('[email] ❌ Resend API error:', response.error);
