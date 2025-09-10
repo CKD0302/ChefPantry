@@ -120,13 +120,24 @@ class CustomDNSResolver {
       const headers = new Headers(init?.headers);
       headers.set('Host', url.hostname);
 
-      // Make the request with resolved IP using undici
-      const { fetch: undiciFetch } = await import('undici');
-      const response = await undiciFetch(resolvedUrl.toString(), {
+      // Make the request with resolved IP using undici with proper SSL handling
+      const { fetch: undiciFetch, Agent } = await import('undici');
+      
+      // Create agent that connects to IP but validates certificate for original hostname
+      const agent = new Agent({
+        connect: {
+          hostname: resolvedIP,
+          port: url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 80),
+          servername: url.hostname, // This ensures SSL certificate validation for original hostname
+        }
+      });
+      
+      const response = await undiciFetch(url.toString(), { // Use original URL, not resolved IP
         method: init?.method,
         headers: Object.fromEntries(headers.entries()),
         body: init?.body as any,
         signal: init?.signal,
+        dispatcher: agent,
       });
 
       return response as any;
