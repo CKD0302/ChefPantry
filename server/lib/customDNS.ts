@@ -125,11 +125,12 @@ class CustomDNSResolver {
       
       // Create agent that connects to IP but validates certificate for original hostname
       const agent = new Agent({
-        connect: {
+        connect: (options: any) => ({
+          ...options,
           hostname: resolvedIP,
           port: url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 80),
           servername: url.hostname, // This ensures SSL certificate validation for original hostname
-        }
+        })
       });
       
       const response = await undiciFetch(url.toString(), { // Use original URL, not resolved IP
