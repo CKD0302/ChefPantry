@@ -46,8 +46,25 @@ export function NotificationsBell({ userId, onNotificationUpdate }: Notification
     }
   }, [userId]);
 
-  const handleNotificationRead = () => {
-    loadNotifications(); // Refresh notifications when one is read
+  const handleNotificationRead = async (notificationId?: string) => {
+    // Optimistic update - immediately decrease count if we know which notification was read
+    if (notificationId) {
+      const notification = notifications.find(n => n.id === notificationId);
+      if (notification && !notification.read_at) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        // Update local notifications state
+        setNotifications(prev => 
+          prev.map(n => 
+            n.id === notificationId 
+              ? { ...n, read_at: new Date().toISOString() }
+              : n
+          )
+        );
+      }
+    }
+
+    // Still refresh to ensure consistency
+    loadNotifications();
     onNotificationUpdate?.();
   };
 

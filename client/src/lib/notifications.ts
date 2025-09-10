@@ -23,9 +23,16 @@ export async function fetchNotifications(limit=20, offset=0) {
 }
 
 export async function markAsRead(id: string) {
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read_at: new Date().toISOString() })
-    .eq('id', id);
-  if (error) throw error;
+  const response = await fetch(`/api/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to mark notification as read');
+  }
+
+  return response.json();
 }

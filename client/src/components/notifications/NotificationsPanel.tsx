@@ -22,7 +22,7 @@ interface Notification {
 interface NotificationsPanelProps {
   userId: string;
   notifications: Notification[];
-  onNotificationRead: () => void;
+  onNotificationRead: (notificationId?: string) => void;
   onClose: () => void;
 }
 
@@ -39,7 +39,7 @@ export function NotificationsPanel({
     if (!notification.read_at) {
       try {
         await markAsRead(notification.id);
-        onNotificationRead();
+        onNotificationRead(notification.id);
       } catch (error) {
         console.error("Error marking notification as read:", error);
       }
