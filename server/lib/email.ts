@@ -6,12 +6,26 @@ const FROM = process.env.EMAIL_FROM || "Chef Pantry <no-reply@thechefpantry.co>"
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   try {
     console.log('[email] to=', to, 'subject=', subject);
+    console.log('[email] from=', FROM);
     console.log('[email] sending via Resend API endpoint: https://api.resend.com');
     
-    await resend.emails.send({ from: FROM, to, subject, html });
-    console.log(`Email sent to ${Array.isArray(to) ? to.join(', ') : to}: ${subject}`);
+    const response = await resend.emails.send({ from: FROM, to, subject, html });
+    
+    console.log('[email] Resend API response:', JSON.stringify(response, null, 2));
+    
+    if (response.error) {
+      console.error('[email] ❌ Resend API error:', response.error);
+      throw new Error(`Resend API error: ${response.error.message}`);
+    }
+    
+    if (response.data) {
+      console.log(`[email] ✅ Email accepted by Resend! ID: ${response.data.id}`);
+      console.log(`Email sent to ${Array.isArray(to) ? to.join(', ') : to}: ${subject}`);
+    } else {
+      console.warn('[email] ⚠️ Unexpected response format from Resend API');
+    }
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('[email] Failed to send email:', error);
     throw error;
   }
 }
