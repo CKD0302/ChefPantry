@@ -171,21 +171,15 @@ export const generateInvoicePDF = (
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
   
-  if (invoice.paymentMethod === 'stripe' && invoice.paymentLink) {
-    pdf.text('Payment Method: Stripe Online Payment', 20, yPos);
+  // Bank transfer payment details (only payment method supported)
+  pdf.text('Payment Method: Bank Transfer', 20, yPos);
+  yPos += 7;
+  if (invoice.sortCode && invoice.accountNumber) {
+    pdf.text(`Sort Code: ${invoice.sortCode}`, 20, yPos);
     yPos += 7;
-    pdf.setTextColor(...primaryColor);
-    pdf.text('Pay online: Visit the payment link provided in your email', 20, yPos);
-  } else {
-    pdf.text('Payment Method: Bank Transfer', 20, yPos);
+    pdf.text(`Account Number: ${invoice.accountNumber}`, 20, yPos);
     yPos += 7;
-    if (invoice.sortCode && invoice.accountNumber) {
-      pdf.text(`Sort Code: ${invoice.sortCode}`, 20, yPos);
-      yPos += 7;
-      pdf.text(`Account Number: ${invoice.accountNumber}`, 20, yPos);
-      yPos += 7;
-      pdf.text(`Account Name: ${invoice.chef.fullName}`, 20, yPos);
-    }
+    pdf.text(`Account Name: ${invoice.chef.fullName}`, 20, yPos);
   }
   
   // Footer

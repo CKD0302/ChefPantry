@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calculator, Clock, MapPin, Calendar, CreditCard, Building } from "lucide-react";
+import { Calculator, Clock, MapPin, Calendar, Building } from "lucide-react";
 
 interface GigData {
   id: string;
@@ -252,24 +252,11 @@ export default function InvoiceSubmissionModal({
             {chefProfile && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
-                  {chefProfile.preferredPaymentMethod === 'stripe' ? (
-                    <>
-                      <CreditCard className="h-4 w-4" />
-                      Payment via Stripe Connect
-                    </>
-                  ) : (
-                    <>
-                      <Building className="h-4 w-4" />
-                      Payment via Bank Transfer
-                    </>
-                  )}
+                  <Building className="h-4 w-4" />
+                  Payment via Bank Transfer
                 </h4>
                 <div className="text-sm text-blue-600">
-                  {chefProfile.preferredPaymentMethod === 'stripe' ? (
-                    "Payment will be processed instantly through Stripe Connect"
-                  ) : (
-                    `Payment will be sent to ${chefProfile.bankName || 'your bank account'} (${chefProfile.accountNumber ? `****${chefProfile.accountNumber.slice(-4)}` : 'Account on file'})`
-                  )}
+                  {`Payment will be sent to ${chefProfile.bankName || 'your bank account'} (${chefProfile.accountNumber ? `****${chefProfile.accountNumber.slice(-4)}` : 'Account on file'})`}
                 </div>
               </div>
             )}

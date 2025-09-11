@@ -18,14 +18,8 @@ import { sendEmail, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
 import { supabaseService } from "./lib/supabaseService";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import Stripe from "stripe";
 import { authenticateUser, verifyNotificationOwnership, type AuthenticatedRequest } from "./lib/authMiddleware";
 import { notificationIdParamSchema, notificationQuerySchema } from "./lib/notificationValidation";
-
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
-}
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -966,17 +960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // TODO: Optional Stripe webhook integration
-  // When implementing Stripe webhooks for payment confirmation, reuse the same notification pattern:
-  // await createNotification({
-  //   userId: chefUserId,
-  //   type: 'invoice_paid',
-  //   title: 'Invoice paid',
-  //   body: `${businessName} paid your invoice for £${Number(amount).toFixed(2)}.`,
-  //   entityType: 'invoice',
-  //   entityId: invoiceId,
-  //   meta: { amount: Number(amount), businessName, invoiceId }
-  // });
+  // Payment processing is now handled via bank transfers only
 
 
 
@@ -986,28 +970,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.put("/chefs/payment-method/:chefId", async (req: Request, res: Response) => {
     try {
       const { chefId } = req.params;
-      const { paymentMethod, stripePaymentLink, bankSortCode, bankAccountNumber } = req.body;
+      const { bankSortCode, bankAccountNumber } = req.body;
       
       if (!chefId) {
         return res.status(400).json({ message: "Chef ID is required" });
       }
 
-      if (paymentMethod && !['stripe', 'bank'].includes(paymentMethod)) {
-        return res.status(400).json({ message: "Valid payment method is required (stripe or bank)" });
-      }
-
-      // If bank transfer is selected, validate bank details
-      if (paymentMethod === 'bank') {
-        if (!bankSortCode || !bankAccountNumber) {
-          return res.status(400).json({ message: "Bank sort code and account number are required for bank transfer" });
-        }
+      // Validate bank details (bank transfer is the only supported payment method)
+      if (!bankSortCode || !bankAccountNumber) {
+        return res.status(400).json({ message: "Bank sort code and account number are required" });
       }
 
       const paymentData = {
-        paymentMethod,
-        stripePaymentLink: paymentMethod === 'stripe' ? stripePaymentLink : null,
-        bankSortCode: paymentMethod === 'bank' ? bankSortCode : null,
-        bankAccountNumber: paymentMethod === 'bank' ? bankAccountNumber : null,
+        paymentMethod: 'bank',
+        bankSortCode,
+        bankAccountNumber,
       };
 
       const updatedProfile = await storage.updateChefPaymentMethod(chefId, paymentData);

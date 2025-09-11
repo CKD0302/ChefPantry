@@ -79,7 +79,6 @@ export interface IStorage {
   }): Promise<ChefProfile | undefined>;
   updateChefPaymentMethod(id: string, paymentData: {
     paymentMethod?: string;
-    stripePaymentLink?: string;
     bankSortCode?: string;
     bankAccountNumber?: string;
   }): Promise<ChefProfile | undefined>;

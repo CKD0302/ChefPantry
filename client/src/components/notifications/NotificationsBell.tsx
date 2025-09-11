@@ -34,7 +34,7 @@ export function NotificationsBell({ userId, onNotificationUpdate }: Notification
     try {
       const data = await fetchNotifications(20, 0);
       setNotifications(data || []);
-      const unread = (data || []).filter(n => !n.read_at).length;
+      const unread = (data || []).filter((n: NotificationRow) => !n.read_at).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Error loading notifications:", error);

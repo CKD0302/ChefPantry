@@ -62,8 +62,7 @@ const chefProfileSchema = z.object({
   certifications: z.string().optional(),
   isAvailable: z.boolean().default(true),
   // Payment method fields
-  paymentMethod: z.enum(["stripe", "bank"]).default("bank"),
-  stripePaymentLink: z.string().url("Must be a valid Stripe payment link").optional().or(z.literal("")),
+  paymentMethod: z.literal("bank"),
   bankSortCode: z.string().regex(/^\d{2}-\d{2}-\d{2}$/, "Sort code must be in format XX-XX-XX").optional().or(z.literal("")),
   bankAccountNumber: z.string().regex(/^\d{8}$/, "Account number must be 8 digits").optional().or(z.literal("")),
 });
@@ -123,7 +122,6 @@ export default function EditProfile() {
       isAvailable: true,
       // Payment method defaults
       paymentMethod: "bank",
-      stripePaymentLink: "",
       bankSortCode: "",
       bankAccountNumber: "",
     },
@@ -227,8 +225,7 @@ export default function EditProfile() {
           certifications: "", // We'll handle certifications with TagInput component
           isAvailable: data.is_available !== false, // Default to true if not set
           // Payment method fields
-          paymentMethod: data.payment_method || "bank",
-          stripePaymentLink: data.stripe_payment_link || "",
+          paymentMethod: "bank",
           bankSortCode: data.bank_sort_code || "",
           bankAccountNumber: data.bank_account_number || "",
         });
@@ -343,10 +340,9 @@ export default function EditProfile() {
         certifications: certifications,
         is_available: data.isAvailable,
         // Payment method fields
-        payment_method: data.paymentMethod,
-        stripe_payment_link: data.paymentMethod === 'stripe' ? data.stripePaymentLink : null,
-        bank_sort_code: data.paymentMethod === 'bank' ? data.bankSortCode : null,
-        bank_account_number: data.paymentMethod === 'bank' ? data.bankAccountNumber : null,
+        payment_method: "bank",
+        bank_sort_code: data.bankSortCode || null,
+        bank_account_number: data.bankAccountNumber || null,
         // Dish photos
         dish_photos_urls: dishPhotos,
       };
@@ -681,90 +677,46 @@ export default function EditProfile() {
                       )}
                     />
 
-                    {/* Payment Method Section */}
+                    {/* Bank Transfer Details Section */}
                     <div className="space-y-6 pt-4">
-                      <h3 className="text-lg font-medium">Payment Preferences</h3>
-                      <p className="text-sm text-gray-500 mb-4">Choose how you'd like to receive payments from businesses</p>
+                      <h3 className="text-lg font-medium">Bank Transfer Details</h3>
+                      <p className="text-sm text-gray-500 mb-4">Enter your bank details to receive payments from businesses</p>
                       
-                      <FormField
-                        control={chefForm.control}
-                        name="paymentMethod"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Payment Method</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select payment method" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="bank">Bank Transfer</SelectItem>
-                                <SelectItem value="stripe">Stripe Payment Link</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Conditional fields based on payment method */}
-                      {chefForm.watch("paymentMethod") === "stripe" && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                           control={chefForm.control}
-                          name="stripePaymentLink"
+                          name="bankSortCode"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Stripe Payment Link</FormLabel>
+                              <FormLabel>Sort Code</FormLabel>
                               <FormControl>
-                                <Input placeholder="https://buy.stripe.com/abc123..." {...field} />
+                                <Input placeholder="12-34-56" {...field} />
                               </FormControl>
                               <FormDescription>
-                                Enter your Stripe payment link (e.g., from Stripe Dashboard)
+                                UK bank sort code (XX-XX-XX format)
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      )}
-
-                      {chefForm.watch("paymentMethod") === "bank" && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <FormField
-                            control={chefForm.control}
-                            name="bankSortCode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Sort Code</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="12-34-56" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  UK bank sort code (XX-XX-XX format)
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={chefForm.control}
-                            name="bankAccountNumber"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Account Number</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="12345678" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  8-digit UK bank account number
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
+                        
+                        <FormField
+                          control={chefForm.control}
+                          name="bankAccountNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Account Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="12345678" {...field} />
+                              </FormControl>
+                              <FormDescription>
+                                8-digit UK bank account number
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                     
                     {/* Dish Photos Upload Section */}
