@@ -64,8 +64,7 @@ export function NotificationsBell({ userId, onNotificationUpdate }: Notification
       }
     }
 
-    // Still refresh to ensure consistency
-    loadNotifications();
+    // No need to reload - optimistic update is sufficient
     onNotificationUpdate?.();
   };
 
