@@ -27,6 +27,7 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 import CreateCompany from "@/pages/company/CreateCompany";
 import CompanyConsole from "@/pages/company/CompanyConsole";
 import AcceptInvite from "@/pages/company/AcceptInvite";
+import CompanyAccess from "@/pages/business/CompanyAccess";
 
 // Gig Management Pages
 import CreateGig from "@/pages/gigs/Create";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/company/create" component={CreateCompany} />
       <Route path="/company/:id/console" component={(params) => <CompanyConsole companyId={params.id} />} />
       <Route path="/company/invites/accept" component={AcceptInvite} />
+      <Route path="/business/:id/company-access" component={(params) => <CompanyAccess businessId={params.id} />} />
       
       {/* Gig Management Routes */}
       <Route path="/gigs/create" component={CreateGig} />

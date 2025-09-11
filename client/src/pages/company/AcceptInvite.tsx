@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,12 +24,14 @@ export default function AcceptInvite() {
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token');
 
-  // Fetch invite details
+  // Fetch invite details by token
   const { data: invite, isLoading: loadingInvite, error: inviteError } = useQuery({
-    queryKey: ['invite', token],
+    queryKey: ['invite-by-token', token],
     queryFn: async () => {
       if (!token) throw new Error('No invitation token found');
-      const response = await apiRequest('GET', `/api/company/invites/mine?email=${user?.email}`);
+      
+      // First get all invites for the current user
+      const response = await apiRequest('GET', `/api/company/invites/mine`);
       if (!response.ok) throw new Error('Failed to fetch invitation details');
       const result = await response.json();
       
@@ -42,11 +44,11 @@ export default function AcceptInvite() {
     enabled: !!user?.email && !!token
   });
 
-  // Fetch user's companies
+  // Fetch user's companies (ones they own or admin)
   const { data: companies, isLoading: loadingCompanies } = useQuery({
     queryKey: ['companies', user?.id],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/company/mine?userId=${user?.id}`);
+      const response = await apiRequest('GET', `/api/company/mine`);
       if (!response.ok) throw new Error('Failed to fetch companies');
       return response.json();
     },
@@ -62,7 +64,6 @@ export default function AcceptInvite() {
       
       const response = await apiRequest('POST', '/api/company/accept-invite', {
         token,
-        userId: user.id,
         company_id: selectedCompanyId
       });
       
@@ -120,7 +121,9 @@ export default function AcceptInvite() {
                 <p className="text-neutral-600 dark:text-neutral-400 mb-4">
                   You need to be logged in to accept company invitations.
                 </p>
-                <Button onClick={() => navigate('/auth/signin')}>Sign In</Button>
+                <Button onClick={() => navigate('/auth/signin')} data-testid="signin-button">
+                  Sign In
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -143,7 +146,9 @@ export default function AcceptInvite() {
                 <p className="text-neutral-600 dark:text-neutral-400 mb-4">
                   This invitation link is invalid or has expired.
                 </p>
-                <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+                <Button onClick={() => navigate('/dashboard')} data-testid="back-to-dashboard">
+                  Go to Dashboard
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -186,9 +191,11 @@ export default function AcceptInvite() {
                 <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold mb-4">Invitation Not Found</h1>
                 <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-                  This invitation may have expired or been revoked.
+                  This invitation may have expired, been revoked, or you may not have permission to view it.
                 </p>
-                <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+                <Button onClick={() => navigate('/dashboard')} data-testid="back-to-dashboard">
+                  Go to Dashboard
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -199,11 +206,8 @@ export default function AcceptInvite() {
   }
 
   const userCompanies = companies?.data || [];
-  const ownerOrAdminCompanies = userCompanies.filter((company: any) => 
-    // For now, we'll assume all returned companies are manageable by the user
-    // In a real implementation, you'd filter by role here
-    true
-  );
+  // Filter to companies where user is owner or admin (for now, we'll assume all returned companies are valid)
+  const ownerOrAdminCompanies = userCompanies.filter((company: any) => company.ownerUserId === user.id);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
@@ -217,7 +221,7 @@ export default function AcceptInvite() {
                 <Building2 className="h-8 w-8 text-blue-600" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">
+            <h1 className="text-3xl font-bold tracking-tight mb-2" data-testid="page-title">
               Venue Management Invitation
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400">
@@ -259,6 +263,13 @@ export default function AcceptInvite() {
                   })}
                 </p>
               </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Status
+                </Label>
+                <p className="text-lg capitalize font-medium text-green-600">{invite.data.status}</p>
+              </div>
             </CardContent>
           </Card>
 
@@ -290,7 +301,7 @@ export default function AcceptInvite() {
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-neutral-500 mt-1">
-                    Only companies where you are an owner or admin are shown
+                    Only companies where you are the owner are shown
                   </p>
                 </div>
               ) : (
@@ -298,7 +309,7 @@ export default function AcceptInvite() {
                   <Building2 className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
                   <h3 className="font-medium mb-2">No Companies Found</h3>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                    You need to create a company or be an admin of one to accept this invitation.
+                    You need to create a company or be the owner of one to accept this invitation.
                   </p>
                   <Button
                     onClick={() => navigate('/company/create')}

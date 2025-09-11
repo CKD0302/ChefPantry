@@ -161,6 +161,11 @@ router.post('/accept-invite', authenticateUser, async (req: AuthenticatedRequest
       return res.status(400).json({ error: 'Invitation has expired' });
     }
 
+    // Critical security check: Verify invitee email matches current user's email
+    if (!req.user.email || invite.inviteeEmail !== req.user.email) {
+      return res.status(403).json({ error: 'You can only accept invitations sent to your email address' });
+    }
+
     // Verify user is owner/admin of the target company
     const membership = await storage.getCompanyMember(company_id, req.user.id);
     if (!membership || !['owner', 'admin'].includes(membership.role)) {
@@ -242,9 +247,12 @@ router.get('/invites/business/:businessId', authenticateUser, async (req: Authen
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Verify user owns this business
-    const businessProfile = await storage.getBusinessProfile(req.user.id);
-    if (!businessProfile || parseInt(businessId) !== businessProfile.id) {
+    // Verify user owns this business by fetching the business and checking ownership
+    const businessProfile = await storage.getBusinessProfile(businessId);
+    if (!businessProfile) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    if (businessProfile.id !== req.user.id) {
       return res.status(403).json({ error: 'You can only view invites for your own business' });
     }
     
@@ -257,6 +265,66 @@ router.get('/invites/business/:businessId', authenticateUser, async (req: Authen
   } catch (error: any) {
     console.error('Error fetching business invites:', error);
     res.status(500).json({ error: 'Failed to fetch invites' });
+  }
+});
+
+/** Verify invite token without exposing details */
+router.get('/invites/verify', async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ 
+        error: 'Token is required',
+        valid: false 
+      });
+    }
+
+    const invite = await storage.getBusinessCompanyInviteByToken(token);
+    
+    if (!invite) {
+      return res.status(400).json({ 
+        error: 'Invalid token',
+        valid: false 
+      });
+    }
+
+    // Check if invite has expired
+    const now = new Date();
+    const expiresAt = new Date(invite.expiresAt);
+    if (now > expiresAt) {
+      await storage.updateBusinessCompanyInviteStatus(invite.id, 'expired');
+      return res.status(400).json({ 
+        error: 'Invitation has expired',
+        valid: false 
+      });
+    }
+
+    if (invite.status !== 'pending') {
+      return res.status(400).json({ 
+        error: `Invitation is ${invite.status}`,
+        valid: false 
+      });
+    }
+
+    // Get business name for display
+    const businessProfile = await storage.getBusinessProfile(invite.businessId.toString());
+    
+    res.json({
+      valid: true,
+      data: {
+        inviteeEmail: invite.inviteeEmail,
+        role: invite.role,
+        businessName: businessProfile?.businessName || 'Unknown Business',
+        expiresAt: invite.expiresAt
+      }
+    });
+  } catch (error: any) {
+    console.error('Error verifying invite token:', error);
+    res.status(500).json({ 
+      error: 'Failed to verify token',
+      valid: false 
+    });
   }
 });
 
