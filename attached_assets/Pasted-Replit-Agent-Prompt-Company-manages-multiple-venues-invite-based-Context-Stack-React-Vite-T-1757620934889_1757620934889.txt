@@ -1,0 +1,330 @@
+Replit Agent Prompt — “Company manages multiple venues (invite-based)”
+
+Context
+
+Stack: React/Vite/Tailwind client in /client, Node/Express (TS) in /server, Supabase DB.
+
+Existing “business” == venue (table public.businesses with id, name, owner_user_id, etc.).
+
+Goal: A user creates a Company. A business (venue) invites that Company. When accepted, members of that Company can manage that venue with the same permissions as a business owner (or a restricted role).
+
+1) Database migration (Supabase SQL)
+
+Create supabase/migrations/2025-xx-xx_companies_invites.sql:
+
+-- 1) Companies and membership
+create table if not exists public.companies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  owner_user_id uuid not null references auth.users(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.company_members (
+  company_id uuid not null references public.companies(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null check (role in ('owner','admin','finance','viewer')),
+  created_at timestamptz not null default now(),
+  primary key (company_id, user_id)
+);
+
+-- 2) Link: which companies can manage which venues (businesses)
+create table if not exists public.business_company_links (
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  company_id uuid not null references public.companies(id) on delete cascade,
+  role text not null check (role in ('manager','finance','viewer')), -- 'manager' ~ full venue rights
+  created_at timestamptz not null default now(),
+  primary key (business_id, company_id)
+);
+
+-- 3) Invite flow: business invites a company (by company owner email)
+create table if not exists public.business_company_invites (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  invitee_email text not null,
+  role text not null check (role in ('manager','finance','viewer')) default 'manager',
+  token text not null unique,
+  status text not null check (status in ('pending','accepted','revoked','expired')) default 'pending',
+  created_by uuid not null references auth.users(id),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '14 days')
+);
+
+-- 4) Helper view: venues a user can access (as business owner or company member)
+create or replace view public.user_accessible_businesses as
+select b.id as business_id, b.name as business_name
+from public.businesses b
+where b.owner_user_id = auth.uid()
+union
+select l.business_id, b2.name
+from public.business_company_links l
+join public.companies c on c.id = l.company_id
+join public.company_members m on m.company_id = c.id and m.user_id = auth.uid()
+join public.businesses b2 on b2.id = l.business_id;
+
+-- 5) RLS
+alter table public.companies enable row level security;
+alter table public.company_members enable row level security;
+alter table public.business_company_links enable row level security;
+alter table public.business_company_invites enable row level security;
+
+-- Companies: members can read; owners/admins can manage
+create policy companies_select on public.companies
+for select to authenticated
+using (exists (select 1 from public.company_members cm where cm.company_id = companies.id and cm.user_id = auth.uid()));
+
+create policy companies_insert on public.companies
+for insert to authenticated
+with check (owner_user_id = auth.uid());
+
+create policy company_members_select on public.company_members
+for select to authenticated
+using (exists (select 1 from public.company_members cm where cm.company_id = company_members.company_id and cm.user_id = auth.uid()));
+
+create policy company_members_insert on public.company_members
+for insert to authenticated
+with check (
+  exists (select 1 from public.company_members cm where cm.company_id = company_members.company_id and cm.user_id = auth.uid() and cm.role in ('owner','admin'))
+);
+
+create policy company_members_update on public.company_members
+for update to authenticated
+using (
+  exists (select 1 from public.company_members cm where cm.company_id = company_members.company_id and cm.user_id = auth.uid() and cm.role in ('owner','admin'))
+)
+with check (true);
+
+-- Links: visible to company members and business owners; insert by business owner or company owner/admin via server (service role)
+create policy bcl_select on public.business_company_links
+for select to authenticated
+using (
+  exists (select 1 from public.company_members m where m.company_id = business_company_links.company_id and m.user_id = auth.uid())
+  or exists (select 1 from public.businesses b where b.id = business_company_links.business_id and b.owner_user_id = auth.uid())
+);
+
+-- Invites: visible to the business owner who created them and to the invitee email once authenticated
+create policy invites_select on public.business_company_invites
+for select to authenticated
+using (
+  created_by = auth.uid()
+  or exists (
+    select 1 from auth.users u
+    where u.id = auth.uid() and lower(u.email) = lower(business_company_invites.invitee_email)
+  )
+);
+
+
+Note: Your existing tables that depend on business_id (gigs, invoices, etc.) should already have RLS. Update those policies to allow access when business_id is in public.user_accessible_businesses.
+
+Example policy pattern to apply on key tables (adjust per table):
+
+-- Example for invoices table: allow select/update when the venue is accessible
+create policy invoices_select_company on public.gig_invoices
+for select to authenticated
+using (
+  exists (select 1 from public.user_accessible_businesses uab where uab.business_id = gig_invoices.business_id)
+);
+
+create policy invoices_update_company on public.gig_invoices
+for update to authenticated
+using (
+  exists (select 1 from public.user_accessible_businesses uab where uab.business_id = gig_invoices.business_id)
+);
+
+2) Server API (Express/TS)
+
+Create server/routes/company.ts:
+
+import { Router } from 'express';
+import { supabaseService as supabase } from '../lib/supabaseService';
+import { randomBytes } from 'crypto';
+import { sendEmail } from '../lib/email';
+
+const router = Router();
+
+/** Create a company (current user becomes owner) */
+router.post('/create', async (req, res) => {
+  try {
+    const { name, userId } = req.body; // userId = auth.uid() from your auth middleware
+    if (!name || !userId) return res.status(400).json({ error: 'Missing fields' });
+
+    const { data: company, error } = await supabase
+      .from('companies')
+      .insert({ name, owner_user_id: userId })
+      .select('id, name')
+      .single();
+    if (error) throw error;
+
+    // Add owner to members
+    await supabase.from('company_members').insert({ company_id: company.id, user_id: userId, role: 'owner' });
+
+    res.json(company);
+  } catch (e:any) {
+    console.error(e); res.status(500).json({ error: 'Failed to create company' });
+  }
+});
+
+/** My companies */
+router.get('/mine', async (req, res) => {
+  try {
+    const { userId } = req.query as any;
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, name, owner_user_id')
+      .in('id', (
+        await supabase.from('company_members').select('company_id').eq('user_id', userId)
+      ).data?.map(r => r.company_id) || []);
+    if (error) throw error;
+    res.json(data || []);
+  } catch (e:any) {
+    console.error(e); res.status(500).json({ error: 'Failed to list companies' });
+  }
+});
+
+/** Business -> invite company owner (by email) */
+router.post('/invite-company', async (req, res) => {
+  try {
+    const { business_id, invitee_email, role, created_by } = req.body;
+    if (!business_id || !invitee_email || !created_by) return res.status(400).json({ error: 'Missing fields' });
+
+    const token = randomBytes(24).toString('hex');
+
+    const { data: invite, error } = await supabase
+      .from('business_company_invites')
+      .insert({
+        business_id,
+        invitee_email,
+        role: role || 'manager',
+        token,
+        created_by
+      })
+      .select('id, token, invitee_email')
+      .single();
+    if (error) throw error;
+
+    const acceptUrl = `https://thechefpantry.co/company/invites/accept?token=${token}`;
+
+    await sendEmail(invitee_email, 'Venue access invitation',
+      `<p>You’ve been invited to manage a venue on Chef Pantry.</p>
+       <p><a href="${acceptUrl}">Accept invitation</a></p>`);
+
+    res.json({ ok: true });
+  } catch (e:any) {
+    console.error(e); res.status(500).json({ error: 'Failed to create invite' });
+  }
+});
+
+/** Company owner/admin accepts invite (must belong to a company) */
+router.post('/accept-invite', async (req, res) => {
+  try {
+    const { token, userId, company_id } = req.body; // userId = current user; company_id = which company they choose if they own multiple
+    if (!token || !userId || !company_id) return res.status(400).json({ error: 'Missing fields' });
+
+    // Validate invite & that user email matches invitee_email
+    const { data: invite, error: invErr } = await supabase
+      .from('business_company_invites')
+      .select('*')
+      .eq('token', token).eq('status','pending')
+      .single();
+    if (invErr || !invite) return res.status(400).json({ error: 'Invalid or expired invite' });
+
+    const { data: user } = await supabase.from('users').select('id,email').eq('id', userId).single();
+    if (!user || !user.email || user.email.toLowerCase() !== invite.invitee_email.toLowerCase()) {
+      return res.status(403).json({ error: 'Invite not addressed to this user' });
+    }
+
+    // Confirm user is owner/admin of the target company
+    const { data: membership } = await supabase
+      .from('company_members')
+      .select('role')
+      .eq('company_id', company_id)
+      .eq('user_id', userId)
+      .single();
+    if (!membership || !['owner','admin'].includes(membership.role)) {
+      return res.status(403).json({ error: 'Insufficient rights on company' });
+    }
+
+    // Link company -> business
+    await supabase.from('business_company_links').upsert({
+      business_id: invite.business_id,
+      company_id,
+      role: invite.role
+    });
+
+    // Mark invite accepted
+    await supabase.from('business_company_invites').update({ status: 'accepted' }).eq('id', invite.id);
+
+    res.json({ ok: true });
+  } catch (e:any) {
+    console.error(e); res.status(500).json({ error: 'Failed to accept invite' });
+  }
+});
+
+/** Businesses accessible to current user (via owner or company membership) */
+router.get('/accessible-businesses', async (req, res) => {
+  try {
+    const { userId } = req.query as any;
+    const { data, error } = await supabase.from('user_accessible_businesses').select('*');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (e:any) {
+    console.error(e); res.status(500).json({ error: 'Failed to list accessible businesses' });
+  }
+});
+
+export default router;
+
+
+Wire in server/index.ts:
+
+import companyRouter from './routes/company';
+app.use('/api/company', companyRouter);
+
+3) Client UI (minimal but complete)
+
+Company creation: new page /company/create with a form (name). POST /api/company/create.
+
+Company switcher (top-right): if user is in ≥1 company, show a selector; store activeCompanyId in localStorage (used when accepting invites).
+
+Business → Access tab: form to invite a company:
+
+Fields: invitee_email, role (manager/finance/viewer)
+
+POST /api/company/invite-company with { business_id, invitee_email, role, created_by: currentUserId }
+
+Company → Invites page /company/invites:
+
+On landing via ?token=..., call /api/company/accept-invite with { token, userId, company_id: activeCompanyId }
+
+Company Console /company/:companyId/console:
+
+List linked venues (GET /api/company/accessible-businesses)
+
+“Open venue” → deep link to the venue dashboard
+
+Optional: global “Invoice Inbox” filtered by venue (read from existing APIs; you already have RLS via the view)
+
+4) Permissions hook-up (server + RLS)
+
+Update your APIs for invoices/gigs/etc. to not require owner_user_id; rely on RLS with user_accessible_businesses.
+Typically you don’t need code changes—just ensure queries filter/secure by RLS and business_id.
+
+5) Emails (invite only)
+
+Reuse your existing Resend setup. The invite route already sends an email with an accept link.
+
+Optional: add an email to the business owner when the company accepts (just another sendEmail).
+
+6) Acceptance Criteria
+
+A user can create a Company and becomes owner.
+
+A business owner can invite a company by email; recipient gets an email with an accept link.
+
+A company owner/admin opens the link and accepts, choosing which company (if they own multiple).
+
+After acceptance, all company members can see/manage the linked venue(s), including invoices and gigs, through the same UI they used as a business owner.
+
+RLS ensures users only see venues present in user_accessible_businesses.
+
+Existing single-venue users keep working.

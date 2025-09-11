@@ -30,6 +30,7 @@ import { fromZodError } from "zod-validation-error";
 import { authenticateUser, verifyNotificationOwnership, type AuthenticatedRequest } from "./lib/authMiddleware";
 import { notificationIdParamSchema, notificationQuerySchema } from "./lib/notificationValidation";
 import { authRateLimit, profileRateLimit, contactRateLimit, generalRateLimit } from "./lib/rateLimiter";
+import companyRouter from "./routes/company";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -2099,6 +2100,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company management routes
+  app.use("/api/company", companyRouter);
+  
   app.use("/api", apiRouter);
 
   const httpServer = createServer(app);

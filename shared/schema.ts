@@ -465,3 +465,70 @@ export type UpdateBusinessProfile = z.infer<typeof updateBusinessProfileSchema>;
 export type UpdateGig = z.infer<typeof updateGigSchema>;
 export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
 export type ChefPaymentMethod = z.infer<typeof chefPaymentMethodSchema>;
+
+// Companies table - for multi-venue management
+export const companies = pgTable("companies", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`), // UUID
+  name: text("name").notNull(),
+  ownerUserId: text("owner_user_id").notNull(), // UUID from Supabase auth
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Company members - users who belong to companies
+export const companyMembers = pgTable("company_members", {
+  companyId: text("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
+  userId: text("user_id").notNull(), // UUID from Supabase auth  
+  role: text("role").notNull().$type<'owner' | 'admin' | 'finance' | 'viewer'>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: {
+    primaryKey: [table.companyId, table.userId],
+  },
+}));
+
+// Business-Company links - which companies can manage which venues
+export const businessCompanyLinks = pgTable("business_company_links", {
+  businessId: integer("business_id").references(() => businesses.id, { onDelete: "cascade" }).notNull(), // Note: businesses uses serial ID
+  companyId: text("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").notNull().$type<'manager' | 'finance' | 'viewer'>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: {
+    primaryKey: [table.businessId, table.companyId],
+  },
+}));
+
+// Business-Company invites - invite flow for companies to manage venues
+export const businessCompanyInvites = pgTable("business_company_invites", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  businessId: integer("business_id").references(() => businesses.id, { onDelete: "cascade" }).notNull(),
+  inviteeEmail: text("invitee_email").notNull(),
+  role: text("role").notNull().$type<'manager' | 'finance' | 'viewer'>().default('manager'),
+  token: text("token").notNull().unique(),
+  status: text("status").notNull().$type<'pending' | 'accepted' | 'revoked' | 'expired'>().default('pending'),
+  createdBy: text("created_by").notNull(), // UUID from Supabase auth
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull().default(sql`now() + interval '14 days'`),
+});
+
+// Company types and schemas
+export type Company = typeof companies.$inferSelect;
+export type CompanyMember = typeof companyMembers.$inferSelect;
+export type BusinessCompanyLink = typeof businessCompanyLinks.$inferSelect;
+export type BusinessCompanyInvite = typeof businessCompanyInvites.$inferSelect;
+
+export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+
+export const insertCompanyMemberSchema = createInsertSchema(companyMembers).omit({ createdAt: true });
+export type InsertCompanyMember = z.infer<typeof insertCompanyMemberSchema>;
+
+export const insertBusinessCompanyLinkSchema = createInsertSchema(businessCompanyLinks).omit({ createdAt: true });
+export type InsertBusinessCompanyLink = z.infer<typeof insertBusinessCompanyLinkSchema>;
+
+export const insertBusinessCompanyInviteSchema = createInsertSchema(businessCompanyInvites).omit({ 
+  id: true, 
+  createdAt: true, 
+  expiresAt: true 
+});
+export type InsertBusinessCompanyInvite = z.infer<typeof insertBusinessCompanyInviteSchema>;

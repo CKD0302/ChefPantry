@@ -23,6 +23,11 @@ import BusinessInvoices from "@/pages/BusinessInvoices";
 import ChefInvoices from "@/pages/ChefInvoices";
 import AdminDashboard from "@/pages/admin/Dashboard";
 
+// Company Management Pages
+import CreateCompany from "@/pages/company/CreateCompany";
+import CompanyConsole from "@/pages/company/CompanyConsole";
+import AcceptInvite from "@/pages/company/AcceptInvite";
+
 // Gig Management Pages
 import CreateGig from "@/pages/gigs/Create";
 import ManageGigs from "@/pages/gigs/Manage";
@@ -52,6 +57,11 @@ function Router() {
       <Route path="/business/invoices" component={BusinessInvoices} />
       <Route path="/chef/invoices" component={ChefInvoices} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      
+      {/* Company Management Routes */}
+      <Route path="/company/create" component={CreateCompany} />
+      <Route path="/company/:id/console" component={(params) => <CompanyConsole companyId={params.id} />} />
+      <Route path="/company/invites/accept" component={AcceptInvite} />
       
       {/* Gig Management Routes */}
       <Route path="/gigs/create" component={CreateGig} />
