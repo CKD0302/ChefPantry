@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { logger } from "./logger";
+import { storage } from "../storage";
 
 // Validate required environment variables at startup
 if (!process.env.RESEND_API_KEY) {
@@ -9,6 +10,63 @@ if (!process.env.RESEND_API_KEY) {
 const resend = new Resend(process.env.RESEND_API_KEY!);
 const FROM = process.env.EMAIL_FROM || "Chef Pantry <no-reply@thechefpantry.co>";
 
+// Map notification types to email preference field names
+const notificationTypeToEmailPreferenceKey: Record<string, string> = {
+  'chef_applied': 'chefAppliedEmail',
+  'application_accepted': 'applicationAcceptedEmail',
+  'application_rejected': 'applicationRejectedEmail',
+  'gig_confirmed': 'gigConfirmedEmail',
+  'gig_declined': 'gigDeclinedEmail',
+  'invoice_submitted': 'invoiceSubmittedEmail',
+  'invoice_paid': 'invoicePaidEmail',
+  'review_reminder': 'reviewReminderEmail',
+  'review_submitted': 'reviewSubmittedEmail',
+  'gig_posted': 'gigPostedEmail',
+  'gig_updated': 'gigUpdatedEmail',
+  'gig_cancelled': 'gigCancelledEmail',
+  'gig_deadline': 'gigDeadlineEmail',
+  'profile_update': 'profileUpdateEmail',
+  'welcome': 'welcomeEmail',
+  'platform_update': 'platformUpdateEmail'
+};
+
+// Function to get user notification preferences
+async function getUserNotificationPreferences(userId: string) {
+  try {
+    const preferences = await storage.getNotificationPreferences(userId);
+    return preferences;
+  } catch (error) {
+    console.error('Failed to get notification preferences for user', userId, ':', error);
+    // Return null so we can fall back to sending emails if preferences can't be loaded
+    return null;
+  }
+}
+
+// Enhanced sendEmail function that respects user preferences
+export async function sendEmailWithPreferences(userId: string, notificationType: string, to: string | string[], subject: string, html: string) {
+  try {
+    // Check user preferences before sending email
+    const preferences = await getUserNotificationPreferences(userId);
+    const preferenceKey = notificationTypeToEmailPreferenceKey[notificationType];
+    
+    // If we have preferences and this email type is disabled, skip it
+    if (preferences && preferenceKey && preferenceKey in preferences) {
+      const isEnabled = (preferences as any)[preferenceKey];
+      if (isEnabled === false) {
+        console.log(`Skipping email notification for user ${userId} (type: ${notificationType}) - disabled in preferences`);
+        return;
+      }
+    }
+    
+    // If no preferences found or preference is enabled, send the email
+    await sendEmail(to, subject, html);
+  } catch (error) {
+    console.error('Failed to send email with preferences:', error);
+    throw error;
+  }
+}
+
+// Original sendEmail function for backwards compatibility and internal use
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   try {
     logger.debug(`[email] Sending to: ${Array.isArray(to) ? to.join(', ') : to} | Subject: ${subject}`);

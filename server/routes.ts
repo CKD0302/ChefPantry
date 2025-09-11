@@ -20,7 +20,7 @@ import {
   chefPaymentMethodSchema
 } from "@shared/schema";
 import { createNotification } from "./lib/notify";
-import { sendEmail, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
+import { sendEmail, sendEmailWithPreferences, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
 import { supabaseService } from "./lib/supabaseService";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -938,7 +938,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Sending invoice notification email to: ${businessEmail}`);
           const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
           
-          await sendEmail(
+          await sendEmailWithPreferences(
+            validatedData.businessId,
+            'invoice_submitted',
             businessEmail,
             "New Invoice Received",
             tplInvoiceSubmitted({
@@ -1102,7 +1104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Sending invoice paid email to: ${chefEmail}`);
             const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/chef/invoices`;
             
-            await sendEmail(
+            await sendEmailWithPreferences(
+              updatedInvoice.chefId,
+              'invoice_paid',
               chefEmail,
               "Invoice Paid",
               tplInvoicePaid({

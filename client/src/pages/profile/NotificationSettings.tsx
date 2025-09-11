@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,50 +6,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Bell, Mail, MessageSquare, Calendar, DollarSign, Star, Settings } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { Bell, Mail, MessageSquare, Calendar, DollarSign, Star, Settings, LucideIcon } from "lucide-react";
+import { NotificationPreferences } from "@shared/schema";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-interface NotificationPreferences {
-  // Application & Booking notifications
-  chefAppliedApp: boolean;
-  chefAppliedEmail: boolean;
-  applicationAcceptedApp: boolean;
-  applicationAcceptedEmail: boolean;
-  applicationRejectedApp: boolean;
-  applicationRejectedEmail: boolean;
-  gigConfirmedApp: boolean;
-  gigConfirmedEmail: boolean;
-  gigDeclinedApp: boolean;
-  gigDeclinedEmail: boolean;
-  // Invoice notifications
-  invoiceSubmittedApp: boolean;
-  invoiceSubmittedEmail: boolean;
-  invoicePaidApp: boolean;
-  invoicePaidEmail: boolean;
-  // Review notifications
-  reviewReminderApp: boolean;
-  reviewReminderEmail: boolean;
-  reviewSubmittedApp: boolean;
-  reviewSubmittedEmail: boolean;
-  // Gig management notifications
-  gigPostedApp: boolean;
-  gigPostedEmail: boolean;
-  gigUpdatedApp: boolean;
-  gigUpdatedEmail: boolean;
-  gigCancelledApp: boolean;
-  gigCancelledEmail: boolean;
-  gigDeadlineApp: boolean;
-  gigDeadlineEmail: boolean;
-  // System notifications
-  profileUpdateApp: boolean;
-  profileUpdateEmail: boolean;
-  welcomeApp: boolean;
-  welcomeEmail: boolean;
-  platformUpdateApp: boolean;
-  platformUpdateEmail: boolean;
-}
 
 const defaultPreferences: NotificationPreferences = {
   // Application & Booking notifications
@@ -94,54 +58,88 @@ const defaultPreferences: NotificationPreferences = {
 export default function NotificationSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadPreferences();
-    }
-  }, [user]);
+  // If not authenticated, show unauthorized message
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-neutral-800 shadow-sm rounded-lg p-6 text-center">
+              <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+              <p className="text-neutral-600 dark:text-neutral-400 mb-4">You need to be logged in to access notification settings.</p>
+              <Button onClick={() => navigate("/auth/signin")} data-testid="signin-button">Sign In</Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
-  const loadPreferences = async () => {
-    try {
+  // Fetch notification preferences using useQuery
+  const {
+    data: preferencesData,
+    isLoading,
+    error: queryError,
+  } = useQuery<{ data: NotificationPreferences }>({
+    queryKey: ["notification-preferences", user.id],
+    queryFn: async () => {
       const response = await apiRequest("GET", "/api/notifications/preferences");
-      const data = await response.json();
-      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch preferences: ${response.status}`);
+      }
+      return response.json();
+    },
+    enabled: !!user?.id,
+    retry: 1,
+  });
+
+  // Update mutation with cache invalidation
+  const updatePreferencesMutation = useMutation({
+    mutationFn: async (updatedPreferences: NotificationPreferences) => {
+      const response = await apiRequest("PUT", "/api/notifications/preferences", updatedPreferences);
+      if (!response.ok) {
+        throw new Error(`Failed to update preferences: ${response.status}`);
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Update local state
       if (data.data) {
         setPreferences(data.data);
       }
-    } catch (error) {
-      console.error("Error loading notification preferences:", error);
-      // Use default preferences if none exist
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const savePreferences = async () => {
-    setSaving(true);
-    try {
-      const response = await apiRequest("PUT", "/api/notifications/preferences", preferences);
-      const data = await response.json();
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ["notification-preferences", user.id] });
       
       toast({
         title: "Settings Saved",
         description: "Your notification preferences have been updated successfully.",
       });
-      
-      setPreferences(data.data);
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Error saving notification preferences:", error);
       toast({
         title: "Error",
         description: "Failed to save notification preferences. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
-    }
+    },
+  });
+
+  // Initialize preferences from query data
+  const currentPreferences = preferencesData?.data || defaultPreferences;
+  
+  // Update preferences state when query data changes
+  if (preferencesData?.data && JSON.stringify(preferences) !== JSON.stringify(preferencesData.data)) {
+    setPreferences(preferencesData.data);
+  }
+
+  const savePreferences = () => {
+    updatePreferencesMutation.mutate(preferences);
   };
 
   const updatePreference = (key: keyof NotificationPreferences, value: boolean) => {
@@ -151,7 +149,8 @@ export default function NotificationSettings() {
     }));
   };
 
-  if (loading) {
+  // Show loading state while fetching preferences
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
         <Navbar />
@@ -172,6 +171,29 @@ export default function NotificationSettings() {
     );
   }
 
+  // Show error state if query failed
+  if (queryError) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-neutral-800 shadow-sm rounded-lg p-6 text-center">
+              <h1 className="text-2xl font-bold mb-4">Error Loading Preferences</h1>
+              <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+                Failed to load your notification preferences. Please try refreshing the page.
+              </p>
+              <Button onClick={() => window.location.reload()} data-testid="refresh-button">
+                Refresh Page
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   const NotificationSection = ({ 
     title, 
     description, 
@@ -180,7 +202,7 @@ export default function NotificationSettings() {
   }: { 
     title: string; 
     description: string; 
-    icon: any; 
+    icon: LucideIcon; 
     items: Array<{ id: string; appKey: keyof NotificationPreferences; emailKey: keyof NotificationPreferences; label: string; description: string }> 
   }) => (
     <Card data-testid={`notification-section-${title.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -397,11 +419,11 @@ export default function NotificationSettings() {
             <div className="flex justify-end pt-6">
               <Button 
                 onClick={savePreferences} 
-                disabled={saving}
+                disabled={updatePreferencesMutation.isPending}
                 data-testid="save-preferences-button"
                 className="min-w-32"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {updatePreferencesMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </div>
