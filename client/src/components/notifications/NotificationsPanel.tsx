@@ -61,7 +61,16 @@ export function NotificationsPanel({
   };
 
   const formatTime = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return 'Invalid date';
+    }
   };
 
   if (notifications.length === 0) {
