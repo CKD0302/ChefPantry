@@ -127,3 +127,28 @@ export function tplInvoicePaid(params: {
       <p>— Chef Pantry</p>
     </div>`;
 }
+
+export function tplContactForm(params: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const { name, email, subject, message } = params;
+  return `
+    <div style="font-family:Arial,sans-serif;line-height:1.5">
+      <h2>New Contact Form Submission</h2>
+      <p>A new message has been submitted through the Chef Pantry contact form.</p>
+      <div style="background:#f5f5f5;padding:15px;border-radius:6px;margin:20px 0">
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
+        <div style="background:white;padding:10px;border-radius:4px;margin-top:8px">
+          ${message.replace(/\n/g, '<br>')}
+        </div>
+      </div>
+      <p style="color:#666;font-size:14px">This message was sent via the Chef Pantry website contact form.</p>
+      <p>— Chef Pantry</p>
+    </div>`;
+}

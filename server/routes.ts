@@ -23,7 +23,7 @@ import {
 } from "@shared/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { createNotification } from "./lib/notify";
-import { sendEmail, sendEmailWithPreferences, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
+import { sendEmail, sendEmailWithPreferences, tplInvoiceSubmitted, tplInvoicePaid, tplContactForm } from "./lib/email";
 import { supabaseService } from "./lib/supabaseService";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -207,6 +207,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertContactMessageSchema.parse(req.body);
       const contactMessage = await storage.createContactMessage(validatedData);
+      
+      // Send email notification to frontdesk@castleinnhotel.co.uk
+      try {
+        const emailSubject = `Contact Form: ${validatedData.subject}`;
+        const emailBody = tplContactForm({
+          name: validatedData.name,
+          email: validatedData.email,
+          subject: validatedData.subject,
+          message: validatedData.message
+        });
+        
+        await sendEmail("frontdesk@castleinnhotel.co.uk", emailSubject, emailBody);
+        console.log("Contact form email sent successfully");
+      } catch (emailError) {
+        console.error("Error sending contact form email:", emailError);
+        // Don't fail the request if email fails - contact form was still saved
+      }
       
       res.status(201).json({
         message: "Contact message received successfully",
