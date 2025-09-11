@@ -59,17 +59,10 @@ export default function ContactSection() {
     contactMutation.mutate(data);
   }
   
-  const contactInfo = [
-    { icon: <Mail className="text-primary h-5 w-5" />, title: "Email Us", content: "support@chefy.com" },
-    { icon: <Phone className="text-primary h-5 w-5" />, title: "Call Us", content: "(555) 123-4567" },
-    { icon: <MapPin className="text-primary h-5 w-5" />, title: "Visit Us", content: "123 Culinary Ave, San Francisco, CA 94103" },
-  ];
   
   const socialLinks = [
-    { icon: <Facebook className="h-5 w-5" />, href: "#" },
-    { icon: <Twitter className="h-5 w-5" />, href: "#" },
-    { icon: <Instagram className="h-5 w-5" />, href: "#" },
-    { icon: <Linkedin className="h-5 w-5" />, href: "#" },
+    { icon: <Instagram className="h-5 w-5" />, href: "https://www.instagram.com/chef_pantry" },
+    { icon: <Facebook className="h-5 w-5" />, href: "https://www.facebook.com/profile.php?id=61576917277812" },
   ];
   
   return (
@@ -82,19 +75,6 @@ export default function ContactSection() {
               Have questions about Chef Pantry? Our team is ready to help you get started on our platform.
             </p>
             
-            <div className="space-y-4 mb-8">
-              {contactInfo.map((item, index) => (
-                <div className="flex items-start" key={index}>
-                  <div className="flex-shrink-0 mt-1">
-                    {item.icon}
-                  </div>
-                  <div className="ml-4">
-                    <h4 className="text-lg font-medium text-neutral-900">{item.title}</h4>
-                    <p className="text-neutral-800">{item.content}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
             
             <div className="flex space-x-4">
               {socialLinks.map((social, index) => (
