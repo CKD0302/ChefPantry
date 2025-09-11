@@ -266,7 +266,7 @@ export default function NotificationSettings() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
       <Navbar />
-      <div className="container mx-auto px-4 py-8 mt-16">
+      <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Notification Settings</h1>
