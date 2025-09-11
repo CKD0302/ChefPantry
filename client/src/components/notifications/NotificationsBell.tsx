@@ -64,7 +64,11 @@ export function NotificationsBell({ userId, onNotificationUpdate }: Notification
       }
     }
 
-    // No need to reload - optimistic update is sufficient
+    // Refresh after a short delay to ensure server state is synchronized
+    setTimeout(() => {
+      loadNotifications();
+    }, 500);
+
     onNotificationUpdate?.();
   };
 
