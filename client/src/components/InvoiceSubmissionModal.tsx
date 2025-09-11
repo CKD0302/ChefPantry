@@ -146,13 +146,7 @@ export default function InvoiceSubmissionModal({
         status: "pending"
       };
 
-      const response = await fetch("/api/invoices", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(invoiceData),
-      });
+      const response = await apiRequest("POST", "/api/invoices", invoiceData);
 
       const data = await response.json();
 
