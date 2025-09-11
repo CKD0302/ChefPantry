@@ -58,10 +58,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile Management Endpoints
   
   // Create chef profile
-  apiRouter.post("/profiles/chef", async (req: Request, res: Response) => {
+  apiRouter.post("/profiles/chef", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Validate request body
       const profileData = insertChefProfileSchema.parse(req.body);
+      
+      // Authorization: Users can only create/update their own profile
+      if (!req.user || profileData.id !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only manage your own profile"
+        });
+      }
       
       // Check if profile already exists
       const existingProfile = await storage.getChefProfile(profileData.id);
@@ -104,9 +111,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get chef profile
-  apiRouter.get("/profiles/chef/:id", async (req: Request, res: Response) => {
+  apiRouter.get("/profiles/chef/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // Authorization: Users can only view their own profile with full details
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const isOwner = id === req.user.id;
       
       // Get chef profile from DB
       const profile = await storage.getChefProfile(id);
@@ -117,10 +130,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Return profile
-      res.status(200).json({
-        data: profile
-      });
+      // Return profile with sensitive data filtered based on authorization
+      if (!isOwner) {
+        // Remove sensitive bank details for non-owners
+        const filteredProfile = {
+          ...profile,
+          bankSortCode: undefined,
+          bankAccountNumber: undefined,
+          bankName: undefined,
+          accountName: undefined
+        };
+        res.status(200).json({
+          data: filteredProfile
+        });
+      } else {
+        // Return full profile for owner
+        res.status(200).json({
+          data: profile
+        });
+      }
     } catch (error) {
       console.error("Error fetching chef profile:", error);
       res.status(500).json({
@@ -130,9 +158,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update chef profile
-  apiRouter.put("/profiles/chef/:id", async (req: Request, res: Response) => {
+  apiRouter.put("/profiles/chef/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // Authorization: Users can only update their own profile
+      if (!req.user || id !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only update your own profile"
+        });
+      }
       
       // Update chef profile in DB
       const updatedProfile = await storage.updateChefProfile(id, req.body);
@@ -197,10 +232,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create business profile
-  apiRouter.post("/profiles/business", async (req: Request, res: Response) => {
+  apiRouter.post("/profiles/business", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Validate request body
       const profileData = insertBusinessProfileSchema.parse(req.body);
+      
+      // Authorization: Users can only create their own business profile
+      if (!req.user || profileData.id !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only create your own business profile"
+        });
+      }
       
       // Check if profile already exists
       const existingProfile = await storage.getBusinessProfile(profileData.id);
@@ -243,9 +285,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get business profile
-  apiRouter.get("/profiles/business/:id", async (req: Request, res: Response) => {
+  apiRouter.get("/profiles/business/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // Authorization check (business profiles can be viewed by others for business purposes)
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       
       // Get business profile from DB
       const profile = await storage.getBusinessProfile(id);
@@ -269,9 +316,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update business profile
-  apiRouter.put("/profiles/business/:id", async (req: Request, res: Response) => {
+  apiRouter.put("/profiles/business/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // Authorization: Users can only update their own business profile
+      if (!req.user || id !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only update your own business profile"
+        });
+      }
       
       // Update business profile in DB
       const updatedProfile = await storage.updateBusinessProfile(id, req.body);
@@ -967,13 +1021,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Update chef payment method (new payment fields)
-  apiRouter.put("/chefs/payment-method/:chefId", async (req: Request, res: Response) => {
+  apiRouter.put("/chefs/payment-method/:chefId", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.params;
       const { bankSortCode, bankAccountNumber } = req.body;
       
       if (!chefId) {
         return res.status(400).json({ message: "Chef ID is required" });
+      }
+
+      // Authorization: Users can only update their own payment method
+      if (!req.user || chefId !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only update your own payment method"
+        });
       }
 
       // Validate bank details (bank transfer is the only supported payment method)
