@@ -141,6 +141,7 @@ export const gigs = pgTable("gigs", {
   tipsAvailable: boolean("tips_available").default(false),
   isActive: boolean("is_active").default(true),
   isBooked: boolean("is_booked").default(false).notNull(),
+  reviewReminderSent: boolean("review_reminder_sent").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

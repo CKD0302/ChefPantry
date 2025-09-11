@@ -17,8 +17,11 @@ import {
   updateBusinessProfileSchema,
   updateGigSchema,
   applicationStatusSchema,
-  chefPaymentMethodSchema
+  chefPaymentMethodSchema,
+  gigs,
+  gigApplications
 } from "@shared/schema";
+import { and, eq, sql } from "drizzle-orm";
 import { createNotification } from "./lib/notify";
 import { sendEmail, sendEmailWithPreferences, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
 import { supabaseService } from "./lib/supabaseService";
@@ -35,6 +38,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply general rate limiting to all API routes
   apiRouter.use(generalRateLimit);
   
+  // Send review reminders for completed gigs
+  apiRouter.post("/reviews/send-reminders", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      // Find completed gigs that haven't had reminders sent yet
+      const completedGigs = await db.select({
+        gigId: gigs.id,
+        gigTitle: gigs.title,
+        gigDate: gigs.startDate,
+        businessId: gigs.createdBy,
+        chefId: gigApplications.chefId,
+      })
+        .from(gigs)
+        .innerJoin(gigApplications, and(
+          eq(gigApplications.gigId, gigs.id),
+          eq(gigApplications.status, 'confirmed')
+        ))
+        .where(and(
+          sql`${gigs.endDate} < NOW() - INTERVAL '1 day'`, // Gig ended at least 1 day ago
+          eq(gigs.reviewReminderSent, false) // No reminder sent yet
+        ));
+
+      let totalReminders = 0;
+
+      for (const gig of completedGigs) {
+        // Get chef and business profile information
+        const chefProfile = await storage.getChefProfile(gig.chefId);
+        const businessProfile = await storage.getBusinessProfile(gig.businessId);
+        
+        if (!chefProfile || !businessProfile) continue;
+
+        let sentForThisGig = false; // Track if any reminders were sent for this specific gig
+
+        // Check if chef needs review reminder
+        const chefReview = await storage.getReviewByGigAndReviewer(gig.gigId, gig.chefId);
+        if (!chefReview) {
+          // Send reminder to chef
+          await createNotification({
+            userId: gig.chefId,
+            type: 'review_reminder',
+            title: 'Review reminder',
+            body: `How was your experience at ${businessProfile.businessName}? Please leave a review.`,
+            entityType: 'gig',
+            entityId: gig.gigId,
+            meta: { gigTitle: gig.gigTitle, businessName: businessProfile.businessName }
+          });
+
+          // Send email reminder to chef (non-blocking)
+          setTimeout(async () => {
+            try {
+              const { getUserEmail } = await import('./lib/supabaseService');
+              const chefEmail = await getUserEmail(gig.chefId);
+              
+              if (chefEmail) {
+                const reviewUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/reviews`;
+                
+                await sendEmailWithPreferences(
+                  gig.chefId,
+                  'review_reminder',
+                  chefEmail,
+                  "How was your gig experience?",
+                  `
+                    <div style="font-family:Arial,sans-serif;line-height:1.5">
+                      <h2>How was your gig experience?</h2>
+                      <p>We hope you had a great time working at <strong>${businessProfile.businessName}</strong> for the <strong>${gig.gigTitle}</strong> gig.</p>
+                      <p>Your feedback helps other chefs and builds trust in our community. Please take a moment to share your experience:</p>
+                      <ul style="margin:10px 0">
+                        <li>How was the venue organization?</li>
+                        <li>Was the equipment as described?</li>
+                        <li>How welcoming was the team?</li>
+                      </ul>
+                      <p><a href="${reviewUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Leave Your Review</a></p>
+                      <p>— Chef Pantry</p>
+                    </div>`
+                );
+                
+                console.log(`✅ Review reminder email sent to chef: ${chefEmail}`);
+              }
+            } catch (emailError) {
+              console.error('Failed to send chef review reminder email:', emailError);
+            }
+          }, 0);
+
+          totalReminders++;
+          sentForThisGig = true;
+        }
+
+        // Check if business needs review reminder
+        const businessReview = await storage.getReviewByGigAndReviewer(gig.gigId, gig.businessId);
+        if (!businessReview) {
+          // Send reminder to business
+          await createNotification({
+            userId: gig.businessId,
+            type: 'review_reminder',
+            title: 'Review reminder',
+            body: `How was ${chefProfile.fullName}? Please leave a review for your chef.`,
+            entityType: 'gig',
+            entityId: gig.gigId,
+            meta: { gigTitle: gig.gigTitle, chefName: chefProfile.fullName }
+          });
+
+          // Send email reminder to business (non-blocking)
+          setTimeout(async () => {
+            try {
+              const { getUserEmail } = await import('./lib/supabaseService');
+              const businessEmail = await getUserEmail(gig.businessId);
+              
+              if (businessEmail) {
+                const reviewUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/reviews`;
+                
+                await sendEmailWithPreferences(
+                  gig.businessId,
+                  'review_reminder',
+                  businessEmail,
+                  "How was your chef experience?",
+                  `
+                    <div style="font-family:Arial,sans-serif;line-height:1.5">
+                      <h2>How was your chef experience?</h2>
+                      <p>We hope <strong>${chefProfile.fullName}</strong> provided excellent service for your <strong>${gig.gigTitle}</strong> event.</p>
+                      <p>Your feedback helps other businesses find great chefs and helps chefs improve their service. Please share your experience:</p>
+                      <ul style="margin:10px 0">
+                        <li>Was the chef punctual and professional?</li>
+                        <li>How was their appearance and presentation?</li>
+                        <li>Did they fulfill their role well?</li>
+                      </ul>
+                      <p><a href="${reviewUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Leave Your Review</a></p>
+                      <p>— Chef Pantry</p>
+                    </div>`
+                );
+                
+                console.log(`✅ Review reminder email sent to business: ${businessEmail}`);
+              }
+            } catch (emailError) {
+              console.error('Failed to send business review reminder email:', emailError);
+            }
+          }, 0);
+
+          totalReminders++;
+          sentForThisGig = true;
+        }
+
+        // Only mark this gig as having sent reminders if we actually sent some for this specific gig
+        if (sentForThisGig) {
+          await db.update(gigs)
+            .set({ reviewReminderSent: true })
+            .where(eq(gigs.id, gig.gigId));
+        }
+      }
+
+      res.status(200).json({
+        message: `Review reminders sent successfully`,
+        remindersCount: totalReminders,
+        gigsProcessed: completedGigs.length
+      });
+    } catch (error) {
+      console.error("Error sending review reminders:", error);
+      res.status(500).json({ message: "Failed to send review reminders" });
+    }
+  });
+
   // Health check endpoint
   apiRouter.get("/health", (req: Request, res: Response) => {
     res.json({ status: "ok", message: "Chef Pantry API is working!" });
@@ -1542,6 +1704,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const review = await storage.createReview(validatedData);
+      
+      // Create notification for review recipient
+      await createNotification({
+        userId: validatedData.recipientId,
+        type: 'review_submitted',
+        title: 'New review received!',
+        body: `You've received a new review for your ${validatedData.reviewerType === 'chef' ? 'venue' : 'service'}.`,
+        entityType: 'review',
+        entityId: review.id,
+        meta: { 
+          gigId: validatedData.gigId, 
+          reviewId: review.id,
+          reviewerType: validatedData.reviewerType,
+          rating: validatedData.rating 
+        }
+      });
+
+      // Send email notification to review recipient (non-blocking)
+      setTimeout(async () => {
+        try {
+          const { getUserEmail } = await import('./lib/supabaseService');
+          const recipientEmail = await getUserEmail(validatedData.recipientId);
+          
+          if (recipientEmail) {
+            // Get gig details
+            const gig = await storage.getGig(validatedData.gigId);
+            if (!gig) return;
+            
+            // Get reviewer profile for name
+            let reviewerName = 'Someone';
+            if (validatedData.reviewerType === 'chef') {
+              const chefProfile = await storage.getChefProfile(validatedData.reviewerId);
+              reviewerName = chefProfile?.fullName || 'A chef';
+            } else {
+              const businessProfile = await storage.getBusinessProfile(validatedData.reviewerId);
+              reviewerName = businessProfile?.companyName || 'A business';
+            }
+            
+            const reviewsUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/reviews`;
+            const stars = '★'.repeat(validatedData.rating) + '☆'.repeat(5 - validatedData.rating);
+            
+            await sendEmailWithPreferences(
+              validatedData.recipientId,
+              'review_submitted',
+              recipientEmail,
+              "New Review Received!",
+              `
+                <div style="font-family:Arial,sans-serif;line-height:1.5">
+                  <h2>You've received a new review!</h2>
+                  <p><strong>${reviewerName}</strong> has left you a review for <strong>${gig.title}</strong>.</p>
+                  <p style="font-size:18px;color:#ff6a2b"><strong>Rating: ${stars} (${validatedData.rating}/5)</strong></p>
+                  ${validatedData.comment ? `<p><em>"${validatedData.comment}"</em></p>` : ''}
+                  <p>Check out your full review and manage your profile reputation.</p>
+                  <p><a href="${reviewsUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">View All Reviews</a></p>
+                  <p>— Chef Pantry</p>
+                </div>`
+            );
+            
+            console.log(`✅ Review submitted email sent to recipient: ${recipientEmail}`);
+          }
+        } catch (emailError) {
+          console.error('Failed to send review submitted email:', emailError);
+        }
+      }, 0);
+      
       res.status(201).json({ message: "Review submitted successfully", review });
     } catch (error) {
       console.error("Error creating review:", error);
