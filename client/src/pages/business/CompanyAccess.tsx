@@ -161,7 +161,7 @@ export default function CompanyAccess({ businessId }: CompanyAccessProps) {
   }
 
   // Check if user owns this business
-  const isBusinessOwner = businessProfile?.data?.userId === user.id;
+  const isBusinessOwner = businessProfile?.data?.id === user.id;
 
   if (!isBusinessOwner) {
     return (
