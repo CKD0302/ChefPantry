@@ -1,24 +1,12 @@
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
-import { markAsRead } from "@/lib/notifications";
+import { markAsRead, NotificationRow } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-// Frontend notification type that matches Supabase API response format
-interface NotificationRow {
-  id: string;
-  user_id: string;
-  type: string;
-  title: string;
-  body?: string;
-  entity_type?: string;
-  entity_id?: string;
-  meta?: any;
-  read_at?: string;
-  created_at: string;
-}
+// NotificationRow imported from lib/notifications
 
 interface NotificationsPanelProps {
   userId: string;
@@ -37,7 +25,7 @@ export function NotificationsPanel({
 
   const handleNotificationClick = async (notification: NotificationRow) => {
     // Mark as read if not already read
-    if (!notification.read_at) {
+    if (!notification.isRead) {
       try {
         await markAsRead(notification.id);
         onNotificationRead(notification.id);
@@ -91,7 +79,7 @@ export function NotificationsPanel({
             <Button
               variant="ghost"
               className={`w-full h-auto p-4 text-left justify-start ${
-                !notification.read_at ? 'bg-accent/50' : ''
+                !notification.isRead ? 'bg-accent/50' : ''
               }`}
               onClick={() => handleNotificationClick(notification)}
             >
@@ -100,7 +88,7 @@ export function NotificationsPanel({
                   <h4 className="text-sm font-medium leading-none">
                     {notification.title}
                   </h4>
-                  {!notification.read_at && (
+                  {!notification.isRead && (
                     <Badge variant="secondary" className="ml-auto">
                       New
                     </Badge>

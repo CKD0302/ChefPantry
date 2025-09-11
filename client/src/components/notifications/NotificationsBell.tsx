@@ -3,22 +3,10 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { fetchNotifications } from "@/lib/notifications";
+import { fetchNotifications, NotificationRow } from "@/lib/notifications";
 import { NotificationsPanel } from "@/components/notifications/NotificationsPanel";
 
-// Frontend notification type that matches Supabase API response format
-interface NotificationRow {
-  id: string;
-  user_id: string;
-  type: string;
-  title: string;
-  body?: string;
-  entity_type?: string;
-  entity_id?: string;
-  meta?: any;
-  read_at?: string;
-  created_at: string;
-}
+// NotificationRow imported from lib/notifications
 
 interface NotificationsBellProps {
   userId: string;
@@ -34,7 +22,7 @@ export function NotificationsBell({ userId, onNotificationUpdate }: Notification
     try {
       const data = await fetchNotifications(20, 0);
       setNotifications(data || []);
-      const unread = (data || []).filter((n: NotificationRow) => !n.read_at).length;
+      const unread = (data || []).filter((n: NotificationRow) => !n.isRead).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Error loading notifications:", error);
@@ -51,23 +39,18 @@ export function NotificationsBell({ userId, onNotificationUpdate }: Notification
     // Optimistic update - immediately decrease count if we know which notification was read
     if (notificationId) {
       const notification = notifications.find(n => n.id === notificationId);
-      if (notification && !notification.read_at) {
+      if (notification && !notification.isRead) {
         setUnreadCount(prev => Math.max(0, prev - 1));
         // Update local notifications state
         setNotifications(prev => 
           prev.map(n => 
             n.id === notificationId 
-              ? { ...n, read_at: new Date().toISOString() }
+              ? { ...n, read_at: new Date().toISOString(), isRead: true }
               : n
           )
         );
       }
     }
-
-    // Refresh after a short delay to ensure server state is synchronized
-    setTimeout(() => {
-      loadNotifications();
-    }, 500);
 
     onNotificationUpdate?.();
   };
