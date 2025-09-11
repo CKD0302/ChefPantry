@@ -556,6 +556,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const gig = await storage.createGig(validatedData);
       
+      // Create notification for new gig posted (for platform tracking)
+      await createNotification({
+        userId: validatedData.createdBy,
+        type: 'gig_posted',
+        title: 'Gig posted successfully!',
+        body: `Your gig "${gig.title}" has been posted and is now available for chef applications.`,
+        entityType: 'gig',
+        entityId: gig.id,
+        meta: { gigTitle: gig.title, gigId: gig.id, location: gig.location }
+      });
+
+      // Send confirmation email to business owner (non-blocking)
+      setTimeout(async () => {
+        try {
+          const businessProfile = await storage.getBusinessProfile(validatedData.createdBy);
+          if (!businessProfile) return;
+
+          const { getUserEmail } = await import('./lib/supabaseService');
+          const businessEmail = await getUserEmail(validatedData.createdBy);
+          
+          if (businessEmail) {
+            const gigUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/manage`;
+            
+            await sendEmailWithPreferences(
+              validatedData.createdBy,
+              'gig_posted',
+              businessEmail,
+              "Your gig is now live!",
+              `
+                <div style="font-family:Arial,sans-serif;line-height:1.5">
+                  <h2>Your gig has been posted successfully!</h2>
+                  <p>Your <strong>${gig.title}</strong> gig is now live on Chef Pantry and chefs can start applying.</p>
+                  <p><strong>Gig Details:</strong><br/>
+                     <strong>Date:</strong> ${new Date(gig.startDate).toLocaleDateString('en-GB')}<br/>
+                     <strong>Location:</strong> ${gig.location}<br/>
+                     <strong>Rate:</strong> £${gig.payRate}</p>
+                  <p>We'll notify you when chefs start applying to your gig.</p>
+                  <p><a href="${gigUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Manage Your Gigs</a></p>
+                  <p>— Chef Pantry</p>
+                </div>`
+            );
+            
+            console.log(`✅ Gig posted email sent to business: ${businessEmail}`);
+          }
+        } catch (emailError) {
+          console.error('Failed to send gig posted email:', emailError);
+        }
+      }, 0);
+      
       res.status(201).json({
         message: "Gig created successfully",
         data: gig
@@ -676,6 +725,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updatedGig) {
         return res.status(404).json({ message: "Gig not found" });
+      }
+
+      // Check if gig was cancelled (marked as inactive)
+      if ('isActive' in validatedData && validatedData.isActive === false && existingGig.isActive === true) {
+        // Gig was cancelled - notify affected users
+        
+        // 1. Get all applicants for this gig
+        const applications = await storage.getGigApplicationsByGigId(id);
+        
+        for (const application of applications) {
+          if (application.status === 'confirmed' || application.status === 'accepted' || application.status === 'pending') {
+            // Notify chef about cancellation
+            await createNotification({
+              userId: application.chefId,
+              type: 'gig_cancelled',
+              title: 'Gig cancelled',
+              body: `The gig "${updatedGig.title}" has been cancelled by the business.`,
+              entityType: 'gig',
+              entityId: updatedGig.id,
+              meta: { gigTitle: updatedGig.title, gigId: updatedGig.id, status: application.status }
+            });
+
+            // Send email notification to chef (non-blocking)
+            setTimeout(async () => {
+              try {
+                const { getUserEmail } = await import('./lib/supabaseService');
+                const chefEmail = await getUserEmail(application.chefId);
+                
+                if (chefEmail) {
+                  const gigUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/browse`;
+                  
+                  await sendEmailWithPreferences(
+                    application.chefId,
+                    'gig_cancelled',
+                    chefEmail,
+                    "Gig Cancelled",
+                    `
+                      <div style="font-family:Arial,sans-serif;line-height:1.5">
+                        <h2>Gig has been cancelled</h2>
+                        <p>We're sorry to inform you that the <strong>${updatedGig.title}</strong> gig has been cancelled by the business.</p>
+                        <p><strong>Original Date:</strong> ${new Date(updatedGig.startDate).toLocaleDateString('en-GB')}<br/>
+                           <strong>Location:</strong> ${updatedGig.location}</p>
+                        <p>We apologize for any inconvenience. There are many other opportunities available!</p>
+                        <p><a href="${gigUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Browse New Gigs</a></p>
+                        <p>— Chef Pantry</p>
+                      </div>`
+                  );
+                  
+                  console.log(`✅ Gig cancelled email sent to chef: ${chefEmail}`);
+                }
+              } catch (emailError) {
+                console.error('Failed to send gig cancelled email:', emailError);
+              }
+            }, 0);
+          }
+        }
+      } else {
+        // Check if significant gig details were updated
+        const significantChanges = [];
+        
+        if (existingGig.title !== updatedGig.title) {
+          significantChanges.push(`title changed from "${existingGig.title}" to "${updatedGig.title}"`);
+        }
+        if (existingGig.startDate.toString() !== updatedGig.startDate.toString()) {
+          significantChanges.push(`start date changed from ${existingGig.startDate} to ${updatedGig.startDate}`);
+        }
+        if (existingGig.endDate && existingGig.endDate.toString() !== updatedGig.endDate?.toString()) {
+          significantChanges.push(`end date changed`);
+        }
+        if (existingGig.location !== updatedGig.location) {
+          significantChanges.push(`location changed from "${existingGig.location}" to "${updatedGig.location}"`);
+        }
+        if (existingGig.payRate !== updatedGig.payRate) {
+          significantChanges.push(`pay rate changed from £${existingGig.payRate} to £${updatedGig.payRate}`);
+        }
+        if (existingGig.role !== updatedGig.role) {
+          significantChanges.push(`role changed from "${existingGig.role}" to "${updatedGig.role}"`);
+        }
+        
+        if (significantChanges.length > 0) {
+          // Gig was significantly updated - notify affected users
+          console.log(`Gig ${updatedGig.id} updated with changes: ${significantChanges.join(', ')}`);
+          
+          // Get all applicants for this gig
+          const applications = await storage.getGigApplicationsByGigId(id);
+          
+          for (const application of applications) {
+            if (application.status === 'confirmed' || application.status === 'accepted' || application.status === 'pending') {
+              // Notify chef about gig updates
+              await createNotification({
+                userId: application.chefId,
+                type: 'gig_updated',
+                title: 'Gig details updated',
+                body: `The gig "${updatedGig.title}" has been updated. Please review the latest details.`,
+                entityType: 'gig',
+                entityId: updatedGig.id,
+                meta: { 
+                  gigTitle: updatedGig.title, 
+                  gigId: updatedGig.id, 
+                  status: application.status,
+                  changes: significantChanges
+                }
+              });
+
+              // Send email notification to chef (non-blocking)
+            setTimeout(async () => {
+              try {
+                const { getUserEmail } = await import('./lib/supabaseService');
+                const chefEmail = await getUserEmail(application.chefId);
+                
+                if (chefEmail) {
+                  const gigUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/my-applications`;
+                  
+                  await sendEmailWithPreferences(
+                    application.chefId,
+                    'gig_updated',
+                    chefEmail,
+                    "Gig Details Updated",
+                    `
+                      <div style="font-family:Arial,sans-serif;line-height:1.5">
+                        <h2>Gig details have been updated</h2>
+                        <p>The <strong>${updatedGig.title}</strong> gig you ${application.status === 'confirmed' ? 'confirmed' : 'applied to'} has been updated.</p>
+                        <p><strong>Latest Details:</strong><br/>
+                           <strong>Date:</strong> ${new Date(updatedGig.startDate).toLocaleDateString('en-GB')}<br/>
+                           <strong>Location:</strong> ${updatedGig.location}<br/>
+                           <strong>Rate:</strong> £${updatedGig.payRate}</p>
+                        <p>Please review the updated details to ensure you're still available and interested.</p>
+                        <p><a href="${gigUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Review Gig Details</a></p>
+                        <p>— Chef Pantry</p>
+                      </div>`
+                  );
+                  
+                  console.log(`✅ Gig updated email sent to chef: ${chefEmail}`);
+                }
+              } catch (emailError) {
+                console.error('Failed to send gig updated email:', emailError);
+              }
+            }, 0);
+            }
+          }
+        }
       }
       
       res.status(200).json({
