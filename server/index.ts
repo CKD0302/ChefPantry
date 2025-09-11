@@ -42,26 +42,12 @@ app.use('/api/_supabase-health', supabaseHealth);
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      // Log only basic request info - NEVER log response bodies (security risk)
+      const logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       log(logLine);
     }
   });
@@ -72,26 +58,28 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
   
-  // Email health endpoint - add after registerRoutes
-  app.get('/api/_email-health', async (req, res) => {
-    try {
-      const to = req.query.to as string;
-      
-      if (!to) {
-        return res.status(400).json({ 
-          ok: false, 
-          error: 'Email address "to" parameter is required' 
-        });
+  // Email health endpoint - restricted to development only for security
+  if (process.env.NODE_ENV === 'development') {
+    app.get('/api/_email-health', async (req, res) => {
+      try {
+        const to = req.query.to as string;
+        
+        if (!to) {
+          return res.status(400).json({ 
+            ok: false, 
+            error: 'Email address "to" parameter is required' 
+          });
+        }
+        
+        const { sendEmail } = await import('./lib/email');
+        await sendEmail(to, 'Chef Pantry email health', '<b>ok</b>');
+        return res.json({ ok: true });
+      } catch (e: any) {
+        console.error('email-health failed:', e?.message || e);
+        return res.status(500).json({ ok: false, error: e?.message || 'send failed' });
       }
-      
-      const { sendEmail } = await import('./lib/email');
-      await sendEmail(to, 'Chef Pantry email health', '<b>ok</b>');
-      return res.json({ ok: true });
-    } catch (e: any) {
-      console.error('email-health failed:', e?.message || e);
-      return res.status(500).json({ ok: false, error: e?.message || 'send failed' });
-    }
-  });
+    });
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
