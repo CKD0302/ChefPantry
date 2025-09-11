@@ -180,8 +180,59 @@ export const notifications = pgTable("notifications", {
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
-  typeCheck: check("type_check", sql`type IN ('invoice_submitted', 'invoice_paid')`),
+  typeCheck: check("type_check", sql`type IN (
+    'invoice_submitted', 'invoice_paid',
+    'chef_applied', 'application_accepted', 'application_rejected', 'gig_confirmed', 'gig_declined',
+    'review_reminder', 'review_submitted',
+    'gig_posted', 'gig_updated', 'gig_cancelled', 'gig_deadline_approaching',
+    'profile_update', 'welcome', 'platform_update'
+  )`),
 }));
+
+// Notification Preferences table for user notification settings
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull().unique(), // UUID from Supabase auth
+  // Application & Booking notifications
+  chefAppliedApp: boolean("chef_applied_app").default(true).notNull(),
+  chefAppliedEmail: boolean("chef_applied_email").default(true).notNull(),
+  applicationAcceptedApp: boolean("application_accepted_app").default(true).notNull(),
+  applicationAcceptedEmail: boolean("application_accepted_email").default(true).notNull(),
+  applicationRejectedApp: boolean("application_rejected_app").default(true).notNull(),
+  applicationRejectedEmail: boolean("application_rejected_email").default(false).notNull(),
+  gigConfirmedApp: boolean("gig_confirmed_app").default(true).notNull(),
+  gigConfirmedEmail: boolean("gig_confirmed_email").default(true).notNull(),
+  gigDeclinedApp: boolean("gig_declined_app").default(true).notNull(),
+  gigDeclinedEmail: boolean("gig_declined_email").default(true).notNull(),
+  // Invoice notifications
+  invoiceSubmittedApp: boolean("invoice_submitted_app").default(true).notNull(),
+  invoiceSubmittedEmail: boolean("invoice_submitted_email").default(true).notNull(),
+  invoicePaidApp: boolean("invoice_paid_app").default(true).notNull(),
+  invoicePaidEmail: boolean("invoice_paid_email").default(true).notNull(),
+  // Review notifications
+  reviewReminderApp: boolean("review_reminder_app").default(true).notNull(),
+  reviewReminderEmail: boolean("review_reminder_email").default(false).notNull(),
+  reviewSubmittedApp: boolean("review_submitted_app").default(true).notNull(),
+  reviewSubmittedEmail: boolean("review_submitted_email").default(true).notNull(),
+  // Gig management notifications
+  gigPostedApp: boolean("gig_posted_app").default(true).notNull(),
+  gigPostedEmail: boolean("gig_posted_email").default(false).notNull(),
+  gigUpdatedApp: boolean("gig_updated_app").default(true).notNull(),
+  gigUpdatedEmail: boolean("gig_updated_email").default(false).notNull(),
+  gigCancelledApp: boolean("gig_cancelled_app").default(true).notNull(),
+  gigCancelledEmail: boolean("gig_cancelled_email").default(true).notNull(),
+  gigDeadlineApp: boolean("gig_deadline_app").default(true).notNull(),
+  gigDeadlineEmail: boolean("gig_deadline_email").default(false).notNull(),
+  // System notifications
+  profileUpdateApp: boolean("profile_update_app").default(true).notNull(),
+  profileUpdateEmail: boolean("profile_update_email").default(false).notNull(),
+  welcomeApp: boolean("welcome_app").default(true).notNull(),
+  welcomeEmail: boolean("welcome_email").default(true).notNull(),
+  platformUpdateApp: boolean("platform_update_app").default(true).notNull(),
+  platformUpdateEmail: boolean("platform_update_email").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 // Gig Invoices table for post-gig billing
 export const gigInvoices = pgTable("gig_invoices", {
@@ -283,6 +334,12 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertGigInvoiceSchema = createInsertSchema(gigInvoices).omit({
   id: true,
   createdAt: true,
@@ -325,6 +382,8 @@ export type ChefDocument = typeof chefDocuments.$inferSelect;
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 
 export type InsertGigInvoice = z.infer<typeof insertGigInvoiceSchema>;
 export type GigInvoice = typeof gigInvoices.$inferSelect;
