@@ -534,6 +534,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertGigApplicationSchema.parse(req.body);
       const application = await storage.createGigApplication(validatedData);
       
+      // Get gig and chef details for notification
+      const gig = await storage.getGig(validatedData.gigId);
+      const chefProfile = await storage.getChefProfile(validatedData.chefId);
+      
+      if (gig && chefProfile) {
+        // Create notification for business owner
+        await createNotification({
+          userId: gig.createdBy,
+          type: 'chef_applied',
+          title: 'New chef application',
+          body: `${chefProfile.fullName} applied for your gig: ${gig.title}`,
+          entityType: 'application',
+          entityId: application.id,
+          meta: { gigTitle: gig.title, chefName: chefProfile.fullName, applicationId: application.id }
+        });
+
+        // Send email notification to business owner (non-blocking)
+        setTimeout(async () => {
+          try {
+            const businessProfile = await storage.getBusinessProfile(gig.createdBy);
+            if (!businessProfile) {
+              console.error('Business profile not found - skipping email notification');
+              return;
+            }
+            
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const businessEmail = await getUserEmail(businessProfile.id);
+            
+            if (!businessEmail) {
+              console.error('Could not get business email - skipping email notification');
+              return;
+            }
+            
+            console.log(`Sending chef application email to: ${businessEmail}`);
+            const applicationUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/applications/${gig.id}`;
+            
+            await sendEmailWithPreferences(
+              gig.createdBy,
+              'chef_applied',
+              businessEmail,
+              "New Chef Application",
+              `
+                <div style="font-family:Arial,sans-serif;line-height:1.5">
+                  <h2>New application for your gig</h2>
+                  <p><strong>${chefProfile.fullName}</strong> has applied for your gig.</p>
+                  <p><strong>Gig:</strong> ${gig.title}<br/>
+                     <strong>Date:</strong> ${new Date(gig.eventDate).toLocaleDateString('en-GB')}<br/>
+                     <strong>Location:</strong> ${gig.location}</p>
+                  <p><a href="${applicationUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Review Application</a></p>
+                  <p>— Chef Pantry</p>
+                </div>`
+            );
+            
+            console.log(`✅ Chef application email sent successfully to: ${businessEmail}`);
+          } catch (emailError) {
+            console.error('Failed to send chef application email:', emailError);
+          }
+        }, 0);
+      }
+      
       res.status(201).json({
         message: "Application submitted successfully",
         data: application
@@ -645,8 +705,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Application is already accepted" });
       }
 
+      // Get all applications for this gig before accepting (to notify rejected chefs)
+      const allApplications = await storage.getGigApplicationsByGigId(application.gigId);
+      const applicationsToReject = allApplications.filter(app => 
+        app.id !== id && app.status === "pending"
+      );
+
       // Accept this specific application and reject all others for the same gig
       const result = await storage.acceptChefForGig(id, application.gigId);
+      
+      // Get gig and profile details for notifications
+      const gig = await storage.getGig(application.gigId);
+      const acceptedChefProfile = await storage.getChefProfile(application.chefId);
+      
+      if (gig && acceptedChefProfile) {
+        // 1. Notify accepted chef
+        await createNotification({
+          userId: application.chefId,
+          type: 'application_accepted',
+          title: 'Application accepted!',
+          body: `Your application for "${gig.title}" has been accepted. Please confirm or decline this gig.`,
+          entityType: 'application',
+          entityId: application.id,
+          meta: { gigTitle: gig.title, gigId: gig.id, applicationId: application.id }
+        });
+
+        // Send email to accepted chef (non-blocking)
+        setTimeout(async () => {
+          try {
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const chefEmail = await getUserEmail(application.chefId);
+            
+            if (chefEmail) {
+              const gigUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/my-applications`;
+              
+              await sendEmailWithPreferences(
+                application.chefId,
+                'application_accepted',
+                chefEmail,
+                "Application Accepted!",
+                `
+                  <div style="font-family:Arial,sans-serif;line-height:1.5">
+                    <h2>Great news! Your application has been accepted</h2>
+                    <p>Your application for <strong>${gig.title}</strong> has been accepted by the business.</p>
+                    <p><strong>Event Date:</strong> ${new Date(gig.eventDate).toLocaleDateString('en-GB')}<br/>
+                       <strong>Location:</strong> ${gig.location}<br/>
+                       <strong>Duration:</strong> ${gig.duration} hours</p>
+                    <p>Please confirm or decline this gig as soon as possible.</p>
+                    <p><a href="${gigUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Confirm or Decline</a></p>
+                    <p>— Chef Pantry</p>
+                  </div>`
+              );
+              
+              console.log(`✅ Application accepted email sent to chef: ${chefEmail}`);
+            }
+          } catch (emailError) {
+            console.error('Failed to send application accepted email:', emailError);
+          }
+        }, 0);
+
+        // 2. Notify rejected chefs
+        for (const rejectedApp of applicationsToReject) {
+          const rejectedChefProfile = await storage.getChefProfile(rejectedApp.chefId);
+          
+          if (rejectedChefProfile) {
+            await createNotification({
+              userId: rejectedApp.chefId,
+              type: 'application_rejected',
+              title: 'Application not selected',
+              body: `Your application for "${gig.title}" was not selected this time.`,
+              entityType: 'application', 
+              entityId: rejectedApp.id,
+              meta: { gigTitle: gig.title, gigId: gig.id, applicationId: rejectedApp.id }
+            });
+
+            // Send email to rejected chef (non-blocking)
+            setTimeout(async () => {
+              try {
+                const { getUserEmail } = await import('./lib/supabaseService');
+                const rejectedChefEmail = await getUserEmail(rejectedApp.chefId);
+                
+                if (rejectedChefEmail) {
+                  const browseUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/browse`;
+                  
+                  await sendEmailWithPreferences(
+                    rejectedApp.chefId,
+                    'application_rejected',
+                    rejectedChefEmail,
+                    "Application Update",
+                    `
+                      <div style="font-family:Arial,sans-serif;line-height:1.5">
+                        <h2>Application Update</h2>
+                        <p>Thank you for your interest in <strong>${gig.title}</strong>.</p>
+                        <p>Unfortunately, your application was not selected this time. Please don't be discouraged - there are many other opportunities available!</p>
+                        <p><a href="${browseUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Browse New Gigs</a></p>
+                        <p>— Chef Pantry</p>
+                      </div>`
+                  );
+                  
+                  console.log(`✅ Application rejected email sent to chef: ${rejectedChefEmail}`);
+                }
+              } catch (emailError) {
+                console.error('Failed to send application rejected email:', emailError);
+              }
+            }, 0);
+          }
+        }
+      }
       
       res.status(200).json({
         message: "Chef accepted successfully",
@@ -689,11 +854,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract first name from fullName field
       const firstName = chefProfile.fullName.split(' ')[0] || 'Chef';
 
-      // Confirm the application and create notification
+      // Confirm the application 
       const confirmedApplication = await storage.confirmGigApplication(
         id, 
         firstName
       );
+      
+      // Get gig details for notification
+      const gig = await storage.getGig(application.gigId);
+      
+      if (gig && confirmedApplication) {
+        // Create notification for business owner
+        await createNotification({
+          userId: gig.createdBy,
+          type: 'gig_confirmed',
+          title: 'Gig confirmed!',
+          body: `${chefProfile.fullName} has confirmed the gig: ${gig.title}`,
+          entityType: 'gig',
+          entityId: gig.id,
+          meta: { gigTitle: gig.title, chefName: chefProfile.fullName, chefFirstName: firstName }
+        });
+
+        // Send email notification to business owner (non-blocking)
+        setTimeout(async () => {
+          try {
+            const businessProfile = await storage.getBusinessProfile(gig.createdBy);
+            if (!businessProfile) {
+              console.error('Business profile not found - skipping email notification');
+              return;
+            }
+            
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const businessEmail = await getUserEmail(businessProfile.id);
+            
+            if (!businessEmail) {
+              console.error('Could not get business email - skipping email notification');
+              return;
+            }
+            
+            console.log(`Sending gig confirmed email to: ${businessEmail}`);
+            const gigUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/manage`;
+            
+            await sendEmailWithPreferences(
+              gig.createdBy,
+              'gig_confirmed',
+              businessEmail,
+              "Gig Confirmed!",
+              `
+                <div style="font-family:Arial,sans-serif;line-height:1.5">
+                  <h2>Your gig has been confirmed!</h2>
+                  <p><strong>${chefProfile.fullName}</strong> has confirmed your gig booking.</p>
+                  <p><strong>Gig:</strong> ${gig.title}<br/>
+                     <strong>Date:</strong> ${new Date(gig.eventDate).toLocaleDateString('en-GB')}<br/>
+                     <strong>Location:</strong> ${gig.location}<br/>
+                     <strong>Duration:</strong> ${gig.duration} hours</p>
+                  <p>Your gig is now booked and ready to go!</p>
+                  <p><a href="${gigUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">View Gig Details</a></p>
+                  <p>— Chef Pantry</p>
+                </div>`
+            );
+            
+            console.log(`✅ Gig confirmed email sent successfully to: ${businessEmail}`);
+          } catch (emailError) {
+            console.error('Failed to send gig confirmed email:', emailError);
+          }
+        }, 0);
+      }
       
       res.status(200).json({
         message: "Gig confirmed successfully",
@@ -702,6 +928,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error confirming gig:", error);
       res.status(500).json({ message: "Failed to confirm gig" });
+    }
+  });
+
+  // Decline a gig application (for chefs)
+  apiRouter.put("/applications/:id/decline", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // First, get the application and gig details
+      const application = await storage.getGigApplication(id);
+      
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.status !== "accepted") {
+        return res.status(400).json({ message: "Only accepted applications can be declined" });
+      }
+
+      // Update application status to declined
+      const declinedApplication = await storage.updateGigApplicationStatus(id, "declined");
+      
+      if (!declinedApplication) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Get gig and chef details for notification
+      const gig = await storage.getGig(application.gigId);
+      const chefProfile = await storage.getChefProfile(application.chefId);
+      
+      if (gig && chefProfile) {
+        // Create notification for business owner
+        await createNotification({
+          userId: gig.createdBy,
+          type: 'gig_declined',
+          title: 'Gig declined',
+          body: `${chefProfile.fullName} has declined the gig: ${gig.title}`,
+          entityType: 'gig',
+          entityId: gig.id,
+          meta: { gigTitle: gig.title, chefName: chefProfile.fullName, applicationId: application.id }
+        });
+
+        // Send email notification to business owner (non-blocking)
+        setTimeout(async () => {
+          try {
+            const businessProfile = await storage.getBusinessProfile(gig.createdBy);
+            if (!businessProfile) {
+              console.error('Business profile not found - skipping email notification');
+              return;
+            }
+            
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const businessEmail = await getUserEmail(businessProfile.id);
+            
+            if (!businessEmail) {
+              console.error('Could not get business email - skipping email notification');
+              return;
+            }
+            
+            console.log(`Sending gig declined email to: ${businessEmail}`);
+            const applicationsUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/gigs/applications/${gig.id}`;
+            
+            await sendEmailWithPreferences(
+              gig.createdBy,
+              'gig_declined',
+              businessEmail,
+              "Gig Declined",
+              `
+                <div style="font-family:Arial,sans-serif;line-height:1.5">
+                  <h2>Gig booking declined</h2>
+                  <p><strong>${chefProfile.fullName}</strong> has declined your gig booking.</p>
+                  <p><strong>Gig:</strong> ${gig.title}<br/>
+                     <strong>Date:</strong> ${new Date(gig.eventDate).toLocaleDateString('en-GB')}<br/>
+                     <strong>Location:</strong> ${gig.location}</p>
+                  <p>You may want to review other applications for this gig or repost it to find another chef.</p>
+                  <p><a href="${applicationsUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">View Applications</a></p>
+                  <p>— Chef Pantry</p>
+                </div>`
+            );
+            
+            console.log(`✅ Gig declined email sent successfully to: ${businessEmail}`);
+          } catch (emailError) {
+            console.error('Failed to send gig declined email:', emailError);
+          }
+        }, 0);
+      }
+      
+      res.status(200).json({
+        message: "Gig declined successfully",
+        application: declinedApplication
+      });
+    } catch (error) {
+      console.error("Error declining gig:", error);
+      res.status(500).json({ message: "Failed to decline gig" });
     }
   });
 

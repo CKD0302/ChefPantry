@@ -639,18 +639,9 @@ export class DBStorage implements IStorage {
         .set({ isBooked: true })
         .where(eq(gigs.id, confirmedApplication.gigId));
 
-      // 4. Create a notification for the business
-      await tx
-        .insert(notifications)
-        .values({
-          userId: gig.createdBy,
-          type: "invoice_submitted", // Using valid type from constraint
-          title: "Gig Confirmed",
-          body: `Chef ${chefFirstName} has confirmed the gig: ${gig.title}`,
-          entityType: "gig",
-          entityId: gig.id,
-          meta: { gigTitle: gig.title, chefFirstName }
-        });
+      // 4. Create a notification for the business using the new notification service
+      // Note: This will be called by the route handler using createNotification function
+      // which respects user preferences
 
       return confirmedApplication;
     });
