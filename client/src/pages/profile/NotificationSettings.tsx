@@ -252,16 +252,55 @@ export default function NotificationSettings() {
     </Card>
   );
 
+  const toggleAllNotifications = (enable: boolean) => {
+    const allKeys = Object.keys(defaultPreferences) as Array<keyof NotificationPreferences>;
+    const newPreferences = { ...preferences };
+    
+    allKeys.forEach(key => {
+      newPreferences[key] = enable;
+    });
+    
+    setPreferences(newPreferences);
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 mt-16">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Notification Settings</h1>
             <p className="text-neutral-600 dark:text-neutral-400 mt-2">
               Manage how you receive notifications from Chef Pantry. You can control both in-app and email notifications for different types of activities.
             </p>
+          </div>
+
+          {/* Toggle All Controls */}
+          <div className="mb-8 p-4 bg-white dark:bg-neutral-800 rounded-lg shadow-sm border">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="font-medium text-lg">Quick Actions</h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">Enable or disable all notifications at once</p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => toggleAllNotifications(true)}
+                  className="text-green-700 border-green-200 hover:bg-green-50"
+                  data-testid="toggle-all-on"
+                >
+                  Enable All
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => toggleAllNotifications(false)}
+                  className="text-red-700 border-red-200 hover:bg-red-50"
+                  data-testid="toggle-all-off"
+                >
+                  Disable All
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-6">
