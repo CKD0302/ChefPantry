@@ -18,6 +18,7 @@ import ViewProfile from "@/pages/profile/View";
 import ViewChefProfile from "@/pages/profile/ViewChefProfile";
 import EditProfile from "@/pages/profile/Edit";
 import PaymentSettings from "@/pages/profile/PaymentSettings";
+import NotificationSettings from "@/pages/profile/NotificationSettings";
 import BusinessInvoices from "@/pages/BusinessInvoices";
 import ChefInvoices from "@/pages/ChefInvoices";
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/profile/chef/:id" component={ViewChefProfile} />
       <Route path="/profile/edit" component={EditProfile} />
       <Route path="/profile/payment-settings" component={PaymentSettings} />
+      <Route path="/profile/notification-settings" component={NotificationSettings} />
       <Route path="/business/invoices" component={BusinessInvoices} />
       <Route path="/chef/invoices" component={ChefInvoices} />
       <Route path="/admin/dashboard" component={AdminDashboard} />

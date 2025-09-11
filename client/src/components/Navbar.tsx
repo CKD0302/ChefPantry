@@ -85,6 +85,9 @@ export default function Navbar() {
                     <DropdownMenuItem onClick={() => navigate("/profile/view")}>
                       Profile
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/profile/notification-settings")}>
+                      Notification Settings
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       Sign Out
