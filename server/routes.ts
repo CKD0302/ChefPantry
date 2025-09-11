@@ -19,6 +19,8 @@ import { supabaseService } from "./lib/supabaseService";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import Stripe from "stripe";
+import { authenticateUser, verifyNotificationOwnership, type AuthenticatedRequest } from "./lib/authMiddleware";
+import { notificationIdParamSchema, notificationQuerySchema } from "./lib/notificationValidation";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -310,9 +312,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new gig (for businesses)
   apiRouter.post("/gigs/create", async (req: Request, res: Response) => {
     try {
-      console.log("Received gig data:", req.body);
+      // Debug logging in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Received gig data:", req.body);
+      }
       const validatedData = insertGigSchema.parse(req.body);
-      console.log("Validated gig data after parsing:", validatedData);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Validated gig data after parsing:", validatedData);
+      }
       const gig = await storage.createGig(validatedData);
       
       res.status(201).json({
@@ -633,14 +640,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get notifications for a user
-  apiRouter.get("/notifications", async (req: Request, res: Response) => {
+  // Get notifications for the authenticated user
+  apiRouter.get("/notifications", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { userId } = req.query;
-      
-      if (!userId || typeof userId !== 'string') {
-        return res.status(400).json({ message: "User ID is required" });
+      // Validate query parameters
+      const validationResult = notificationQuerySchema.safeParse(req.query);
+      if (!validationResult.success) {
+        const validationError = fromZodError(validationResult.error);
+        return res.status(400).json({ 
+          message: "Invalid query parameters", 
+          errors: validationError.details
+        });
       }
+
+      // Use authenticated user's ID - ignore any userId in query for security
+      const userId = req.user!.id;
       
       const notifications = await storage.getNotificationsByUserId(userId);
       
@@ -653,11 +667,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mark notification as read
-  apiRouter.patch("/notifications/:id/read", async (req: Request, res: Response) => {
+  // Mark notification as read (with ownership verification)
+  apiRouter.patch("/notifications/:id/read", authenticateUser, verifyNotificationOwnership, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { id } = req.params;
+      // Validate notification ID parameter
+      const validationResult = notificationIdParamSchema.safeParse(req.params);
+      if (!validationResult.success) {
+        const validationError = fromZodError(validationResult.error);
+        return res.status(400).json({ 
+          message: "Invalid notification ID", 
+          errors: validationError.details
+        });
+      }
+
+      const { id } = validationResult.data;
       
+      // If we reach here, ownership has already been verified by middleware
       const updatedNotification = await storage.markNotificationAsRead(id);
       
       if (!updatedNotification) {

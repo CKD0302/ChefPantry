@@ -20,10 +20,12 @@ setGlobalDispatcher(ipv4Agent);
 // Set via env for Node internals (defensive)
 process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 
-// Log DNS configuration for debugging
-console.log('[DNS] Configured servers:', dns.getServers());
-console.log('[DNS] Result order:', dns.getDefaultResultOrder());
-console.log('[DNS] NODE_OPTIONS:', process.env.NODE_OPTIONS);
+// Log DNS configuration in development only
+if (process.env.NODE_ENV === 'development') {
+  console.log('[DNS] Configured servers:', dns.getServers());
+  console.log('[DNS] Result order:', dns.getDefaultResultOrder());
+  console.log('[DNS] NODE_OPTIONS:', process.env.NODE_OPTIONS);
+}
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";

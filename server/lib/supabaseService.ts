@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { customFetch } from './customDNS';
+import { ipv4Fetch } from './ipv4Fetch';
 
 const url = process.env.SUPABASE_URL!;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -13,7 +13,7 @@ if (!key) {
 }
 
 export const supabaseService = createClient(url, key, {
-  global: { fetch: customFetch as any },
+  global: { fetch: ipv4Fetch as any },
   auth: { persistSession: false, autoRefreshToken: false },
   realtime: {
     params: { eventsPerSecond: 2 },

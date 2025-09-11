@@ -6,7 +6,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { fetchNotifications } from "@/lib/notifications";
 import { NotificationsPanel } from "@/components/notifications/NotificationsPanel";
 
-interface Notification {
+// Frontend notification type that matches Supabase API response format
+interface NotificationRow {
   id: string;
   user_id: string;
   type: string;
@@ -25,7 +26,7 @@ interface NotificationsBellProps {
 }
 
 export function NotificationsBell({ userId, onNotificationUpdate }: NotificationsBellProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 

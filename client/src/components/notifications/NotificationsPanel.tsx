@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-interface Notification {
+// Frontend notification type that matches Supabase API response format
+interface NotificationRow {
   id: string;
   user_id: string;
   type: string;
@@ -21,7 +22,7 @@ interface Notification {
 
 interface NotificationsPanelProps {
   userId: string;
-  notifications: Notification[];
+  notifications: NotificationRow[];
   onNotificationRead: (notificationId?: string) => void;
   onClose: () => void;
 }
@@ -34,7 +35,7 @@ export function NotificationsPanel({
 }: NotificationsPanelProps) {
   const [, setLocation] = useLocation();
 
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = async (notification: NotificationRow) => {
     // Mark as read if not already read
     if (!notification.read_at) {
       try {

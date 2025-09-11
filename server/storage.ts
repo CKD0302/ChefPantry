@@ -111,6 +111,7 @@ export interface IStorage {
   
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotificationById(id: string): Promise<Notification | undefined>;
   getNotificationsByUserId(userId: string): Promise<Notification[]>;
   markNotificationAsRead(notificationId: string): Promise<Notification | undefined>;
   
@@ -399,11 +400,16 @@ export class DBStorage implements IStorage {
         benefits: insertGig.benefits || []
       };
       
-      // Log the exact data being sent to the database
-      console.log("Sending gig data to database:", JSON.stringify(gigData, null, 2));
+      // Debug logging in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Sending gig data to database:", JSON.stringify(gigData, null, 2));
+      }
       
       const result = await db.insert(gigs).values(gigData).returning();
-      console.log("Database insert result:", result);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Database insert result:", result);
+      }
       return result[0];
     } catch (error) {
       console.error("Database error during gig creation:", error);
@@ -649,6 +655,16 @@ export class DBStorage implements IStorage {
 
   async createNotification(insertNotification: InsertNotification): Promise<Notification> {
     const result = await db.insert(notifications).values(insertNotification).returning();
+    return result[0];
+  }
+
+  async getNotificationById(id: string): Promise<Notification | undefined> {
+    const result = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+    
     return result[0];
   }
 

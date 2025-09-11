@@ -1,27 +1,33 @@
 import { Resend } from "resend";
+import { logger } from "./logger";
+
+// Validate required environment variables at startup
+if (!process.env.RESEND_API_KEY) {
+  throw new Error('Missing required environment variable: RESEND_API_KEY');
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 const FROM = process.env.EMAIL_FROM || "Chef Pantry <no-reply@thechefpantry.co>";
 
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   try {
-    console.log(`[email] Sending to: ${Array.isArray(to) ? to.join(', ') : to} | Subject: ${subject}`);
+    logger.debug(`[email] Sending to: ${Array.isArray(to) ? to.join(', ') : to} | Subject: ${subject}`);
     
     const response = await resend.emails.send({ from: FROM, to, subject, html });
     
     if (response.error) {
-      console.error('[email] ❌ Resend API error:', response.error);
+      logger.error('[email] ❌ Resend API error:', response.error);
       throw new Error(`Resend API error: ${response.error.message}`);
     }
     
     if (response.data) {
-      console.log(`[email] ✅ Email accepted by Resend! ID: ${response.data.id}`);
-      console.log(`Email sent to ${Array.isArray(to) ? to.join(', ') : to}: ${subject}`);
+      logger.debug(`[email] ✅ Email accepted by Resend! ID: ${response.data.id}`);
+      logger.info(`Email sent to ${Array.isArray(to) ? to.join(', ') : to}: ${subject}`);
     } else {
-      console.warn('[email] ⚠️ Unexpected response format from Resend API');
+      logger.warn('[email] ⚠️ Unexpected response format from Resend API');
     }
   } catch (error) {
-    console.error('[email] Failed to send email:', error);
+    logger.error('[email] Failed to send email:', error);
     throw error;
   }
 }
