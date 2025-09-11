@@ -32,6 +32,9 @@ import {
   notifications,
   type Notification,
   type InsertNotification,
+  notificationPreferences,
+  type NotificationPreferences,
+  type InsertNotificationPreferences,
   reviews,
   type Review,
   type InsertReview
@@ -112,6 +115,10 @@ export interface IStorage {
   getNotificationById(id: string): Promise<Notification | undefined>;
   getNotificationsByUserId(userId: string): Promise<Notification[]>;
   markNotificationAsRead(notificationId: string): Promise<Notification | undefined>;
+  
+  // Notification Preferences methods
+  getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined>;
+  updateNotificationPreferences(userId: string, preferences: InsertNotificationPreferences): Promise<NotificationPreferences>;
   
   // Invoice methods
   createGigInvoice(invoice: InsertGigInvoice): Promise<GigInvoice>;
@@ -682,6 +689,43 @@ export class DBStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async getNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined> {
+    const result = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async updateNotificationPreferences(userId: string, preferences: InsertNotificationPreferences): Promise<NotificationPreferences> {
+    // First try to update existing preferences
+    const existingPrefs = await this.getNotificationPreferences(userId);
+    
+    if (existingPrefs) {
+      // Update existing preferences
+      const result = await db
+        .update(notificationPreferences)
+        .set({ 
+          ...preferences, 
+          updatedAt: new Date() 
+        })
+        .where(eq(notificationPreferences.userId, userId))
+        .returning();
+      
+      return result[0];
+    } else {
+      // Create new preferences if none exist
+      const result = await db
+        .insert(notificationPreferences)
+        .values(preferences)
+        .returning();
+      
+      return result[0];
+    }
   }
 
   // Invoice methods

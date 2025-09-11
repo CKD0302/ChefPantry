@@ -12,6 +12,7 @@ import {
   insertGigInvoiceSchema,
   insertReviewSchema,
   insertNotificationSchema,
+  insertNotificationPreferencesSchema,
   updateChefProfileSchema,
   updateBusinessProfileSchema,
   updateGigSchema,
@@ -800,6 +801,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking notification as read:", error);
       res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Get notification preferences for the authenticated user
+  apiRouter.get("/notifications/preferences", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const preferences = await storage.getNotificationPreferences(userId);
+      
+      res.status(200).json({
+        data: preferences
+      });
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
+  // Update notification preferences for the authenticated user
+  apiRouter.put("/notifications/preferences", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const preferencesData = insertNotificationPreferencesSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const updatedPreferences = await storage.updateNotificationPreferences(userId, preferencesData);
+      
+      res.status(200).json({
+        message: "Notification preferences updated successfully",
+        data: updatedPreferences
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details
+        });
+      }
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Failed to update notification preferences" });
     }
   });
 
