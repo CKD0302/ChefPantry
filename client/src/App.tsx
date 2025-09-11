@@ -28,6 +28,8 @@ import CreateCompany from "@/pages/company/CreateCompany";
 import CompanyConsole from "@/pages/company/CompanyConsole";
 import AcceptInvite from "@/pages/company/AcceptInvite";
 import CompanyAccess from "@/pages/business/CompanyAccess";
+import MyCompanies from "@/pages/company/MyCompanies";
+import { useRoute } from "wouter";
 
 // Gig Management Pages
 import CreateGig from "@/pages/gigs/Create";
@@ -37,6 +39,19 @@ import ViewGig from "@/pages/gigs/View";
 import MyApplications from "@/pages/gigs/MyApplications";
 import GigApplications from "@/pages/gigs/applications/GigApplications";
 import Reviews from "@/pages/Reviews";
+
+// Wrapper components for route parameters
+function CompanyConsoleWrapper() {
+  const [match, params] = useRoute("/company/:id/console");
+  if (!match || !params?.id) return <NotFound />;
+  return <CompanyConsole companyId={params.id} />;
+}
+
+function CompanyAccessWrapper() {
+  const [match, params] = useRoute("/business/:id/company-access");  
+  if (!match || !params?.id) return <NotFound />;
+  return <CompanyAccess businessId={params.id} />;
+}
 
 function Router() {
   return (
@@ -61,9 +76,10 @@ function Router() {
       
       {/* Company Management Routes */}
       <Route path="/company/create" component={CreateCompany} />
-      <Route path="/company/:id/console" component={(params) => <CompanyConsole companyId={params.id} />} />
+      <Route path="/company/my-companies" component={MyCompanies} />
+      <Route path="/company/:id/console" component={CompanyConsoleWrapper} />
       <Route path="/company/invites/accept" component={AcceptInvite} />
-      <Route path="/business/:id/company-access" component={(params) => <CompanyAccess businessId={params.id} />} />
+      <Route path="/business/:id/company-access" component={CompanyAccessWrapper} />
       
       {/* Gig Management Routes */}
       <Route path="/gigs/create" component={CreateGig} />

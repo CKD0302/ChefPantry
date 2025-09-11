@@ -233,7 +233,7 @@ export default function Dashboard() {
                     className="bg-primary hover:bg-primary-dark text-white"
                     onClick={() => {
                       console.log("Complete Your Profile button clicked");
-                      setIsDisclaimerModalOpen(true);
+                      setIsChefDisclaimerModalOpen(true);
                     }}
                   >
                     Complete Your Profile
@@ -403,11 +403,47 @@ export default function Dashboard() {
           )}
 
 
-          {!["chef", "business"].includes(userRole) && (
+          {userRole === "company" && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Company Management</h2>
+              <div className="bg-white border border-neutral-200 rounded p-4">
+                <div className="flex flex-col space-y-4">
+                  <div>
+                    <p className="text-blue-600 font-medium mb-2">🏢 Welcome to Chef Pantry Company Portal</p>
+                    <p className="text-neutral-600">Create and manage companies to oversee multiple venues.</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <Button 
+                      className="bg-primary hover:bg-primary-dark text-white w-full"
+                      onClick={() => navigate("/company/create")}
+                    >
+                      Create Company
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/company/my-companies")}
+                      className="w-full"
+                    >
+                      My Companies
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/company/invites/accept")}
+                      className="w-full"
+                    >
+                      Accept Invites
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!["chef", "business", "company"].includes(userRole) && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Create Your Profile</h2>
               <div className="bg-neutral-100 p-4 rounded">
-                <p className="text-center">Choose what type of profile you want to create - Chef or Business.</p>
+                <p className="text-center">Choose what type of profile you want to create - Chef, Business, or Company.</p>
                 <div className="flex justify-center gap-4 mt-4">
                   <Button 
                     className="bg-primary hover:bg-primary-dark text-white"

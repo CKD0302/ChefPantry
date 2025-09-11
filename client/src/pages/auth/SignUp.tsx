@@ -126,6 +126,7 @@ export default function SignUp() {
                 <SelectContent>
                   <SelectItem value="chef">Chef</SelectItem>
                   <SelectItem value="business">Hospitality Business</SelectItem>
+                  <SelectItem value="company">Company (Venue Management)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
