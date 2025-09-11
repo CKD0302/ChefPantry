@@ -11,7 +11,12 @@ import {
   insertGigApplicationSchema,
   insertGigInvoiceSchema,
   insertReviewSchema,
-  insertNotificationSchema
+  insertNotificationSchema,
+  updateChefProfileSchema,
+  updateBusinessProfileSchema,
+  updateGigSchema,
+  applicationStatusSchema,
+  chefPaymentMethodSchema
 } from "@shared/schema";
 import { createNotification } from "./lib/notify";
 import { sendEmail, tplInvoiceSubmitted, tplInvoicePaid } from "./lib/email";
@@ -173,8 +178,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Validate request body
+      const validatedData = updateChefProfileSchema.parse(req.body);
+      
       // Update chef profile in DB
-      const updatedProfile = await storage.updateChefProfile(id, req.body);
+      const updatedProfile = await storage.updateChefProfile(id, validatedData);
       
       if (!updatedProfile) {
         return res.status(404).json({
@@ -331,8 +339,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Validate request body
+      const validatedData = updateBusinessProfileSchema.parse(req.body);
+      
       // Update business profile in DB
-      const updatedProfile = await storage.updateBusinessProfile(id, req.body);
+      const updatedProfile = await storage.updateBusinessProfile(id, validatedData);
       
       if (!updatedProfile) {
         return res.status(404).json({
@@ -362,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gig Management Routes
   
   // Create a new gig (for businesses)
-  apiRouter.post("/gigs/create", async (req: Request, res: Response) => {
+  apiRouter.post("/gigs/create", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Debug logging in development only
       if (process.env.NODE_ENV === 'development') {
@@ -372,6 +383,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (process.env.NODE_ENV === 'development') {
         console.log("Validated gig data after parsing:", validatedData);
       }
+      
+      // Authorization: Ensure createdBy field matches authenticated user
+      if (!req.user || validatedData.createdBy !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only create gigs for yourself"
+        });
+      }
+      
       const gig = await storage.createGig(validatedData);
       
       res.status(201).json({
@@ -467,12 +486,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update a gig
-  apiRouter.put("/gigs/:id", async (req: Request, res: Response) => {
+  apiRouter.put("/gigs/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const updateData = req.body;
       
-      const updatedGig = await storage.updateGig(id, updateData);
+      // Authorization: Verify user owns the gig
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const existingGig = await storage.getGig(id);
+      if (!existingGig) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      
+      if (existingGig.createdBy !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only update your own gigs"
+        });
+      }
+      
+      // Validate request body
+      const validatedData = updateGigSchema.parse(req.body);
+      
+      const updatedGig = await storage.updateGig(id, validatedData);
       
       if (!updatedGig) {
         return res.status(404).json({ message: "Gig not found" });
@@ -491,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   
   // Apply for a gig (for chefs)
-  apiRouter.post("/gigs/apply", async (req: Request, res: Response) => {
+  apiRouter.post("/gigs/apply", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const validatedData = insertGigApplicationSchema.parse(req.body);
       const application = await storage.createGigApplication(validatedData);
@@ -551,14 +588,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update application status (for businesses)
-  apiRouter.put("/applications/:id/status", async (req: Request, res: Response) => {
+  apiRouter.put("/applications/:id/status", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
       
-      if (!status || typeof status !== 'string' || !['applied', 'shortlisted', 'rejected', 'accepted'].includes(status)) {
-        return res.status(400).json({ message: "Valid status is required" });
+      // Authorization: Verify user owns the gig this application belongs to
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
       }
+      
+      const application = await storage.getGigApplication(id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      const gig = await storage.getGig(application.gigId);
+      if (!gig || gig.createdBy !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only update applications for your own gigs"
+        });
+      }
+      
+      // Validate request body
+      const { status } = applicationStatusSchema.parse(req.body);
       
       const updatedApplication = await storage.updateGigApplicationStatus(id, status);
       
@@ -577,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Accept a chef for a gig (accepts one, rejects all others)
-  apiRouter.put("/applications/:id/accept", async (req: Request, res: Response) => {
+  apiRouter.put("/applications/:id/accept", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
 
@@ -607,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Confirm a gig application (for chefs)
-  apiRouter.put("/applications/:id/confirm", async (req: Request, res: Response) => {
+  apiRouter.put("/applications/:id/confirm", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
 
@@ -752,9 +804,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Submit invoice for a completed gig
-  apiRouter.post("/invoices", async (req: Request, res: Response) => {
+  apiRouter.post("/invoices", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const validatedData = insertGigInvoiceSchema.parse(req.body);
+      
+      // Authorization: Verify user has permission to create this invoice
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // User can create invoices as a chef (for their own work) or as a business (for manual invoices)
+      const isChefInvoice = validatedData.chefId === req.user.id;
+      const isBusinessInvoice = validatedData.businessId === req.user.id && validatedData.isManual;
+      
+      if (!isChefInvoice && !isBusinessInvoice) {
+        return res.status(403).json({
+          message: "Forbidden: You can only create invoices for your own work or manual invoices for your business"
+        });
+      }
       
       // For regular gig invoices, check if invoice already exists
       if (validatedData.gigId) {
@@ -942,7 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mark invoice as paid
-  apiRouter.put("/invoices/:invoiceId/mark-paid", async (req: Request, res: Response) => {
+  apiRouter.put("/invoices/:invoiceId/mark-paid", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { invoiceId } = req.params;
       
@@ -1028,7 +1095,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.put("/chefs/payment-method/:chefId", authenticateUser, authRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.params;
-      const { bankSortCode, bankAccountNumber } = req.body;
+      
+      // Validate request body
+      const { bankSortCode, bankAccountNumber } = chefPaymentMethodSchema.parse(req.body);
       
       if (!chefId) {
         return res.status(400).json({ message: "Chef ID is required" });
@@ -1039,11 +1108,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({
           message: "Forbidden: You can only update your own payment method"
         });
-      }
-
-      // Validate bank details (bank transfer is the only supported payment method)
-      if (!bankSortCode || !bankAccountNumber) {
-        return res.status(400).json({ message: "Bank sort code and account number are required" });
       }
 
       const paymentData = {
@@ -1069,9 +1133,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a review
-  apiRouter.post("/reviews", async (req: Request, res: Response) => {
+  apiRouter.post("/reviews", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const validatedData = insertReviewSchema.parse(req.body);
+      
+      // Authorization: Verify user is the reviewer and participated in the gig
+      if (!req.user || validatedData.reviewerId !== req.user.id) {
+        return res.status(403).json({
+          message: "Forbidden: You can only submit reviews for yourself"
+        });
+      }
+      
+      // Verify user participated in the gig (either as business owner or confirmed chef)
+      const gig = await storage.getGig(validatedData.gigId);
+      if (!gig) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      
+      const isBusinessReviewer = gig.createdBy === req.user.id;
+      let isChefReviewer = false;
+      
+      if (!isBusinessReviewer) {
+        // Check if user is a confirmed chef for this gig
+        const confirmedApplications = await storage.getGigApplicationsByGigId(validatedData.gigId);
+        isChefReviewer = confirmedApplications.some(
+          (app: any) => app.chefId === req.user!.id && app.status === 'confirmed'
+        );
+      }
+      
+      if (!isBusinessReviewer && !isChefReviewer) {
+        return res.status(403).json({
+          message: "Forbidden: You can only review gigs you participated in"
+        });
+      }
       
       // Check if review already exists
       const existingReview = await storage.getReviewByGigAndReviewer(validatedData.gigId, validatedData.reviewerId);

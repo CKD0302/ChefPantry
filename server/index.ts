@@ -28,12 +28,43 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: process.env.NODE_ENV === 'production' 
+        ? ["'self'"]
+        : ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts in development for Vite HMR
+      connectSrc: ["'self'", "wss:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://chef-pantry.replit.app'] // Add your production domain here
+    : ['http://localhost:5000', 'http://127.0.0.1:5000', 'http://0.0.0.0:5000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Request parsing middleware with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Add Supabase health check endpoint
 import supabaseHealth from './routes/_supabase-health';
@@ -86,7 +117,8 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    // Removed throw after response sent to prevent server crashes
+    console.error("Error occurred:", err);
   });
 
   // importantly only setup vite in development and after

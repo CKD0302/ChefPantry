@@ -331,3 +331,77 @@ export type GigInvoice = typeof gigInvoices.$inferSelect;
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+// Additional validation schemas for route inputs
+export const updateChefProfileSchema = z.object({
+  fullName: z.string().optional(),
+  bio: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  experienceYears: z.number().optional(),
+  location: z.string().optional(),
+  travelRadiusKm: z.number().optional(),
+  profileImageUrl: z.string().optional(),
+  dishPhotosUrls: z.array(z.string()).optional(),
+  introVideoUrl: z.string().optional(),
+  instagramUrl: z.string().optional(),
+  linkedinUrl: z.string().optional(),
+  portfolioUrl: z.string().optional(),
+  languages: z.array(z.string()).optional(),
+  certifications: z.array(z.string()).optional(),
+  isAvailable: z.boolean().optional(),
+  bankName: z.string().optional(),
+  accountName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  bankSortCode: z.string().optional(),
+  paymentMethod: z.string().optional()
+});
+
+export const updateBusinessProfileSchema = z.object({
+  businessName: z.string().optional(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  profileImageUrl: z.string().optional(),
+  galleryImageUrls: z.array(z.string()).optional(),
+  websiteUrl: z.string().optional(),
+  instagramUrl: z.string().optional(),
+  linkedinUrl: z.string().optional(),
+  venueType: z.string().optional(),
+  cuisineSpecialties: z.array(z.string()).optional(),
+  businessSize: z.string().optional(),
+  isHiring: z.boolean().optional(),
+  availabilityNotes: z.string().optional()
+});
+
+export const updateGigSchema = z.object({
+  title: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  location: z.string().optional(),
+  payRate: z.string().optional(),
+  role: z.string().optional(),
+  venueType: z.string().optional(),
+  dressCode: z.string().optional(),
+  serviceExpectations: z.string().optional(),
+  kitchenDetails: z.string().optional(),
+  equipmentProvided: z.array(z.string()).optional(),
+  benefits: z.array(z.string()).optional(),
+  tipsAvailable: z.boolean().optional(),
+  isActive: z.boolean().optional()
+});
+
+export const applicationStatusSchema = z.object({
+  status: z.enum(['applied', 'shortlisted', 'rejected', 'accepted'])
+});
+
+export const chefPaymentMethodSchema = z.object({
+  bankSortCode: z.string().min(6, "Sort code must be at least 6 characters").max(8, "Sort code cannot exceed 8 characters"),
+  bankAccountNumber: z.string().min(8, "Account number must be at least 8 characters").max(10, "Account number cannot exceed 10 characters")
+});
+
+export type UpdateChefProfile = z.infer<typeof updateChefProfileSchema>;
+export type UpdateBusinessProfile = z.infer<typeof updateBusinessProfileSchema>;
+export type UpdateGig = z.infer<typeof updateGigSchema>;
+export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
+export type ChefPaymentMethod = z.infer<typeof chefPaymentMethodSchema>;
