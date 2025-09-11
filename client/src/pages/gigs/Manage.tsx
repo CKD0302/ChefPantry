@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   CalendarCheck, 
   Clock, 
@@ -164,12 +165,7 @@ export default function ManageGigs() {
     setAcceptingId(applicationId);
 
     try {
-      const response = await fetch(`/api/applications/${applicationId}/accept`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await apiRequest("PUT", `/api/applications/${applicationId}/accept`);
 
       const data = await response.json();
 

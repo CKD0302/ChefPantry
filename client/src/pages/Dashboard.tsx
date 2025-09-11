@@ -90,8 +90,7 @@ export default function Dashboard() {
     queryKey: ['/api/applications/accepted', user?.id],
     enabled: !!user && user.user_metadata?.role === 'chef',
     queryFn: async () => {
-      const response = await fetch(`/api/applications/accepted?chefId=${user!.id}`);
-      if (!response.ok) throw new Error('Failed to fetch accepted applications');
+      const response = await apiRequest("GET", `/api/applications/accepted?chefId=${user!.id}`);
       return response.json();
     }
   });
@@ -101,8 +100,7 @@ export default function Dashboard() {
     queryKey: ['/api/notifications', user?.id],
     enabled: !!user && user.user_metadata?.role === 'business',
     queryFn: async () => {
-      const response = await fetch(`/api/notifications?recipientId=${user!.id}`);
-      if (!response.ok) throw new Error('Failed to fetch notifications');
+      const response = await apiRequest("GET", `/api/notifications?recipientId=${user!.id}`);
       return response.json();
     }
   });
@@ -112,8 +110,7 @@ export default function Dashboard() {
     queryKey: ['/api/bookings/confirmed', user?.id],
     enabled: !!user && user.user_metadata?.role === 'chef',
     queryFn: async () => {
-      const response = await fetch(`/api/bookings/confirmed?chefId=${user!.id}`);
-      if (!response.ok) throw new Error('Failed to fetch confirmed bookings');
+      const response = await apiRequest("GET", `/api/bookings/confirmed?chefId=${user!.id}`);
       return response.json();
     }
   });
@@ -121,11 +118,7 @@ export default function Dashboard() {
   // Mutation for confirming gigs
   const confirmGigMutation = useMutation({
     mutationFn: async (applicationId: string) => {
-      const response = await fetch(`/api/applications/${applicationId}/confirm`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!response.ok) throw new Error('Failed to confirm gig');
+      const response = await apiRequest("PUT", `/api/applications/${applicationId}/confirm`);
       return response.json();
     },
     onSuccess: () => {
