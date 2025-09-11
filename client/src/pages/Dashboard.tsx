@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -367,7 +367,7 @@ export default function Dashboard() {
                     <p className="text-green-600 font-medium mb-2">✓ Your business profile is complete!</p>
                     <p className="text-neutral-600">You can now post gigs and find chefs.</p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <Button 
                       className="bg-primary hover:bg-primary-dark text-white w-full"
                       onClick={() => navigate("/gigs/create")}
@@ -388,6 +388,14 @@ export default function Dashboard() {
                     >
                       <PoundSterling className="h-4 w-4 text-blue-600" />
                       Invoices
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/business/${user.id}/company-access`)}
+                      className="flex items-center justify-center gap-2 w-full"
+                    >
+                      <Building2 className="h-4 w-4 text-orange-600" />
+                      Company Access
                     </Button>
                     <Button 
                       variant="outline"
