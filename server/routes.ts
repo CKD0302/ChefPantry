@@ -20,10 +20,14 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { authenticateUser, verifyNotificationOwnership, type AuthenticatedRequest } from "./lib/authMiddleware";
 import { notificationIdParamSchema, notificationQuerySchema } from "./lib/notificationValidation";
+import { authRateLimit, profileRateLimit, contactRateLimit, generalRateLimit } from "./lib/rateLimiter";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   const apiRouter = express.Router();
+  
+  // Apply general rate limiting to all API routes
+  apiRouter.use(generalRateLimit);
   
   // Health check endpoint
   apiRouter.get("/health", (req: Request, res: Response) => {
@@ -31,7 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Contact form submission
-  apiRouter.post("/contact", async (req: Request, res: Response) => {
+  apiRouter.post("/contact", contactRateLimit, async (req: Request, res: Response) => {
     try {
       const validatedData = insertContactMessageSchema.parse(req.body);
       const contactMessage = await storage.createContactMessage(validatedData);
@@ -58,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile Management Endpoints
   
   // Create chef profile
-  apiRouter.post("/profiles/chef", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.post("/profiles/chef", authenticateUser, profileRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Validate request body
       const profileData = insertChefProfileSchema.parse(req.body);
@@ -111,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get chef profile
-  apiRouter.get("/profiles/chef/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.get("/profiles/chef/:id", authenticateUser, profileRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -158,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update chef profile
-  apiRouter.put("/profiles/chef/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.put("/profiles/chef/:id", authenticateUser, profileRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -232,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create business profile
-  apiRouter.post("/profiles/business", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.post("/profiles/business", authenticateUser, profileRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Validate request body
       const profileData = insertBusinessProfileSchema.parse(req.body);
@@ -285,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get business profile
-  apiRouter.get("/profiles/business/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.get("/profiles/business/:id", authenticateUser, profileRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -316,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update business profile
-  apiRouter.put("/profiles/business/:id", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.put("/profiles/business/:id", authenticateUser, profileRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -1021,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Update chef payment method (new payment fields)
-  apiRouter.put("/chefs/payment-method/:chefId", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  apiRouter.put("/chefs/payment-method/:chefId", authenticateUser, authRateLimit, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.params;
       const { bankSortCode, bankAccountNumber } = req.body;
