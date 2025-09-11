@@ -60,6 +60,9 @@ export default function NotificationSettings() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
+  
+  // Get user role from metadata (same pattern as other components)
+  const userRole = user?.user_metadata?.role || null;
 
   // Fetch notification preferences using useQuery (always called, enabled only when user exists)
   const {
@@ -304,11 +307,12 @@ export default function NotificationSettings() {
           </div>
 
           <div className="space-y-6">
+            {/* Applications & Bookings - Role-specific */}
             <NotificationSection
               title="Applications & Bookings"
-              description="Get notified about gig applications, acceptances, and confirmations"
+              description={userRole === "business" ? "Get notified about chef applications and confirmations" : "Get notified about application responses and gig confirmations"}
               icon={MessageSquare}
-              items={[
+              items={userRole === "business" ? [
                 {
                   id: "chefApplied",
                   appKey: "chefAppliedApp",
@@ -316,6 +320,21 @@ export default function NotificationSettings() {
                   label: "Chef Applications",
                   description: "When a chef applies to your gig posting"
                 },
+                {
+                  id: "gigConfirmed",
+                  appKey: "gigConfirmedApp",
+                  emailKey: "gigConfirmedEmail",
+                  label: "Gig Confirmed",
+                  description: "When a chef confirms their accepted gig"
+                },
+                {
+                  id: "gigDeclined",
+                  appKey: "gigDeclinedApp",
+                  emailKey: "gigDeclinedEmail",
+                  label: "Gig Declined", 
+                  description: "When a chef declines their accepted gig"
+                }
+              ] : [
                 {
                   id: "applicationAccepted",
                   appKey: "applicationAcceptedApp", 
@@ -328,37 +347,25 @@ export default function NotificationSettings() {
                   appKey: "applicationRejectedApp",
                   emailKey: "applicationRejectedEmail", 
                   label: "Application Rejected",
-                  description: "When your application is rejected"
-                },
-                {
-                  id: "gigConfirmed",
-                  appKey: "gigConfirmedApp",
-                  emailKey: "gigConfirmedEmail",
-                  label: "Gig Confirmed",
-                  description: "When a chef confirms an accepted gig"
-                },
-                {
-                  id: "gigDeclined",
-                  appKey: "gigDeclinedApp",
-                  emailKey: "gigDeclinedEmail",
-                  label: "Gig Declined", 
-                  description: "When a chef declines an accepted gig"
+                  description: "When your application is rejected by a business"
                 }
               ]}
             />
 
+            {/* Invoices & Payments - Role-specific */}
             <NotificationSection
               title="Invoices & Payments"
-              description="Stay updated on invoice submissions and payment confirmations"
+              description={userRole === "business" ? "Get notified when chefs submit invoices" : "Get notified about invoice payments"}
               icon={DollarSign}
-              items={[
+              items={userRole === "business" ? [
                 {
                   id: "invoiceSubmitted",
                   appKey: "invoiceSubmittedApp",
                   emailKey: "invoiceSubmittedEmail",
                   label: "Invoice Submitted",
                   description: "When a chef submits an invoice to your business"
-                },
+                }
+              ] : [
                 {
                   id: "invoicePaid",
                   appKey: "invoicePaidApp",
@@ -391,11 +398,34 @@ export default function NotificationSettings() {
               ]}
             />
 
+            {/* Gig Management - Role-specific */}
             <NotificationSection
               title="Gig Management"
-              description="Notifications about gig postings, updates, and cancellations"
+              description={userRole === "business" ? "Manage notifications for your gig postings" : "Stay updated on available gigs and deadlines"}
               icon={Calendar}
-              items={[
+              items={userRole === "business" ? [
+                {
+                  id: "gigUpdated",
+                  appKey: "gigUpdatedApp",
+                  emailKey: "gigUpdatedEmail",
+                  label: "Your Gig Updates",
+                  description: "When your posted gigs are updated"
+                },
+                {
+                  id: "gigCancelled",
+                  appKey: "gigCancelledApp",
+                  emailKey: "gigCancelledEmail",
+                  label: "Gig Cancellations",
+                  description: "When your gigs are cancelled"
+                },
+                {
+                  id: "gigDeadline",
+                  appKey: "gigDeadlineApp",
+                  emailKey: "gigDeadlineEmail",
+                  label: "Gig Deadline Reminders",
+                  description: "Reminders about upcoming deadlines for your gigs"
+                }
+              ] : [
                 {
                   id: "gigPosted",
                   appKey: "gigPostedApp",
@@ -415,7 +445,7 @@ export default function NotificationSettings() {
                   appKey: "gigCancelledApp",
                   emailKey: "gigCancelledEmail",
                   label: "Gig Cancellations",
-                  description: "When gigs are cancelled"
+                  description: "When gigs you've applied to are cancelled"
                 },
                 {
                   id: "gigDeadline",
