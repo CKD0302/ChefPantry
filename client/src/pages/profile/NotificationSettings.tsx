@@ -61,33 +61,15 @@ export default function NotificationSettings() {
   const [, navigate] = useLocation();
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
 
-  // If not authenticated, show unauthorized message
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-neutral-800 shadow-sm rounded-lg p-6 text-center">
-              <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-              <p className="text-neutral-600 dark:text-neutral-400 mb-4">You need to be logged in to access notification settings.</p>
-              <Button onClick={() => navigate("/auth/signin")} data-testid="signin-button">Sign In</Button>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Fetch notification preferences using useQuery
+  // Fetch notification preferences using useQuery (always called, enabled only when user exists)
   const {
     data: preferencesData,
     isLoading,
     error: queryError,
   } = useQuery<{ data: NotificationPreferences }>({
-    queryKey: ["notification-preferences", user.id],
+    queryKey: ["notification-preferences", user?.id || "no-user"],
     queryFn: async () => {
+      if (!user?.id) throw new Error("No user");
       const response = await apiRequest("GET", "/api/notifications/preferences");
       if (!response.ok) {
         throw new Error(`Failed to fetch preferences: ${response.status}`);
@@ -148,6 +130,25 @@ export default function NotificationSettings() {
       [key]: value
     }));
   };
+
+  // If not authenticated, show unauthorized message
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-neutral-800 shadow-sm rounded-lg p-6 text-center">
+              <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+              <p className="text-neutral-600 dark:text-neutral-400 mb-4">You need to be logged in to access notification settings.</p>
+              <Button onClick={() => navigate("/auth/signin")} data-testid="signin-button">Sign In</Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   // Show loading state while fetching preferences
   if (isLoading) {
