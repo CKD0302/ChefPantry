@@ -69,7 +69,6 @@ export interface IStorage {
   getChefProfile(id: string): Promise<ChefProfile | undefined>;
   createChefProfile(profile: InsertChefProfile): Promise<ChefProfile>;
   updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined>;
-  // Stripe integration removed
   updateChefPaymentPreferences(id: string, preferences: {
     preferredPaymentMethod: string;
     bankName?: string;
@@ -280,8 +279,6 @@ export class DBStorage implements IStorage {
     
     return result[0];
   }
-
-  // Stripe integration removed - updateChefStripeAccountId function deleted
 
   async updateChefPaymentPreferences(id: string, preferences: {
     preferredPaymentMethod: string;
