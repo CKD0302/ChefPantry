@@ -26,24 +26,12 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${session.access_token}`;
   }
   
-  // Debug logging for POST requests
-  if (method === "POST") {
-    console.log(`DEBUG apiRequest ${method} ${url}`);
-    console.log("Session exists:", !!session);
-    console.log("Token exists:", !!session?.access_token);
-    console.log("Headers being sent:", headers);
-  }
-  
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
-
-  if (method === "POST") {
-    console.log("Response status:", res.status);
-  }
 
   await throwIfResNotOk(res);
   return res;

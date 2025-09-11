@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   CalendarCheck, 
   Clock, 
@@ -104,7 +105,7 @@ export default function MyApplications() {
     for (const app of confirmedApplications) {
       if (app.gig && user?.id) {
         try {
-          const response = await fetch(`/api/invoices/check?gigId=${app.gig.id}&chefId=${user.id}`);
+          const response = await apiRequest("GET", `/api/invoices/check?gigId=${app.gig.id}&chefId=${user.id}`);
           const data = await response.json();
           statuses[app.gig.id] = data.exists;
         } catch (error) {

@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Calculator, Clock, MapPin, Calendar, Building } from "lucide-react";
-import { supabase } from "@/utils/supabaseClient";
 
 interface GigData {
   id: string;
@@ -136,11 +135,6 @@ export default function InvoiceSubmissionModal({
     setIsSubmitting(true);
 
     try {
-      // Debug: Check authentication state before submission
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Invoice submission - Session exists:", !!session);
-      console.log("Invoice submission - Token exists:", !!session?.access_token);
-      
       const invoiceData = {
         gigId: gig.id,
         chefId: application.chefId,
@@ -152,7 +146,6 @@ export default function InvoiceSubmissionModal({
         status: "pending"
       };
 
-      console.log("About to submit invoice with data:", invoiceData);
       const response = await apiRequest("POST", "/api/invoices", invoiceData);
 
       const data = await response.json();
@@ -169,9 +162,7 @@ export default function InvoiceSubmissionModal({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error submitting invoice - Full error:", error);
-      console.error("Error message:", error instanceof Error ? error.message : "Unknown error");
-      
+      console.error("Error submitting invoice:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to submit invoice",

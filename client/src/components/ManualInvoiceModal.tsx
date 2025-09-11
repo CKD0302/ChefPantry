@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Search, Building2, MapPin, X } from "lucide-react";
 import {
   Dialog,
@@ -172,13 +173,7 @@ export default function ManualInvoiceModal({ isOpen, onClose, onSuccess, chefId 
         })
       };
 
-      const response = await fetch("/api/invoices", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(invoiceData),
-      });
+      const response = await apiRequest("POST", "/api/invoices", invoiceData);
 
       const data = await response.json();
 
