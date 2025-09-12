@@ -394,4 +394,40 @@ router.get('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
+/** Update company details */
+router.put('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Company name is required' });
+    }
+    
+    // Verify user is a member of this company
+    const membership = await storage.getCompanyMember(id, req.user.id);
+    if (!membership) {
+      return res.status(403).json({ error: 'You can only update companies you are a member of' });
+    }
+    
+    // Update the company
+    const updatedCompany = await storage.updateCompany(id, { name: name.trim() });
+    if (!updatedCompany) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    
+    res.json({
+      success: true,
+      data: updatedCompany
+    });
+  } catch (error: any) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ error: 'Failed to update company' });
+  }
+});
+
 export default router;

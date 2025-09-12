@@ -125,19 +125,9 @@ function CompanyConsoleDashboard({ companyId, user, navigate, signOut }: { compa
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate(`/company/${companyId}/console`)}
-              className="mt-1"
-              data-testid="button-edit-profile"
-            >
-              Edit Profile
-            </Button>
-            <Button variant="destructive" onClick={() => signOut()} className="mt-1">
-              Sign Out
-            </Button>
-          </div>
+          <Button variant="destructive" onClick={() => signOut()} className="mt-1">
+            Sign Out
+          </Button>
         </div>
       </div>
 

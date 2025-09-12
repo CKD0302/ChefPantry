@@ -119,10 +119,20 @@ export default function CompanyConsole({ companyId }: CompanyConsoleProps) {
           {/* Company Info Card */}
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Company Information
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Company Information
+                </CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate(`/company/${companyId}/settings`)}
+                  data-testid="button-edit-profile"
+                >
+                  Edit Profile
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

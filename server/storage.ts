@@ -1125,6 +1125,21 @@ export class DBStorage implements IStorage {
     return result;
   }
 
+  async updateCompany(id: string, updateData: Partial<Company>): Promise<Company | undefined> {
+    // First check if company exists
+    const existingCompany = await this.getCompany(id);
+    if (!existingCompany) {
+      return undefined;
+    }
+    
+    const result = await db.update(companies)
+      .set(updateData)
+      .where(eq(companies.id, id))
+      .returning();
+    
+    return result[0];
+  }
+
   // Company member methods
   async addCompanyMember(insertMember: InsertCompanyMember): Promise<CompanyMember> {
     const result = await db.insert(companyMembers).values(insertMember).returning();

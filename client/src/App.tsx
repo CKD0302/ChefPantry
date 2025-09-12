@@ -26,6 +26,7 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 // Company Management Pages
 import CreateCompany from "@/pages/company/CreateCompany";
 import CompanyConsole from "@/pages/company/CompanyConsole";
+import CompanySettings from "@/pages/company/CompanySettings";
 import AcceptInvite from "@/pages/company/AcceptInvite";
 import CompanyAccess from "@/pages/business/CompanyAccess";
 import MyCompanies from "@/pages/company/MyCompanies";
@@ -45,6 +46,12 @@ function CompanyConsoleWrapper() {
   const [match, params] = useRoute("/company/:id/console");
   if (!match || !params?.id) return <NotFound />;
   return <CompanyConsole companyId={params.id} />;
+}
+
+function CompanySettingsWrapper() {
+  const [match, params] = useRoute("/company/:id/settings");
+  if (!match || !params?.id) return <NotFound />;
+  return <CompanySettings companyId={params.id} />;
 }
 
 function CompanyAccessWrapper() {
@@ -78,6 +85,7 @@ function Router() {
       <Route path="/company/create" component={CreateCompany} />
       <Route path="/company/my-companies" component={MyCompanies} />
       <Route path="/company/:id/console" component={CompanyConsoleWrapper} />
+      <Route path="/company/:id/settings" component={CompanySettingsWrapper} />
       <Route path="/company/invites/accept" component={AcceptInvite} />
       <Route path="/business/:id/company-access" component={CompanyAccessWrapper} />
       
