@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
+import { ArrowLeft } from "lucide-react";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -105,6 +106,12 @@ export default function SignIn() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
+          <div className="text-center text-sm">
+            <Link href="/" className="inline-flex items-center gap-1 text-neutral-600 hover:text-primary hover:underline">
+              <ArrowLeft className="h-3 w-3" />
+              Back to Home
+            </Link>
+          </div>
           <div className="text-center text-sm">
             Don't have an account?{" "}
             <Link href="/auth/signup" className="text-primary font-medium hover:underline">

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -136,6 +137,12 @@ export default function SignUp() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
+          <div className="text-center text-sm">
+            <Link href="/" className="inline-flex items-center gap-1 text-neutral-600 hover:text-primary hover:underline">
+              <ArrowLeft className="h-3 w-3" />
+              Back to Home
+            </Link>
+          </div>
           <div className="text-center text-sm">
             Already have an account?{" "}
             <Link href="/auth/signin" className="text-primary font-medium hover:underline">
