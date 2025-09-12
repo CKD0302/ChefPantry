@@ -25,7 +25,7 @@ export default function Dashboard() {
   
   const userRole = user?.user_metadata?.role || "chef";
   
-  // Check if profile exists using API
+  // Check if profile exists using API (only for chef and business users)
   const { data: profileResponse, isLoading: isCheckingProfile } = useQuery({
     queryKey: userRole === "chef" ? ["/api/profiles/chef", user?.id] : ["/api/profiles/business", user?.id],
     queryFn: () => {
@@ -35,7 +35,8 @@ export default function Dashboard() {
     enabled: !!user && (userRole === "chef" || userRole === "business")
   });
   
-  const hasProfile = !!(profileResponse?.data || profileResponse?.id);
+  // Company users don't need chef/business profiles, so they "have a profile" by default
+  const hasProfile = userRole === "company" ? true : !!(profileResponse?.data || profileResponse?.id);
 
   // Chef disclaimer acceptance mutation
   const chefDisclaimerMutation = useMutation({
