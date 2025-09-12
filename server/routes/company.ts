@@ -408,17 +408,25 @@ router.put('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Resp
       return res.status(400).json({ error: 'Company name is required' });
     }
     
-    // Verify user is a member of this company
-    const membership = await storage.getCompanyMember(id, req.user.id);
-    if (!membership) {
-      return res.status(403).json({ error: 'You can only update companies you are a member of' });
+    // Verify user is the owner of this company or a member with permission
+    const company = await storage.getCompany(id);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    
+    // Allow company owner to update
+    if (company.ownerUserId === req.user.id) {
+      // Owner can update
+    } else {
+      // Check if user is a member with appropriate permissions
+      const membership = await storage.getCompanyMember(id, req.user.id);
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        return res.status(403).json({ error: 'You can only update companies you own or are an admin of' });
+      }
     }
     
     // Update the company
     const updatedCompany = await storage.updateCompany(id, { name: name.trim() });
-    if (!updatedCompany) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
     
     res.json({
       success: true,
