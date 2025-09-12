@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2 } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, FileText } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -15,13 +15,13 @@ import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 import BusinessDisclaimerModal from "@/components/BusinessDisclaimerModal";
 import { apiRequest } from "@/lib/queryClient";
 
-// Company Dashboard Section Component
+// Company Dashboard Section Component - Full Console Functionality
 function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any }) {
-  // Check if user has existing companies
-  const { data: userCompanies, isLoading: loadingCompanies } = useQuery({
-    queryKey: ['/api/company/user-companies', user?.id],
+  // Get user's company
+  const { data: userCompanies } = useQuery({
+    queryKey: ['/api/company/mine', user?.id],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/company/user-companies?userId=${user!.id}`);
+      const response = await apiRequest('GET', `/api/company/mine`);
       return response.json();
     },
     enabled: !!user?.id
@@ -30,54 +30,275 @@ function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any 
   const hasExistingCompany = userCompanies?.data && userCompanies.data.length > 0;
   const firstCompany = hasExistingCompany ? userCompanies.data[0] : null;
 
-  return (
-    <div className="mt-8">
-      <h2 className="text-xl font-semibold mb-4">Company Management</h2>
-      <div className="bg-white border border-neutral-200 rounded p-4">
-        <div className="flex flex-col space-y-4">
-          <div>
+  // If no company exists, show company creation
+  if (!hasExistingCompany) {
+    return (
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Company Setup</h2>
+        <div className="bg-white border border-neutral-200 rounded p-6 text-center">
+          <div className="max-w-md mx-auto">
             <p className="text-blue-600 font-medium mb-2">🏢 Welcome to Chef Pantry Company Portal</p>
-            <p className="text-neutral-600">
-              {hasExistingCompany 
-                ? `Manage your company "${firstCompany?.name}" and oversee multiple venues.`
-                : "Create your company to manage multiple venues."
-              }
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {!hasExistingCompany && (
-              <Button 
-                className="bg-primary hover:bg-primary-dark text-white w-full"
-                onClick={() => navigate("/company/create")}
-                data-testid="button-create-company"
-              >
-                Create Company
-              </Button>
-            )}
+            <p className="text-neutral-600 mb-4">Create your company to manage multiple venues.</p>
             <Button 
-              variant="outline"
-              onClick={() => navigate("/company/invites/accept")}
-              className="w-full"
-              data-testid="button-accept-invites"
+              className="bg-primary hover:bg-primary-dark text-white"
+              onClick={() => navigate("/company/create")}
+              data-testid="button-create-company"
             >
-              Accept Invites
+              Create Company
             </Button>
           </div>
-          {hasExistingCompany && firstCompany && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-sm text-blue-800">
-                <strong>Your Company:</strong> {firstCompany.name}
-              </p>
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/company/${firstCompany.id}/console`)}
-                className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-100"
-                data-testid="button-company-console"
-              >
-                Go to Company Console →
-              </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If company exists, show full console functionality
+  return <CompanyConsoleDashboard companyId={firstCompany.id} user={user} navigate={navigate} />;
+}
+
+// Full Company Console Dashboard Component
+function CompanyConsoleDashboard({ companyId, user, navigate }: { companyId: string, user: any, navigate: any }) {
+  // Fetch company details
+  const { data: company, isLoading: loadingCompany } = useQuery({
+    queryKey: ['company', companyId],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/company/${companyId}`);
+      if (!response.ok) throw new Error('Failed to fetch company');
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch accessible businesses
+  const { data: businesses, isLoading: loadingBusinesses } = useQuery({
+    queryKey: ['accessible-businesses', user?.id],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/company/accessible-businesses?userId=${user?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch businesses');
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch company members
+  const { data: members, isLoading: loadingMembers } = useQuery({
+    queryKey: ['company-members', companyId],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/company/${companyId}/members?userId=${user?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch members');
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  if (loadingCompany || loadingBusinesses || loadingMembers) {
+    return (
+      <div className="mt-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-neutral-200 rounded mb-6"></div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-neutral-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const accessibleBusinesses = businesses?.data || [];
+  const companyMembers = members?.data || [];
+
+  return (
+    <div className="mt-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <Building2 className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl font-bold tracking-tight" data-testid="company-name">
+            {company?.data?.name || 'Company Dashboard'}
+          </h1>
+        </div>
+        <p className="text-neutral-600">
+          Manage your venues, team members, and operations from one central location
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white border border-neutral-200 rounded p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600">Managed Venues</p>
+              <p className="text-2xl font-bold">{accessibleBusinesses.length}</p>
             </div>
-          )}
+            <Building2 className="h-8 w-8 text-blue-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white border border-neutral-200 rounded p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600">Team Members</p>
+              <p className="text-2xl font-bold">{companyMembers.length}</p>
+            </div>
+            <Users className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white border border-neutral-200 rounded p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600">Active Invites</p>
+              <p className="text-2xl font-bold">0</p>
+            </div>
+            <Bell className="h-8 w-8 text-orange-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Managed Venues */}
+        <div className="bg-white border border-neutral-200 rounded">
+          <div className="p-6 border-b border-neutral-200">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Managed Venues
+            </h3>
+          </div>
+          <div className="p-6">
+            {accessibleBusinesses.length > 0 ? (
+              <div className="space-y-3">
+                {accessibleBusinesses.map((business: any) => (
+                  <div
+                    key={business.businessId}
+                    className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
+                  >
+                    <div>
+                      <h4 className="font-medium">{business.businessName}</h4>
+                      <p className="text-sm text-neutral-600">Business ID: {business.businessId}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/business/${business.businessId}/dashboard`)}
+                      data-testid={`open-venue-${business.businessId}`}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Open Venue
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Building2 className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+                <p className="text-neutral-600">No venues assigned yet</p>
+                <p className="text-sm text-neutral-500 mt-1">
+                  Venues will appear here when they invite your company
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Team Members */}
+        <div className="bg-white border border-neutral-200 rounded">
+          <div className="p-6 border-b border-neutral-200">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Team Members
+            </h3>
+          </div>
+          <div className="p-6">
+            {companyMembers.length > 0 ? (
+              <div className="space-y-3">
+                {companyMembers.map((member: any) => (
+                  <div
+                    key={member.userId}
+                    className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
+                  >
+                    <div>
+                      <h4 className="font-medium">{member.userId}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs bg-neutral-200 px-2 py-1 rounded">
+                          {member.role}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+                <p className="text-neutral-600">No team members yet</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mt-8 bg-white border border-neutral-200 rounded">
+        <div className="p-6 border-b border-neutral-200">
+          <h3 className="text-lg font-semibold">Quick Actions</h3>
+        </div>
+        <div className="p-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Button
+              variant="outline"
+              className="justify-start h-auto p-4"
+              onClick={() => navigate(`/company/${companyId}/members`)}
+              data-testid="manage-members-button"
+            >
+              <Users className="h-5 w-5 mr-2" />
+              <div className="text-left">
+                <div className="font-medium">Manage Members</div>
+                <div className="text-sm text-neutral-500">Add or remove team members</div>
+              </div>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="justify-start h-auto p-4"
+              onClick={() => navigate("/company/invites/accept")}
+              data-testid="view-invites-button"
+            >
+              <Bell className="h-5 w-5 mr-2" />
+              <div className="text-left">
+                <div className="font-medium">Accept Invites</div>
+                <div className="text-sm text-neutral-500">Check pending invitations</div>
+              </div>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="justify-start h-auto p-4"
+              onClick={() => navigate("/invoices")}
+              data-testid="invoice-inbox-button"
+            >
+              <FileText className="h-5 w-5 mr-2" />
+              <div className="text-left">
+                <div className="font-medium">Invoice Inbox</div>
+                <div className="text-sm text-neutral-500">Manage all venue invoices</div>
+              </div>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="justify-start h-auto p-4"
+              onClick={() => navigate(`/company/${companyId}/settings`)}
+              data-testid="company-settings-button"
+            >
+              <Settings className="h-5 w-5 mr-2" />
+              <div className="text-left">
+                <div className="font-medium">Company Settings</div>
+                <div className="text-sm text-neutral-500">Update company details</div>
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

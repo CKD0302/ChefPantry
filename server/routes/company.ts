@@ -90,7 +90,7 @@ router.post('/invite-company', authenticateUser, async (req: AuthenticatedReques
 
     // Verify user owns this business or has permission to invite on behalf of it
     const businessProfile = await storage.getBusinessProfile(req.user.id);
-    if (!businessProfile || parseInt(business_id) !== businessProfile.id) {
+    if (!businessProfile || business_id !== businessProfile.id) {
       return res.status(403).json({ error: 'You can only send invites for your own business' });
     }
 

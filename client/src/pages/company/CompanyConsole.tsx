@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Building2, Users, ExternalLink, Settings, Bell, FileText } from 'lucide-react';
+import { format } from 'date-fns';
 import { apiRequest } from '@/lib/queryClient';
 
 interface CompanyConsoleProps {
@@ -101,19 +102,47 @@ export default function CompanyConsole({ companyId }: CompanyConsoleProps) {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
       <Navbar />
       <div className="container mx-auto px-4 py-20">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <Building2 className="h-8 w-8 text-blue-600" />
+              <Settings className="h-8 w-8 text-blue-600" />
               <h1 className="text-3xl font-bold tracking-tight" data-testid="company-name">
-                {company?.data?.name || 'Company Console'}
+                Company Profile
               </h1>
             </div>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Manage your venues, team members, and operations from one central location
+              Manage your company settings and profile information
             </p>
           </div>
+
+          {/* Company Info Card */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Company Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Company Name</label>
+                  <p className="text-lg font-semibold">{company?.data?.name || 'Not specified'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Company ID</label>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">{companyId}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Created</label>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {company?.data?.createdAt ? format(new Date(company.data.createdAt), 'PPP') : 'Not available'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Quick Stats */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -160,137 +189,13 @@ export default function CompanyConsole({ companyId }: CompanyConsoleProps) {
             </Card>
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Managed Venues */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Managed Venues
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {accessibleBusinesses.length > 0 ? (
-                  <div className="space-y-3">
-                    {accessibleBusinesses.map((business: any) => (
-                      <div
-                        key={business.businessId}
-                        className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
-                      >
-                        <div>
-                          <h4 className="font-medium">{business.businessName}</h4>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            Business ID: {business.businessId}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/business/${business.businessId}/dashboard`)}
-                          data-testid={`open-venue-${business.businessId}`}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Open Venue
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Building2 className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-                    <p className="text-neutral-600 dark:text-neutral-400">No venues assigned yet</p>
-                    <p className="text-sm text-neutral-500 mt-1">
-                      Venues will appear here when they invite your company
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Team Members */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Team Members
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {companyMembers.length > 0 ? (
-                  <div className="space-y-3">
-                    {companyMembers.map((member: any) => (
-                      <div
-                        key={member.userId}
-                        className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
-                      >
-                        <div>
-                          <h4 className="font-medium">{member.userId}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {member.role}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-                    <p className="text-neutral-600 dark:text-neutral-400">No team members yet</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <Card className="mt-8">
+          {/* Settings Actions */}
+          <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Company Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-4"
-                  onClick={() => navigate(`/company/${companyId}/members`)}
-                  data-testid="manage-members-button"
-                >
-                  <Users className="h-5 w-5 mr-2" />
-                  <div className="text-left">
-                    <div className="font-medium">Manage Members</div>
-                    <div className="text-sm text-neutral-500">Add or remove team members</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-4"
-                  onClick={() => navigate(`/company/${companyId}/invites`)}
-                  data-testid="view-invites-button"
-                >
-                  <Bell className="h-5 w-5 mr-2" />
-                  <div className="text-left">
-                    <div className="font-medium">View Invites</div>
-                    <div className="text-sm text-neutral-500">Check pending invitations</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto p-4"
-                  onClick={() => navigate(`/invoices`)}
-                  data-testid="invoice-inbox-button"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
-                  <div className="text-left">
-                    <div className="font-medium">Invoice Inbox</div>
-                    <div className="text-sm text-neutral-500">Manage all venue invoices</div>
-                  </div>
-                </Button>
-                
+              <div className="grid md:grid-cols-2 gap-4">
                 <Button
                   variant="outline"
                   className="justify-start h-auto p-4"
@@ -300,7 +205,20 @@ export default function CompanyConsole({ companyId }: CompanyConsoleProps) {
                   <Settings className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <div className="font-medium">Company Settings</div>
-                    <div className="text-sm text-neutral-500">Update company details</div>
+                    <div className="text-sm text-neutral-500">Update company name and details</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto p-4"
+                  onClick={() => navigate("/dashboard")}
+                  data-testid="back-to-dashboard-button"
+                >
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  <div className="text-left">
+                    <div className="font-medium">Back to Dashboard</div>
+                    <div className="text-sm text-neutral-500">Return to main company dashboard</div>
                   </div>
                 </Button>
               </div>
