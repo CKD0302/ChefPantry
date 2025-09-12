@@ -410,19 +410,29 @@ router.put('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Resp
     
     // Verify user is the owner of this company or a member with permission
     const company = await storage.getCompany(id);
+    console.log(`[DEBUG] Company update - Company ID: ${id}, User ID: ${req.user.id}`);
+    console.log(`[DEBUG] Company found:`, company);
+    
     if (!company) {
       return res.status(404).json({ error: 'Company not found' });
     }
     
+    console.log(`[DEBUG] Comparing owner: company.ownerUserId="${company.ownerUserId}" vs req.user.id="${req.user.id}"`);
+    
     // Allow company owner to update
     if (company.ownerUserId === req.user.id) {
+      console.log(`[DEBUG] User is owner, allowing update`);
       // Owner can update
     } else {
       // Check if user is a member with appropriate permissions
       const membership = await storage.getCompanyMember(id, req.user.id);
+      console.log(`[DEBUG] Membership check result:`, membership);
+      
       if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+        console.log(`[DEBUG] Authorization failed - insufficient permissions`);
         return res.status(403).json({ error: 'You can only update companies you own or are an admin of' });
       }
+      console.log(`[DEBUG] User has adequate permissions via membership`);
     }
     
     // Update the company
