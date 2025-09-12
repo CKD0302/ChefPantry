@@ -1116,6 +1116,8 @@ export class DBStorage implements IStorage {
       .select({
         id: companies.id,
         name: companies.name,
+        taxCode: companies.taxCode,
+        companyNumber: companies.companyNumber,
         ownerUserId: companies.ownerUserId,
         createdAt: companies.createdAt
       })
@@ -1142,7 +1144,10 @@ export class DBStorage implements IStorage {
 
   // Company member methods
   async addCompanyMember(insertMember: InsertCompanyMember): Promise<CompanyMember> {
-    const result = await db.insert(companyMembers).values(insertMember).returning();
+    const result = await db.insert(companyMembers).values([{
+      ...insertMember,
+      role: insertMember.role as CompanyMember['role']
+    }]).returning();
     return result[0];
   }
 
@@ -1176,22 +1181,26 @@ export class DBStorage implements IStorage {
 
   // Business-Company link methods
   async createBusinessCompanyLink(insertLink: InsertBusinessCompanyLink): Promise<BusinessCompanyLink> {
-    const result = await db.insert(businessCompanyLinks).values(insertLink).returning();
+    const result = await db.insert(businessCompanyLinks).values([{
+      ...insertLink,
+      role: insertLink.role as BusinessCompanyLink['role']
+    }]).returning();
     return result[0];
   }
 
   async getBusinessCompanyLinks(businessId?: number, companyId?: string): Promise<BusinessCompanyLink[]> {
-    let query = db.select().from(businessCompanyLinks);
-    
     if (businessId && companyId) {
-      query = query.where(and(eq(businessCompanyLinks.businessId, businessId), eq(businessCompanyLinks.companyId, companyId)));
+      return await db.select().from(businessCompanyLinks)
+        .where(and(eq(businessCompanyLinks.businessId, businessId), eq(businessCompanyLinks.companyId, companyId)));
     } else if (businessId) {
-      query = query.where(eq(businessCompanyLinks.businessId, businessId));
+      return await db.select().from(businessCompanyLinks)
+        .where(eq(businessCompanyLinks.businessId, businessId));
     } else if (companyId) {
-      query = query.where(eq(businessCompanyLinks.companyId, companyId));
+      return await db.select().from(businessCompanyLinks)
+        .where(eq(businessCompanyLinks.companyId, companyId));
     }
     
-    return await query;
+    return await db.select().from(businessCompanyLinks);
   }
 
   async updateBusinessCompanyLinkRole(businessId: number, companyId: string, role: BusinessCompanyLink['role']): Promise<BusinessCompanyLink | undefined> {
@@ -1211,7 +1220,11 @@ export class DBStorage implements IStorage {
 
   // Business-Company invite methods
   async createBusinessCompanyInvite(insertInvite: InsertBusinessCompanyInvite): Promise<BusinessCompanyInvite> {
-    const result = await db.insert(businessCompanyInvites).values(insertInvite).returning();
+    const result = await db.insert(businessCompanyInvites).values([{
+      ...insertInvite,
+      status: insertInvite.status ? insertInvite.status as BusinessCompanyInvite['status'] : 'pending',
+      role: insertInvite.role ? insertInvite.role as BusinessCompanyLink['role'] : undefined
+    }]).returning();
     return result[0];
   }
 
@@ -1230,9 +1243,23 @@ export class DBStorage implements IStorage {
     return result;
   }
 
-  async getBusinessCompanyInvitesByEmail(email: string): Promise<BusinessCompanyInvite[]> {
-    const result = await db.select().from(businessCompanyInvites).where(eq(businessCompanyInvites.inviteeEmail, email));
-    return result;
+  async getBusinessCompanyInvitesByEmail(email: string): Promise<(BusinessCompanyInvite & { businessName?: string })[]> {
+    // Get invites and resolve business names from the business profiles
+    const invites = await db.select().from(businessCompanyInvites).where(eq(businessCompanyInvites.inviteeEmail, email));
+    
+    // Enhance invites with business names by looking up the createdBy user's business profile
+    const enrichedInvites = await Promise.all(
+      invites.map(async (invite) => {
+        // Try to get business name from the creator's business profile
+        const businessProfile = await this.getBusinessProfile(invite.createdBy);
+        return {
+          ...invite,
+          businessName: businessProfile?.businessName || 'Unknown Business'
+        };
+      })
+    );
+    
+    return enrichedInvites;
   }
 
   async updateBusinessCompanyInviteStatus(id: string, status: BusinessCompanyInvite['status']): Promise<BusinessCompanyInvite | undefined> {

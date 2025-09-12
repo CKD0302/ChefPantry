@@ -187,7 +187,75 @@ router.post('/invite-company', authenticateUser, async (req: AuthenticatedReques
   }
 });
 
-/** Company owner/admin accepts invite (must belong to a company) */
+/** Company owner/admin accepts invite within a specific company context */
+router.post('/:companyId/accept-invite', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { token } = req.body;
+    const { companyId } = req.params;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Missing required field: token' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Use centralized authorization helper to verify company access
+    const authResult = await authorizeCompanyAccess(req.user.id, companyId, ['owner', 'admin']);
+    if (!authResult.authorized) {
+      if (authResult.reason === 'Company not found') {
+        return res.status(404).json({ error: 'Company not found' });
+      }
+      return res.status(403).json({ error: 'Insufficient permissions - only company owners/admins can accept invites' });
+    }
+
+    // Validate invite exists and is pending
+    const invite = await storage.getBusinessCompanyInviteByToken(token);
+    if (!invite || invite.status !== 'pending') {
+      return res.status(400).json({ error: 'Invalid or expired invite' });
+    }
+
+    // Check if invite has expired
+    const now = new Date();
+    const expiresAt = new Date(invite.expiresAt);
+    if (now > expiresAt) {
+      await storage.updateBusinessCompanyInviteStatus(invite.id, 'expired');
+      return res.status(400).json({ error: 'Invitation has expired' });
+    }
+
+    // Critical security check: Verify invitee email matches current user's email
+    if (!req.user.email || invite.inviteeEmail !== req.user.email) {
+      return res.status(403).json({ error: 'You can only accept invitations sent to your email address' });
+    }
+
+    // Check if business-company link already exists
+    const existingLinks = await storage.getBusinessCompanyLinks(invite.businessId, companyId);
+    if (existingLinks.length > 0) {
+      return res.status(409).json({ error: 'Company is already managing this business' });
+    }
+
+    // Create business-company link using the company from the URL (not client input)
+    await storage.createBusinessCompanyLink({
+      businessId: invite.businessId,
+      companyId: companyId, // Use companyId from URL params, not client body
+      role: invite.role
+    });
+
+    // Mark invite as accepted
+    await storage.updateBusinessCompanyInviteStatus(invite.id, 'accepted');
+
+    res.json({
+      success: true,
+      message: 'Invitation accepted successfully'
+    });
+  } catch (error: any) {
+    console.error('Error accepting company invite:', error);
+    res.status(500).json({ error: 'Failed to accept invite' });
+  }
+});
+
+/** Legacy accept-invite endpoint (deprecated - use company-specific version) */
 router.post('/accept-invite', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { token, company_id } = req.body;
