@@ -1,9 +1,9 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "./lib/queryClient";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { MobileMenuProvider } from "@/hooks/use-mobile-menu";
 import { NotificationProvider } from "@/hooks/useNotifications";
 import Home from "@/pages/Home";
@@ -30,7 +30,7 @@ import CompanySettings from "@/pages/company/CompanySettings";
 import AcceptInvite from "@/pages/company/AcceptInvite";
 import CompanyAccess from "@/pages/business/CompanyAccess";
 import MyCompanies from "@/pages/company/MyCompanies";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 
 // Gig Management Pages
 import CreateGig from "@/pages/gigs/Create";
@@ -46,6 +46,34 @@ function CompanyConsoleWrapper() {
   const [match, params] = useRoute("/company/:id/console");
   if (!match || !params?.id) return <NotFound />;
   return <CompanyConsole companyId={params.id} />;
+}
+
+function CompanyDashboardWrapper() {
+  const { user, isLoading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+  const { data: companies, isLoading: companiesLoading } = useQuery({
+    queryKey: ['user-companies', user?.id],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/company/mine`);
+      if (!response.ok) throw new Error('Failed to fetch companies');
+      return response.json();
+    },
+    enabled: !!user?.id && !authLoading
+  });
+  
+  // If still loading authentication, show loading state
+  if (authLoading || companiesLoading) {
+    return <div>Loading...</div>;
+  }
+  
+  // If companies are loaded and user has a company, redirect to console
+  if (companies && companies.length > 0) {
+    navigate(`/company/${companies[0].id}/console`);
+    return null;
+  }
+  
+  // If no companies found, show NotFound
+  return <NotFound />;
 }
 
 function CompanySettingsWrapper() {
@@ -84,6 +112,7 @@ function Router() {
       {/* Company Management Routes */}
       <Route path="/company/create" component={CreateCompany} />
       <Route path="/company/my-companies" component={MyCompanies} />
+      <Route path="/company/dashboard" component={CompanyDashboardWrapper} />
       <Route path="/company/:id/console" component={CompanyConsoleWrapper} />
       <Route path="/company/:id/settings" component={CompanySettingsWrapper} />
       <Route path="/company/invites/accept" component={AcceptInvite} />

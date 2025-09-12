@@ -95,7 +95,7 @@ export default function CompanyConsole({ companyId }: CompanyConsoleProps) {
   });
 
   // Calculate pending invites count
-  const pendingInvites = invites?.filter((invite: any) => invite.status === 'pending') || [];
+  const pendingInvites = Array.isArray(invites) ? invites.filter((invite: any) => invite.status === 'pending') : [];
   const activeInvitesCount = pendingInvites.length;
 
   if (!user) {
