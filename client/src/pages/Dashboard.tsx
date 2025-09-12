@@ -15,6 +15,85 @@ import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 import BusinessDisclaimerModal from "@/components/BusinessDisclaimerModal";
 import { apiRequest } from "@/lib/queryClient";
 
+// Company Dashboard Section Component
+function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any }) {
+  // Check if user has existing companies
+  const { data: userCompanies, isLoading: loadingCompanies } = useQuery({
+    queryKey: ['/api/company/user-companies', user?.id],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/company/user-companies?userId=${user!.id}`);
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  const hasExistingCompany = userCompanies?.data && userCompanies.data.length > 0;
+  const firstCompany = hasExistingCompany ? userCompanies.data[0] : null;
+
+  return (
+    <div className="mt-8">
+      <h2 className="text-xl font-semibold mb-4">Company Management</h2>
+      <div className="bg-white border border-neutral-200 rounded p-4">
+        <div className="flex flex-col space-y-4">
+          <div>
+            <p className="text-blue-600 font-medium mb-2">🏢 Welcome to Chef Pantry Company Portal</p>
+            <p className="text-neutral-600">
+              {hasExistingCompany 
+                ? `Manage your company "${firstCompany?.name}" and oversee multiple venues.`
+                : "Create and manage companies to oversee multiple venues."
+              }
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Button 
+              className={`w-full ${hasExistingCompany 
+                ? "bg-neutral-300 text-neutral-500 cursor-not-allowed" 
+                : "bg-primary hover:bg-primary-dark text-white"
+              }`}
+              onClick={() => !hasExistingCompany && navigate("/company/create")}
+              disabled={hasExistingCompany}
+              data-testid="button-create-company"
+            >
+              {hasExistingCompany ? "Company Created" : "Create Company"}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/company/my-companies")}
+              className="w-full"
+              data-testid="button-my-companies"
+            >
+              My Companies
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/company/invites/accept")}
+              className="w-full"
+              data-testid="button-accept-invites"
+            >
+              Accept Invites
+            </Button>
+          </div>
+          {hasExistingCompany && firstCompany && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800">
+                <strong>Your Company:</strong> {firstCompany.name}
+              </p>
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/company/${firstCompany.id}/console`)}
+                className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-100"
+                data-testid="button-company-console"
+              >
+                Go to Company Console →
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
@@ -413,39 +492,7 @@ export default function Dashboard() {
 
 
           {userRole === "company" && (
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Company Management</h2>
-              <div className="bg-white border border-neutral-200 rounded p-4">
-                <div className="flex flex-col space-y-4">
-                  <div>
-                    <p className="text-blue-600 font-medium mb-2">🏢 Welcome to Chef Pantry Company Portal</p>
-                    <p className="text-neutral-600">Create and manage companies to oversee multiple venues.</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <Button 
-                      className="bg-primary hover:bg-primary-dark text-white w-full"
-                      onClick={() => navigate("/company/create")}
-                    >
-                      Create Company
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => navigate("/company/my-companies")}
-                      className="w-full"
-                    >
-                      My Companies
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => navigate("/company/invites/accept")}
-                      className="w-full"
-                    >
-                      Accept Invites
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CompanyDashboardSection user={user} navigate={navigate} />
           )}
 
           {!["chef", "business", "company"].includes(userRole) && (

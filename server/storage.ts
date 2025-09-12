@@ -1231,35 +1231,10 @@ export class DBStorage implements IStorage {
 
   // User accessible businesses - for multi-venue access control
   async getUserAccessibleBusinesses(userId: string): Promise<{ businessId: number; businessName: string }[]> {
-    // Get businesses owned directly by user
-    const ownedBusinesses = await db
-      .select({
-        businessId: businesses.id,
-        businessName: businesses.name
-      })
-      .from(businesses)
-      .innerJoin(businessProfiles, eq(businesses.id, businessProfiles.id))
-      .where(eq(businessProfiles.id, userId));
-
-    // Get businesses accessible through company membership
-    const companyBusinesses = await db
-      .select({
-        businessId: businessCompanyLinks.businessId,
-        businessName: businesses.name
-      })
-      .from(businessCompanyLinks)
-      .innerJoin(companies, eq(businessCompanyLinks.companyId, companies.id))
-      .innerJoin(companyMembers, eq(companyMembers.companyId, companies.id))
-      .innerJoin(businesses, eq(businessCompanyLinks.businessId, businesses.id))
-      .where(eq(companyMembers.userId, userId));
-
-    // Combine and deduplicate
-    const allBusinesses = [...ownedBusinesses, ...companyBusinesses];
-    const uniqueBusinesses = allBusinesses.filter((business, index, self) => 
-      index === self.findIndex(b => b.businessId === business.businessId)
-    );
-
-    return uniqueBusinesses;
+    // Since the businesses table doesn't exist, return empty array for now
+    // This prevents the 500 error until business linking is fully implemented
+    // TODO: Implement proper business access control with UUID-based business_profiles
+    return [];
   }
 }
 

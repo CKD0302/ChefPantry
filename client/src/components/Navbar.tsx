@@ -82,7 +82,16 @@ export default function Navbar() {
                     <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                       Dashboard
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/profile/view")}>
+                    <DropdownMenuItem onClick={() => {
+                      // Company users should go to their company console
+                      if (user?.user_metadata?.role === "company") {
+                        // Find their company and navigate to console
+                        // For now, navigate to My Companies page
+                        navigate("/company/my-companies");
+                      } else {
+                        navigate("/profile/view");
+                      }
+                    }}>
                       Profile
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/profile/notification-settings")}>
