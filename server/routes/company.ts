@@ -237,10 +237,21 @@ router.get('/:companyId/members', authenticateUser, async (req: AuthenticatedReq
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Verify user has permission to view members
-    const membership = await storage.getCompanyMember(companyId, req.user.id);
-    if (!membership) {
-      return res.status(403).json({ error: 'Not a member of this company' });
+    // Check if user is company owner or member
+    const company = await storage.getCompany(companyId);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    
+    // Allow company owner to view members
+    if (company.ownerUserId === req.user.id) {
+      // Owner can view members
+    } else {
+      // Check if user is a member
+      const membership = await storage.getCompanyMember(companyId, req.user.id);
+      if (!membership) {
+        return res.status(403).json({ error: 'You can only view members of companies you own or are a member of' });
+      }
     }
 
     const members = await storage.getCompanyMembers(companyId);
@@ -373,15 +384,21 @@ router.get('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Resp
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Verify user is a member of this company
-    const membership = await storage.getCompanyMember(id, req.user.id);
-    if (!membership) {
-      return res.status(403).json({ error: 'You can only access companies you are a member of' });
-    }
-    
+    // Get company first to check ownership
     const company = await storage.getCompany(id);
     if (!company) {
       return res.status(404).json({ error: 'Company not found' });
+    }
+    
+    // Allow company owner to access directly
+    if (company.ownerUserId === req.user.id) {
+      // Owner can access
+    } else {
+      // Check if user is a member
+      const membership = await storage.getCompanyMember(id, req.user.id);
+      if (!membership) {
+        return res.status(403).json({ error: 'You can only access companies you own or are a member of' });
+      }
     }
     
     res.json({
