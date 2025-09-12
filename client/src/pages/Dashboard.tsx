@@ -45,17 +45,15 @@ function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any 
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button 
-              className={`w-full ${hasExistingCompany 
-                ? "bg-neutral-300 text-neutral-500 cursor-not-allowed" 
-                : "bg-primary hover:bg-primary-dark text-white"
-              }`}
-              onClick={() => !hasExistingCompany && navigate("/company/create")}
-              disabled={hasExistingCompany}
-              data-testid="button-create-company"
-            >
-              {hasExistingCompany ? "Company Created" : "Create Company"}
-            </Button>
+            {!hasExistingCompany && (
+              <Button 
+                className="bg-primary hover:bg-primary-dark text-white w-full"
+                onClick={() => navigate("/company/create")}
+                data-testid="button-create-company"
+              >
+                Create Company
+              </Button>
+            )}
             <Button 
               variant="outline"
               onClick={() => navigate("/company/invites/accept")}

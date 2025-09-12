@@ -21,6 +21,17 @@ router.post('/create', authenticateUser, async (req: AuthenticatedRequest, res: 
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Check if user has company role
+    if (req.user.user_metadata?.role !== 'company') {
+      return res.status(403).json({ error: 'Only company users can create companies' });
+    }
+
+    // Check if user already has a company
+    const existingCompanies = await storage.getCompaniesByUserId(req.user.id);
+    if (existingCompanies.length > 0) {
+      return res.status(409).json({ error: 'You can only create one company per account' });
+    }
+
     // Validate input
     const companyData = insertCompanySchema.parse({ name, ownerUserId: req.user.id });
     
@@ -32,6 +43,12 @@ router.post('/create', authenticateUser, async (req: AuthenticatedRequest, res: 
     });
   } catch (error: any) {
     console.error('Error creating company:', error);
+    
+    // Handle unique constraint violation if it occurs
+    if (error.message && error.message.includes('unique')) {
+      return res.status(409).json({ error: 'You can only create one company per account' });
+    }
+    
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: 'Invalid input data', details: error.errors });
     }

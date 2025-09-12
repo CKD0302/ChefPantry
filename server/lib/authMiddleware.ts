@@ -5,6 +5,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email?: string;
+    user_metadata?: any;
   };
 }
 
@@ -51,6 +52,7 @@ export async function authenticateUser(
     req.user = {
       id: user.id,
       email: user.email,
+      user_metadata: user.user_metadata,
     };
 
     next();

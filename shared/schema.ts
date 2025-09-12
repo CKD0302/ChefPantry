@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, uuid, time, date, numeric, jsonb, check } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uuid, time, date, numeric, jsonb, check, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
@@ -472,7 +472,10 @@ export const companies = pgTable("companies", {
   name: text("name").notNull(),
   ownerUserId: text("owner_user_id").notNull(), // UUID from Supabase auth
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Enforce one company per owner
+  uniqueOwner: uniqueIndex("companies_owner_user_id_unique").on(table.ownerUserId),
+}));
 
 // Company members - users who belong to companies
 export const companyMembers = pgTable("company_members", {
