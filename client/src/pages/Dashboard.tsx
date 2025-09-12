@@ -40,11 +40,11 @@ function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any 
             <p className="text-neutral-600">
               {hasExistingCompany 
                 ? `Manage your company "${firstCompany?.name}" and oversee multiple venues.`
-                : "Create and manage companies to oversee multiple venues."
+                : "Create your company to manage multiple venues."
               }
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Button 
               className={`w-full ${hasExistingCompany 
                 ? "bg-neutral-300 text-neutral-500 cursor-not-allowed" 
@@ -55,14 +55,6 @@ function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any 
               data-testid="button-create-company"
             >
               {hasExistingCompany ? "Company Created" : "Create Company"}
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate("/company/my-companies")}
-              className="w-full"
-              data-testid="button-my-companies"
-            >
-              My Companies
             </Button>
             <Button 
               variant="outline"

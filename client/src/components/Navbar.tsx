@@ -83,11 +83,10 @@ export default function Navbar() {
                       Dashboard
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
-                      // Company users should go to their company console
+                      // Company users should go directly to their company console
                       if (user?.user_metadata?.role === "company") {
-                        // Find their company and navigate to console
-                        // For now, navigate to My Companies page
-                        navigate("/company/my-companies");
+                        // Navigate directly to company console (there's only ever one company)
+                        navigate(`/company/${user.id}/console`);
                       } else {
                         navigate("/profile/view");
                       }
