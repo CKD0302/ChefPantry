@@ -2097,25 +2097,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug user auth route
-  apiRouter.get("/_debug-auth", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: "No user found" });
-      }
-
-      res.status(200).json({
-        userId: req.user.id,
-        email: req.user.email,
-        userMetadata: req.user.user_metadata,
-        role: req.user.user_metadata?.role
-      });
-    } catch (error) {
-      console.error("Error in debug auth:", error);
-      res.status(500).json({ message: "Failed to debug auth" });
-    }
-  });
-
   // Test email route (optional - for verification)
   apiRouter.get("/_test-email", async (req: Request, res: Response) => {
     try {

@@ -470,6 +470,8 @@ export type ChefPaymentMethod = z.infer<typeof chefPaymentMethodSchema>;
 export const companies = pgTable("companies", {
   id: text("id").primaryKey().default(sql`gen_random_uuid()`), // UUID
   name: text("name").notNull(),
+  taxCode: text("tax_code"), // Optional: Company tax code for later use
+  companyNumber: text("company_number"), // Optional: Company registration number for later use
   ownerUserId: text("owner_user_id").notNull(), // UUID from Supabase auth
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({

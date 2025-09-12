@@ -7,6 +7,42 @@ import { z } from 'zod';
 import { authenticateUser, type AuthenticatedRequest } from '../lib/authMiddleware';
 import { Response } from 'express';
 
+// Centralized authorization helper for company access
+async function authorizeCompanyAccess(
+  userId: string, 
+  companyId: string, 
+  allowedRoles: Array<'owner' | 'admin' | 'finance' | 'viewer'> = ['owner', 'admin']
+): Promise<{ authorized: boolean; reason?: string }> {
+  try {
+    // Get company first to check ownership
+    const company = await storage.getCompany(companyId);
+    if (!company) {
+      return { authorized: false, reason: 'Company not found' };
+    }
+
+    // Direct ownership check
+    if (company.ownerUserId === userId) {
+      return { authorized: true };
+    }
+
+    // Check membership with role validation
+    const membership = await storage.getCompanyMember(companyId, userId);
+    if (!membership) {
+      return { authorized: false, reason: 'Not a company member' };
+    }
+
+    // Check if user role is in allowed roles
+    if (!allowedRoles.includes(membership.role)) {
+      return { authorized: false, reason: 'Insufficient permissions' };
+    }
+
+    return { authorized: true };
+  } catch (error) {
+    console.error('Authorization check failed:', error);
+    return { authorized: false, reason: 'Authorization check failed' };
+  }
+}
+
 const router = Router();
 
 /** Create a company (current user becomes owner) */
@@ -237,21 +273,13 @@ router.get('/:companyId/members', authenticateUser, async (req: AuthenticatedReq
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Check if user is company owner or member
-    const company = await storage.getCompany(companyId);
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
-    
-    // Allow company owner to view members
-    if (company.ownerUserId === req.user.id) {
-      // Owner can view members
-    } else {
-      // Check if user is a member
-      const membership = await storage.getCompanyMember(companyId, req.user.id);
-      if (!membership) {
-        return res.status(403).json({ error: 'You can only view members of companies you own or are a member of' });
+    // Use centralized authorization helper (all members can view member list)
+    const authResult = await authorizeCompanyAccess(req.user.id, companyId, ['owner', 'admin', 'finance', 'viewer']);
+    if (!authResult.authorized) {
+      if (authResult.reason === 'Company not found') {
+        return res.status(404).json({ error: 'Company not found' });
       }
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const members = await storage.getCompanyMembers(companyId);
@@ -384,22 +412,17 @@ router.get('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Resp
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Get company first to check ownership
-    const company = await storage.getCompany(id);
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
+    // Use centralized authorization helper
+    const authResult = await authorizeCompanyAccess(req.user.id, id, ['owner', 'admin', 'finance', 'viewer']);
+    if (!authResult.authorized) {
+      if (authResult.reason === 'Company not found') {
+        return res.status(404).json({ error: 'Company not found' });
+      }
+      return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Allow company owner to access directly
-    if (company.ownerUserId === req.user.id) {
-      // Owner can access
-    } else {
-      // Check if user is a member
-      const membership = await storage.getCompanyMember(id, req.user.id);
-      if (!membership) {
-        return res.status(403).json({ error: 'You can only access companies you own or are a member of' });
-      }
-    }
+    // Get company data (already validated by authorization helper)
+    const company = await storage.getCompany(id);
     
     res.json({
       success: true,
@@ -411,49 +434,48 @@ router.get('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
+// Company update schema with validation
+const updateCompanySchema = insertCompanySchema.extend({
+  taxCode: z.string().optional().nullable(),
+  companyNumber: z.string().optional().nullable()
+}).partial();
+
 /** Update company details */
 router.put('/:id', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
     
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    if (!name || typeof name !== 'string') {
-      return res.status(400).json({ error: 'Company name is required' });
+    // Validate request body with Zod
+    const parseResult = updateCompanySchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ 
+        error: 'Invalid input data', 
+        details: parseResult.error.errors 
+      });
     }
     
-    // Verify user is the owner of this company or a member with permission
-    const company = await storage.getCompany(id);
-    console.log(`[DEBUG] Company update - Company ID: ${id}, User ID: ${req.user.id}`);
-    console.log(`[DEBUG] Company found:`, company);
+    const { name, taxCode, companyNumber } = parseResult.data;
     
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
-    
-    console.log(`[DEBUG] Comparing owner: company.ownerUserId="${company.ownerUserId}" vs req.user.id="${req.user.id}"`);
-    
-    // Allow company owner to update
-    if (company.ownerUserId === req.user.id) {
-      console.log(`[DEBUG] User is owner, allowing update`);
-      // Owner can update
-    } else {
-      // Check if user is a member with appropriate permissions
-      const membership = await storage.getCompanyMember(id, req.user.id);
-      console.log(`[DEBUG] Membership check result:`, membership);
-      
-      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-        console.log(`[DEBUG] Authorization failed - insufficient permissions`);
-        return res.status(403).json({ error: 'You can only update companies you own or are an admin of' });
+    // Use centralized authorization helper (only admins and owners can update)
+    const authResult = await authorizeCompanyAccess(req.user.id, id, ['owner', 'admin']);
+    if (!authResult.authorized) {
+      if (authResult.reason === 'Company not found') {
+        return res.status(404).json({ error: 'Company not found' });
       }
-      console.log(`[DEBUG] User has adequate permissions via membership`);
+      return res.status(403).json({ error: 'Access denied - insufficient permissions' });
     }
     
     // Update the company
-    const updatedCompany = await storage.updateCompany(id, { name: name.trim() });
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (taxCode !== undefined) updateData.taxCode = taxCode?.trim() || null;
+    if (companyNumber !== undefined) updateData.companyNumber = companyNumber?.trim() || null;
+    
+    const updatedCompany = await storage.updateCompany(id, updateData);
     
     res.json({
       success: true,
