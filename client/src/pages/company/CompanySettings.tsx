@@ -21,6 +21,8 @@ export default function CompanySettings({ companyId }: CompanySettingsProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [companyName, setCompanyName] = useState('');
+  const [taxCode, setTaxCode] = useState('');
+  const [companyNumber, setCompanyNumber] = useState('');
 
   // Fetch company details
   const { data: company, isLoading } = useQuery({
@@ -33,16 +35,18 @@ export default function CompanySettings({ companyId }: CompanySettingsProps) {
     enabled: !!user?.id
   });
 
-  // Set initial company name when data loads
+  // Set initial company data when data loads
   useEffect(() => {
-    if (company?.data?.name) {
-      setCompanyName(company.data.name);
+    if (company?.data) {
+      setCompanyName(company.data.name || '');
+      setTaxCode(company.data.taxCode || '');
+      setCompanyNumber(company.data.companyNumber || '');
     }
   }, [company]);
 
   // Update company mutation
   const updateCompanyMutation = useMutation({
-    mutationFn: async (data: { name: string }) => {
+    mutationFn: async (data: { name: string; taxCode?: string; companyNumber?: string }) => {
       const response = await apiRequest('PUT', `/api/company/${companyId}`, data);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -78,7 +82,11 @@ export default function CompanySettings({ companyId }: CompanySettingsProps) {
       return;
     }
 
-    updateCompanyMutation.mutate({ name: companyName.trim() });
+    updateCompanyMutation.mutate({ 
+      name: companyName.trim(),
+      taxCode: taxCode.trim() || undefined,
+      companyNumber: companyNumber.trim() || undefined
+    });
   };
 
   if (!user) {
@@ -162,6 +170,36 @@ export default function CompanySettings({ companyId }: CompanySettingsProps) {
                   placeholder="Enter company name"
                   data-testid="input-company-name"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tax-code">Tax Code (Optional)</Label>
+                <Input
+                  id="tax-code"
+                  type="text"
+                  value={taxCode}
+                  onChange={(e) => setTaxCode(e.target.value)}
+                  placeholder="Enter tax code (e.g., GB123456789)"
+                  data-testid="input-tax-code"
+                />
+                <p className="text-sm text-neutral-500">
+                  Company tax code for identification purposes
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company-number">Company Number (Optional)</Label>
+                <Input
+                  id="company-number"
+                  type="text"
+                  value={companyNumber}
+                  onChange={(e) => setCompanyNumber(e.target.value)}
+                  placeholder="Enter company registration number"
+                  data-testid="input-company-number"
+                />
+                <p className="text-sm text-neutral-500">
+                  Official company registration number
+                </p>
               </div>
 
               <div className="space-y-2">
