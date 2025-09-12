@@ -16,7 +16,7 @@ import BusinessDisclaimerModal from "@/components/BusinessDisclaimerModal";
 import { apiRequest } from "@/lib/queryClient";
 
 // Company Dashboard Section Component - Full Console Functionality
-function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any }) {
+function CompanyDashboardSection({ user, navigate, signOut }: { user: any, navigate: any, signOut: () => void }) {
   // Get user's company
   const { data: userCompanies } = useQuery({
     queryKey: ['/api/company/mine', user?.id],
@@ -53,11 +53,11 @@ function CompanyDashboardSection({ user, navigate }: { user: any, navigate: any 
   }
 
   // If company exists, show full console functionality
-  return <CompanyConsoleDashboard companyId={firstCompany.id} user={user} navigate={navigate} />;
+  return <CompanyConsoleDashboard companyId={firstCompany.id} user={user} navigate={navigate} signOut={signOut} />;
 }
 
 // Full Company Console Dashboard Component
-function CompanyConsoleDashboard({ companyId, user, navigate }: { companyId: string, user: any, navigate: any }) {
+function CompanyConsoleDashboard({ companyId, user, navigate, signOut }: { companyId: string, user: any, navigate: any, signOut: () => void }) {
   // Fetch company details
   const { data: company, isLoading: loadingCompany } = useQuery({
     queryKey: ['company', companyId],
@@ -113,15 +113,22 @@ function CompanyConsoleDashboard({ companyId, user, navigate }: { companyId: str
     <div className="mt-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Building2 className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="company-name">
-            {company?.data?.name || 'Company Dashboard'}
-          </h1>
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-3">
+            <Building2 className="h-8 w-8 text-blue-600" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight" data-testid="company-name">
+                {company?.data?.name || 'Company Dashboard'}
+              </h1>
+              <p className="text-neutral-600">
+                Manage your venues, team members, and operations from one central location
+              </p>
+            </div>
+          </div>
+          <Button variant="destructive" onClick={() => signOut()} className="mt-1">
+            Sign Out
+          </Button>
         </div>
-        <p className="text-neutral-600">
-          Manage your venues, team members, and operations from one central location
-        </p>
       </div>
 
       {/* Quick Stats */}
@@ -486,33 +493,37 @@ export default function Dashboard() {
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8 mt-16">
         <div className="bg-white shadow-sm rounded-lg p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900">Welcome to Your Dashboard</h1>
-              <p className="text-neutral-800">
-                {userRole === "chef" 
-                  ? "Manage your chef profile and bookings" 
-                  : "Manage your business and chef bookings"}
-              </p>
-            </div>
-            <Button variant="destructive" onClick={handleSignOut} className="mt-4 md:mt-0">
-              Sign Out
-            </Button>
-          </div>
-          
-          <div className="border-t border-neutral-200 pt-6">
-            <h2 className="text-xl font-semibold mb-4">Account Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-neutral-500">Email</p>
-                <p className="font-medium">{user.email}</p>
+          {userRole !== "company" && (
+            <>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                  <h1 className="text-2xl font-bold text-neutral-900">Welcome to Your Dashboard</h1>
+                  <p className="text-neutral-800">
+                    {userRole === "chef" 
+                      ? "Manage your chef profile and bookings" 
+                      : "Manage your business and chef bookings"}
+                  </p>
+                </div>
+                <Button variant="destructive" onClick={handleSignOut} className="mt-4 md:mt-0">
+                  Sign Out
+                </Button>
               </div>
-              <div>
-                <p className="text-sm text-neutral-500">Account Type</p>
-                <p className="font-medium capitalize">{userRole}</p>
+              
+              <div className="border-t border-neutral-200 pt-6">
+                <h2 className="text-xl font-semibold mb-4">Account Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-neutral-500">Email</p>
+                    <p className="font-medium">{user.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-500">Account Type</p>
+                    <p className="font-medium capitalize">{userRole}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
           
           {userRole === "chef" && !hasProfile && (
             <div className="mt-8">
@@ -703,7 +714,7 @@ export default function Dashboard() {
 
 
           {userRole === "company" && (
-            <CompanyDashboardSection user={user} navigate={navigate} />
+            <CompanyDashboardSection user={user} navigate={navigate} signOut={signOut} />
           )}
 
           {!["chef", "business", "company"].includes(userRole) && (
