@@ -1,3 +1,7 @@
+// CRITICAL: Load environment variables FIRST
+import dotenv from 'dotenv';
+dotenv.config();
+
 // CRITICAL: DNS configuration must be FIRST before any other imports
 import dns from 'node:dns';
 

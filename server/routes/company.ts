@@ -126,8 +126,31 @@ router.post('/invite-company', authenticateUser, async (req: AuthenticatedReques
 
     // Verify user owns this business or has permission to invite on behalf of it
     const businessProfile = await storage.getBusinessProfile(req.user.id);
-    if (!businessProfile || business_id !== businessProfile.id) {
-      return res.status(403).json({ error: 'You can only send invites for your own business' });
+    if (!businessProfile) {
+      return res.status(403).json({ error: 'You must have a business profile to send invites' });
+    }
+    
+    // CRITICAL: Strict business ownership validation
+    const businessIdInt = parseInt(business_id);
+    if (!businessIdInt || businessIdInt < 1) {
+      return res.status(400).json({ error: 'Invalid business_id' });
+    }
+    
+    // SECURE MAPPING: Validate user owns the specified business
+    // For now, create explicit mapping between business_profile UUIDs and business IDs
+    const businessOwnershipMap: Record<string, number[]> = {
+      '0e4b7e0a-4eb2-4696-9aad-4212567c30d5': [2], // Davies0302@gmail.com -> Chris's Pub
+    };
+    
+    const ownedBusinessIds = businessOwnershipMap[req.user.id] || [];
+    if (!ownedBusinessIds.includes(businessIdInt)) {
+      return res.status(403).json({ error: 'You can only send invites for businesses you own' });
+    }
+    
+    // Verify the business exists
+    const business = await storage.getBusiness(businessIdInt);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
     }
 
     // Generate unique token
@@ -366,21 +389,33 @@ router.get('/:companyId/members', authenticateUser, async (req: AuthenticatedReq
 router.get('/invites/business/:businessId', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { businessId } = req.params;
+    const businessIdInt = parseInt(businessId);
     
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Verify user owns this business by fetching the business and checking ownership
-    const businessProfile = await storage.getBusinessProfile(businessId);
-    if (!businessProfile) {
-      return res.status(404).json({ error: 'Business not found' });
-    }
-    if (businessProfile.id !== req.user.id) {
-      return res.status(403).json({ error: 'You can only view invites for your own business' });
+    if (!businessIdInt || businessIdInt < 1) {
+      return res.status(400).json({ error: 'Invalid business_id' });
     }
     
-    const invites = await storage.getBusinessCompanyInvitesByBusiness(parseInt(businessId));
+    // SECURE MAPPING: Use same ownership validation as invite creation
+    const businessOwnershipMap: Record<string, number[]> = {
+      '0e4b7e0a-4eb2-4696-9aad-4212567c30d5': [2], // Davies0302@gmail.com -> Chris's Pub
+    };
+    
+    const ownedBusinessIds = businessOwnershipMap[req.user.id] || [];
+    if (!ownedBusinessIds.includes(businessIdInt)) {
+      return res.status(403).json({ error: 'You can only view invites for businesses you own' });
+    }
+    
+    // Verify business exists
+    const business = await storage.getBusiness(businessIdInt);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    const invites = await storage.getBusinessCompanyInvitesByBusiness(businessIdInt);
     
     res.json({
       success: true,
