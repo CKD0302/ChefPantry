@@ -241,30 +241,40 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
       expiresAt
     });
 
-    // Send email invitation
+    // Create in-platform notification
     try {
-      // BUGFIX: Fetch businessProfile for email composition
-      const businessProfile = await storage.getBusinessProfile(data.businessId);
-      if (!businessProfile) {
-        throw new Error("Business profile not found for email composition");
+      // Look up user by email to send notification
+      const inviteeUser = await storage.getUserByEmail(data.inviteeEmail);
+      if (!inviteeUser) {
+        console.log(`No user found with email ${data.inviteeEmail} - skipping notification`);
+      } else {
+        // Fetch businessProfile for notification content
+        const businessProfile = await storage.getBusinessProfile(data.businessId);
+        if (!businessProfile) {
+          throw new Error("Business profile not found for notification composition");
+        }
+        
+        const { createNotification } = await import("../lib/notify");
+        await createNotification({
+          userId: inviteeUser.id,
+          type: 'company_invite_received',
+          title: `${businessProfile.businessName} invited your company`,
+          body: `You've been invited to manage ${businessProfile.businessName} as ${data.role}. View and respond to this invitation in your notifications.`,
+          entityType: 'company_invite',
+          entityId: invite.id,
+          meta: {
+            businessId: data.businessId,
+            businessName: businessProfile.businessName,
+            role: data.role,
+            inviteToken: token,
+            expiresAt: expiresAt.toISOString()
+          }
+        });
+        console.log(`Company invite notification created for user ${inviteeUser.id}`);
       }
-      
-      const acceptUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/company/invites/accept?token=${token}`;
-      const subject = `${businessProfile.businessName} invited your company to manage their venue`;
-      const html = `
-        <div style="font-family:Arial,sans-serif;line-height:1.5">
-          <h2>Company Management Invitation</h2>
-          <p>${businessProfile.businessName} has invited your company to help manage their venue operations.</p>
-          <p><strong>Role:</strong> ${data.role}</p>
-          <p><a href="${acceptUrl}" style="display:inline-block;background:#ff6a2b;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Accept Invitation</a></p>
-          <p>This invitation will expire in 14 days.</p>
-          <p>— Chef Pantry</p>
-        </div>`;
-      
-      await sendEmail(data.inviteeEmail, subject, html);
-    } catch (emailError) {
-      console.error("Failed to send invite email:", emailError);
-      // Don't fail the invitation creation if email fails
+    } catch (notificationError) {
+      console.error("Failed to create company invite notification:", notificationError);
+      // Don't fail the invitation creation if notification fails
     }
 
     res.json({ data: invite });

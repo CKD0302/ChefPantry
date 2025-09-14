@@ -187,7 +187,8 @@ export const notifications = pgTable("notifications", {
     'chef_applied', 'application_accepted', 'application_rejected', 'gig_confirmed', 'gig_declined',
     'review_reminder', 'review_submitted',
     'gig_posted', 'gig_updated', 'gig_cancelled', 'gig_deadline_approaching',
-    'profile_update', 'welcome', 'platform_update'
+    'profile_update', 'welcome', 'platform_update',
+    'company_invite_received', 'company_invite_accepted', 'company_invite_rejected'
   )`),
 }));
 

@@ -60,6 +60,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getUserProfile(userId: string): Promise<{ email: string } | undefined>;
+  getUserByEmail(email: string): Promise<{ id: string } | undefined>;
   
   // Chef methods
   getChef(id: number): Promise<Chef | undefined>;
@@ -230,6 +231,40 @@ export class DBStorage implements IStorage {
       return undefined;
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      return undefined;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<{ id: string } | undefined> {
+    try {
+      // Check chef profiles first (they have email in our local database)
+      const chefProfile = await db.select({ id: chefProfiles.id })
+        .from(chefProfiles)
+        .where(eq(chefProfiles.email, email))
+        .limit(1);
+      
+      if (chefProfile.length > 0) {
+        return { id: chefProfile[0].id };
+      }
+
+      // For business/company profiles, we need to use Supabase auth admin
+      // since emails are stored in Supabase auth, not our local tables
+      const { supabaseService } = await import("./lib/supabaseService");
+      const { data, error } = await supabaseService.auth.admin.listUsers();
+      
+      if (error) {
+        console.error('Error listing users from Supabase:', error);
+        return undefined;
+      }
+
+      const user = data.users.find(u => u.email === email);
+      if (user) {
+        return { id: user.id };
+      }
+
+      return undefined;
+    } catch (error) {
+      console.error('Error looking up user by email:', error);
       return undefined;
     }
   }

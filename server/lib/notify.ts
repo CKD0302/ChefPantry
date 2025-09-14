@@ -7,10 +7,11 @@ type NotifyParams = {
   type: 'chef_applied' | 'application_accepted' | 'application_rejected' | 'gig_confirmed' | 'gig_declined' |
         'invoice_submitted' | 'invoice_paid' | 'review_reminder' | 'review_submitted' |
         'gig_posted' | 'gig_updated' | 'gig_cancelled' | 'gig_deadline' |
-        'profile_update' | 'welcome' | 'platform_update';
+        'profile_update' | 'welcome' | 'platform_update' |
+        'company_invite_received' | 'company_invite_accepted' | 'company_invite_rejected';
   title: string;
   body?: string;
-  entityType?: 'invoice' | 'gig' | 'application' | 'review';
+  entityType?: 'invoice' | 'gig' | 'application' | 'review' | 'company_invite';
   entityId?: string;
   meta?: Record<string, any>;
 };
@@ -32,7 +33,10 @@ const notificationTypeToPreferenceKey: Record<string, string> = {
   'gig_deadline': 'gigDeadlineApp',
   'profile_update': 'profileUpdateApp',
   'welcome': 'welcomeApp',
-  'platform_update': 'platformUpdateApp'
+  'platform_update': 'platformUpdateApp',
+  'company_invite_received': 'companyInviteReceivedApp',
+  'company_invite_accepted': 'companyInviteAcceptedApp',
+  'company_invite_rejected': 'companyInviteRejectedApp'
 };
 
 // Function to get user notification preferences
