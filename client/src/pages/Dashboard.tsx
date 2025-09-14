@@ -13,6 +13,7 @@ import Footer from "@/components/Footer";
 import ProfessionalDocuments from "@/components/ProfessionalDocuments";
 import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 import BusinessDisclaimerModal from "@/components/BusinessDisclaimerModal";
+import InviteCompanyModal from "@/components/InviteCompanyModal";
 import { apiRequest } from "@/lib/queryClient";
 
 // Company Dashboard Section Component - Full Console Functionality
@@ -691,14 +692,18 @@ export default function Dashboard() {
                       <PoundSterling className="h-4 w-4 text-blue-600" />
                       Invoices
                     </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => navigate(`/business/${user.id}/company-access`)}
-                      className="flex items-center justify-center gap-2 w-full"
-                    >
-                      <Building2 className="h-4 w-4 text-orange-600" />
-                      Company Access
-                    </Button>
+                    <InviteCompanyModal
+                      businessId={user.id}
+                      trigger={
+                        <Button 
+                          variant="outline"
+                          className="flex items-center justify-center gap-2 w-full"
+                        >
+                          <Building2 className="h-4 w-4 text-orange-600" />
+                          Invite Company
+                        </Button>
+                      }
+                    />
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/reviews")}
