@@ -123,7 +123,8 @@ export const businessProfiles = pgTable("business_profiles", {
 // Gigs table for job postings
 export const gigs = pgTable("gigs", {
   id: uuid("id").defaultRandom().primaryKey(),
-  createdBy: text("created_by").notNull(), // UUID from Supabase auth
+  createdBy: text("created_by").notNull(), // UUID from Supabase auth (user who created)
+  businessId: text("business_id"), // UUID of the business/venue this gig is for (nullable for backward compatibility)
   title: text("title").notNull(),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),

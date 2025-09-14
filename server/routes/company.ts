@@ -15,7 +15,7 @@ import { ZodError } from "zod";
 const router = Router();
 
 // Create Company
-router.post("/create", authenticateUser, async (req: AuthenticatedRequest, res) => {
+router.post("/", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
     const data = insertCompanySchema.parse(req.body);
     const userId = req.user!.id;
@@ -103,6 +103,93 @@ router.get("/:id/members", authenticateUser, async (req: AuthenticatedRequest, r
   }
 });
 
+// Update company details
+router.put("/:id", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    
+    // Check if user is owner or admin of this company
+    const members = await storage.getCompanyMembers(id);
+    const userMembership = members.find(member => member.userId === userId);
+    
+    if (!userMembership || !["owner", "admin"].includes(userMembership.role)) {
+      return res.status(403).json({ message: "Access denied: Only owners and admins can update company details" });
+    }
+
+    // Validate the update data
+    const updateSchema = z.object({
+      name: z.string().min(2, "Company name must be at least 2 characters").optional(),
+      description: z.string().optional(),
+    });
+    
+    const updateData = updateSchema.parse(req.body);
+    
+    const company = await storage.updateCompany(id, updateData);
+    res.json({ data: company });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({ message: "Invalid input", errors: error.errors });
+    }
+    console.error("Error updating company:", error);
+    res.status(500).json({ message: "Failed to update company" });
+  }
+});
+
+// Get accessible businesses for a company user
+router.get("/accessible-businesses", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    
+    const businesses = await storage.getUserAccessibleBusinesses(userId);
+    res.json({ data: businesses });
+  } catch (error) {
+    console.error("Error fetching accessible businesses:", error);
+    res.status(500).json({ message: "Failed to fetch accessible businesses" });
+  }
+});
+
+// Remove company member (for owners/admins)
+router.delete("/:id/members/:userId", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id: companyId, userId: memberUserId } = req.params;
+    const currentUserId = req.user!.id;
+    
+    // Check if current user is owner or admin of this company
+    const members = await storage.getCompanyMembers(companyId);
+    const currentUserMembership = members.find(member => member.userId === currentUserId);
+    
+    if (!currentUserMembership || !["owner", "admin"].includes(currentUserMembership.role)) {
+      return res.status(403).json({ message: "Access denied: Only owners and admins can remove members" });
+    }
+
+    // Prevent removing the owner
+    const memberToRemove = members.find(member => member.userId === memberUserId);
+    if (memberToRemove?.role === "owner") {
+      return res.status(400).json({ message: "Cannot remove company owner" });
+    }
+
+    // Prevent self-removal unless there are other owners
+    if (currentUserId === memberUserId) {
+      const ownerCount = members.filter(member => member.role === "owner").length;
+      if (ownerCount <= 1) {
+        return res.status(400).json({ message: "Cannot remove yourself as the last owner" });
+      }
+    }
+
+    const removed = await storage.removeCompanyMember(companyId, memberUserId);
+    
+    if (!removed) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+
+    res.json({ message: "Member removed successfully" });
+  } catch (error) {
+    console.error("Error removing company member:", error);
+    res.status(500).json({ message: "Failed to remove company member" });
+  }
+});
+
 // Get venues linked to company
 router.get("/:id/venues", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
@@ -126,7 +213,7 @@ router.get("/:id/venues", authenticateUser, async (req: AuthenticatedRequest, re
 });
 
 // Send invitation from business to company
-router.post("/invite-company", authenticateUser, async (req: AuthenticatedRequest, res) => {
+router.post("/invite-business", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
     const data = insertBusinessCompanyInviteSchema.parse(req.body);
     const userId = req.user!.id;
@@ -185,6 +272,25 @@ router.post("/invite-company", authenticateUser, async (req: AuthenticatedReques
     }
     console.error("Error creating company invite:", error);
     res.status(500).json({ message: "Failed to create company invite" });
+  }
+});
+
+// Get invite details by token
+router.get("/invite/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const invite = await storage.getBusinessCompanyInviteByToken(token);
+    if (!invite) {
+      return res.status(404).json({ message: "Invite not found" });
+    }
+
+    // Don't expose sensitive data like the token itself
+    const { token: _, ...inviteData } = invite;
+    res.json({ data: inviteData });
+  } catch (error) {
+    console.error("Error fetching invite:", error);
+    res.status(500).json({ message: "Failed to fetch invite" });
   }
 });
 
