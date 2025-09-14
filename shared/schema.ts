@@ -190,6 +190,56 @@ export const notifications = pgTable("notifications", {
   )`),
 }));
 
+// Companies table for company management
+export const companies = pgTable("companies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  ownerUserId: text("owner_user_id").notNull(), // UUID from Supabase auth
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Company Members table for company access control
+export const companyMembers = pgTable("company_members", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  userId: text("user_id").notNull(), // UUID from Supabase auth
+  role: text("role").notNull(), // 'owner', 'admin', 'finance', 'viewer'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  roleCheck: check("role_check", sql`role IN ('owner', 'admin', 'finance', 'viewer')`),
+  uniqueMember: uniqueIndex("unique_company_member").on(table.companyId, table.userId),
+}));
+
+// Business Company Invites table for venue-to-company invitations
+export const businessCompanyInvites = pgTable("business_company_invites", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  businessId: text("business_id").notNull(), // UUID from Supabase auth (business_profiles.id)
+  inviteeEmail: text("invitee_email").notNull(),
+  role: text("role").notNull(), // 'manager', 'finance', 'viewer'
+  token: text("token").notNull().unique(),
+  status: text("status").notNull().default("pending"), // 'pending', 'accepted', 'revoked', 'expired'
+  createdBy: text("created_by").notNull(), // UUID from Supabase auth
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+}, (table) => ({
+  roleCheck: check("invite_role_check", sql`role IN ('manager', 'finance', 'viewer')`),
+  statusCheck: check("invite_status_check", sql`status IN ('pending', 'accepted', 'revoked', 'expired')`),
+  uniquePendingInvite: uniqueIndex("unique_pending_invite").on(table.businessId, table.inviteeEmail)
+    .where(sql`status = 'pending'`),
+}));
+
+// Business Company Links table for established business-company relationships
+export const businessCompanyLinks = pgTable("business_company_links", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  businessId: text("business_id").notNull(), // UUID from Supabase auth (business_profiles.id)
+  companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  role: text("role").notNull(), // 'manager', 'finance', 'viewer'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  roleCheck: check("link_role_check", sql`role IN ('manager', 'finance', 'viewer')`),
+  uniqueLink: uniqueIndex("unique_business_company_link").on(table.businessId, table.companyId),
+}));
+
 // Notification Preferences table for user notification settings
 export const notificationPreferences = pgTable("notification_preferences", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -351,6 +401,27 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
   createdAt: true,
 });
 
+export const insertCompanySchema = createInsertSchema(companies).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCompanyMemberSchema = createInsertSchema(companyMembers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBusinessCompanyInviteSchema = createInsertSchema(businessCompanyInvites).omit({
+  id: true,
+  createdAt: true,
+  token: true, // Generated server-side
+});
+
+export const insertBusinessCompanyLinkSchema = createInsertSchema(businessCompanyLinks).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -391,6 +462,18 @@ export type GigInvoice = typeof gigInvoices.$inferSelect;
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type Company = typeof companies.$inferSelect;
+
+export type InsertCompanyMember = z.infer<typeof insertCompanyMemberSchema>;
+export type CompanyMember = typeof companyMembers.$inferSelect;
+
+export type InsertBusinessCompanyInvite = z.infer<typeof insertBusinessCompanyInviteSchema>;
+export type BusinessCompanyInvite = typeof businessCompanyInvites.$inferSelect;
+
+export type InsertBusinessCompanyLink = z.infer<typeof insertBusinessCompanyLinkSchema>;
+export type BusinessCompanyLink = typeof businessCompanyLinks.$inferSelect;
 
 // Additional validation schemas for route inputs
 export const updateChefProfileSchema = z.object({
