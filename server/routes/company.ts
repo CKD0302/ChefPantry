@@ -215,6 +215,9 @@ router.get("/:id/venues", authenticateUser, async (req: AuthenticatedRequest, re
 // Send invitation from business to company
 router.post("/invite-business", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
+    console.log("DEBUG: Received invite request body:", JSON.stringify(req.body, null, 2));
+    console.log("DEBUG: User ID:", req.user!.id);
+    
     const data = insertBusinessCompanyInviteSchema.parse(req.body);
     const userId = req.user!.id;
 
