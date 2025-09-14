@@ -268,6 +268,7 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
     res.json({ data: invite });
   } catch (error) {
     if (error instanceof ZodError) {
+      console.error("Validation error in invite-business:", error.errors);
       return res.status(400).json({ message: "Invalid input", errors: error.errors });
     }
     console.error("Error creating company invite:", error);
