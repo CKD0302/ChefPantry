@@ -38,18 +38,6 @@ import {
   reviews,
   type Review,
   type InsertReview,
-  companies,
-  type Company,
-  type InsertCompany,
-  companyMembers,
-  type CompanyMember,
-  type InsertCompanyMember,
-  businessCompanyLinks,
-  type BusinessCompanyLink,
-  type InsertBusinessCompanyLink,
-  businessCompanyInvites,
-  type BusinessCompanyInvite,
-  type InsertBusinessCompanyInvite
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not, sql } from "drizzle-orm";
@@ -151,31 +139,6 @@ export interface IStorage {
   getReviewSummary(recipientId: string): Promise<any>;
   getPendingReviewsForUser(userId: string): Promise<any[]>;
 
-  // Company methods
-  createCompany(company: InsertCompany): Promise<Company>;
-  getCompany(id: string): Promise<Company | undefined>;
-  getCompaniesByUserId(userId: string): Promise<Company[]>;
-  
-  // Company member methods
-  addCompanyMember(member: InsertCompanyMember): Promise<CompanyMember>;
-  getCompanyMembers(companyId: string): Promise<CompanyMember[]>;
-  getCompanyMember(companyId: string, userId: string): Promise<CompanyMember | undefined>;
-  updateCompanyMemberRole(companyId: string, userId: string, role: CompanyMember['role']): Promise<CompanyMember | undefined>;
-  removeCompanyMember(companyId: string, userId: string): Promise<void>;
-  
-  // Business-Company link methods
-  createBusinessCompanyLink(link: InsertBusinessCompanyLink): Promise<BusinessCompanyLink>;
-  getBusinessCompanyLinks(businessId?: number, companyId?: string): Promise<BusinessCompanyLink[]>;
-  updateBusinessCompanyLinkRole(businessId: number, companyId: string, role: BusinessCompanyLink['role']): Promise<BusinessCompanyLink | undefined>;
-  removeBusinessCompanyLink(businessId: number, companyId: string): Promise<void>;
-  
-  // Business-Company invite methods
-  createBusinessCompanyInvite(invite: InsertBusinessCompanyInvite): Promise<BusinessCompanyInvite>;
-  getBusinessCompanyInvite(id: string): Promise<BusinessCompanyInvite | undefined>;
-  getBusinessCompanyInviteByToken(token: string): Promise<BusinessCompanyInvite | undefined>;
-  getBusinessCompanyInvitesByBusiness(businessId: number): Promise<BusinessCompanyInvite[]>;
-  getBusinessCompanyInvitesByEmail(email: string): Promise<BusinessCompanyInvite[]>;
-  updateBusinessCompanyInviteStatus(id: string, status: BusinessCompanyInvite['status']): Promise<BusinessCompanyInvite | undefined>;
   
   // User accessible businesses - for multi-venue access control
   getUserAccessibleBusinesses(userId: string): Promise<{ businessId: number; businessName: string }[]>;
