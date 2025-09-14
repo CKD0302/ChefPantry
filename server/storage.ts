@@ -203,24 +203,28 @@ export class DBStorage implements IStorage {
 
   async getUserProfile(userId: string): Promise<{ email: string } | undefined> {
     try {
-      // Check chef profiles first
+      // Check chef profiles first - chef profiles have email field
       const chefProfile = await db.select({ email: chefProfiles.email })
         .from(chefProfiles)
-        .where(eq(chefProfiles.userId, userId))
+        .where(eq(chefProfiles.id, userId))
         .limit(1);
       
-      if (chefProfile.length > 0) {
+      if (chefProfile.length > 0 && chefProfile[0].email) {
         return { email: chefProfile[0].email };
       }
 
-      // Check business profiles
-      const businessProfile = await db.select({ email: businessProfiles.email })
+      // For business profiles, we need to get email from Supabase auth
+      // since business profiles don't have email field in our schema
+      // For now, return undefined for business profiles
+      const businessProfile = await db.select()
         .from(businessProfiles)
-        .where(eq(businessProfiles.userId, userId))
+        .where(eq(businessProfiles.id, userId))
         .limit(1);
       
       if (businessProfile.length > 0) {
-        return { email: businessProfile[0].email };
+        // Business profiles don't have email in our schema
+        // This would need to be fetched from Supabase auth
+        return undefined;
       }
 
       return undefined;
@@ -1158,19 +1162,13 @@ export class DBStorage implements IStorage {
   // Business ownership validation method
   async isBusinessOwner(userId: string, businessId: string): Promise<boolean> {
     try {
-      console.log('DEBUG isBusinessOwner - userId:', userId, 'businessId:', businessId);
       const business = await db.select()
         .from(businessProfiles)
         .where(eq(businessProfiles.id, businessId))
         .limit(1);
       
-      console.log('DEBUG isBusinessOwner - business found:', business.length > 0);
-      if (business.length > 0) {
-        console.log('DEBUG isBusinessOwner - business.userId:', business[0].userId);
-        console.log('DEBUG isBusinessOwner - match:', business[0].userId === userId);
-      }
-      
-      return business.length > 0 && business[0].userId === userId;
+      // The businessId IS the userId in the businessProfiles table
+      return business.length > 0 && business[0].id === userId;
     } catch (error) {
       console.error('Error checking business ownership:', error);
       return false;
@@ -1191,10 +1189,7 @@ export class DBStorage implements IStorage {
   async updateCompany(id: string, updates: Partial<InsertCompany>): Promise<Company | undefined> {
     const result = await db
       .update(companies)
-      .set({
-        ...updates,
-        updatedAt: new Date()
-      })
+      .set(updates)
       .where(eq(companies.id, id))
       .returning();
     return result[0];
@@ -1259,8 +1254,8 @@ export class DBStorage implements IStorage {
   }
   
   // Business Company Invite methods
-  async createBusinessCompanyInvite(invite: InsertBusinessCompanyInvite & { token: string }): Promise<BusinessCompanyInvite> {
-    const result = await db.insert(businessCompanyInvites).values(invite).returning();
+  async createBusinessCompanyInvite(invite: InsertBusinessCompanyInvite & { token: string; createdBy: string; expiresAt: Date }): Promise<BusinessCompanyInvite> {
+    const result = await db.insert(businessCompanyInvites).values([invite]).returning();
     return result[0];
   }
   
