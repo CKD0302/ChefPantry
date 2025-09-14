@@ -69,21 +69,23 @@ export default function MyCompanies() {
     );
   }
 
-  const companyList = companies?.data || [];
+  const companyList = (companies as any)?.data || [];
 
   return (
     <div className="container mx-auto px-4 py-8" data-testid="my-companies-page">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title">My Companies</h1>
+          <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title">My Company</h1>
           <p className="text-gray-600 mt-2" data-testid="page-description">Manage your company venues and teams</p>
         </div>
-        <Link href="/company/create">
-          <Button className="flex items-center gap-2" data-testid="create-company-button">
-            <Plus className="h-4 w-4" />
-            Create Company
-          </Button>
-        </Link>
+        {companyList.length === 0 && (
+          <Link href="/company/create">
+            <Button className="flex items-center gap-2" data-testid="create-company-button">
+              <Plus className="h-4 w-4" />
+              Create Company
+            </Button>
+          </Link>
+        )}
       </div>
 
       {companyList.length === 0 ? (
@@ -94,38 +96,50 @@ export default function MyCompanies() {
                 <Users className="h-12 w-12 text-gray-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900" data-testid="empty-title">No companies yet</h3>
-                <p className="text-gray-600 mt-1" data-testid="empty-description">Create your first company to start managing venues</p>
+                <h3 className="text-lg font-semibold text-gray-900" data-testid="empty-title">No company yet</h3>
+                <p className="text-gray-600 mt-1" data-testid="empty-description">Create your company to start managing venues</p>
               </div>
               <Link href="/company/create">
                 <Button data-testid="create-first-company-button">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Company
+                  Create Your Company
                 </Button>
               </Link>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" data-testid="companies-grid">
+        <div className="max-w-2xl" data-testid="company-details">
           {companyList.map((company: any) => (
-            <Card key={company.id} className="hover:shadow-lg transition-shadow" data-testid={`company-card-${company.id}`}>
+            <Card key={company.id} className="w-full" data-testid={`company-card-${company.id}`}>
               <CardHeader>
-                <CardTitle className="text-xl" data-testid={`company-name-${company.id}`}>{company.name}</CardTitle>
-                <CardDescription data-testid={`company-description-${company.id}`}>{company.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Link href={`/company/${company.id}/members`}>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1" data-testid={`members-button-${company.id}`}>
-                      <Users className="h-4 w-4" />
-                      Members
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-2xl" data-testid={`company-name-${company.id}`}>{company.name}</CardTitle>
+                    <CardDescription className="mt-2" data-testid={`company-description-${company.id}`}>
+                      {company.description || "No description provided"}
+                    </CardDescription>
+                  </div>
+                  <Link href={`/company/${company.id}/settings`}>
+                    <Button variant="outline" size="sm" className="flex items-center gap-1" data-testid={`edit-company-button-${company.id}`}>
+                      <Settings className="h-4 w-4" />
+                      Edit Company
                     </Button>
                   </Link>
-                  <Link href={`/company/${company.id}/settings`}>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1" data-testid={`settings-button-${company.id}`}>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Link href={`/company/${company.id}/members`}>
+                    <Button variant="outline" className="w-full flex items-center justify-center gap-2" data-testid={`members-button-${company.id}`}>
+                      <Users className="h-4 w-4" />
+                      Manage Team Members
+                    </Button>
+                  </Link>
+                  <Link href={`/company/${company.id}/venues`}>
+                    <Button variant="outline" className="w-full flex items-center justify-center gap-2" data-testid={`venues-button-${company.id}`}>
                       <Settings className="h-4 w-4" />
-                      Settings
+                      Manage Venues
                     </Button>
                   </Link>
                 </div>
