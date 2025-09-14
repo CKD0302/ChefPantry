@@ -23,13 +23,6 @@ import BusinessInvoices from "@/pages/BusinessInvoices";
 import ChefInvoices from "@/pages/ChefInvoices";
 import AdminDashboard from "@/pages/admin/Dashboard";
 
-// Company Management Pages
-import CreateCompany from "@/pages/company/CreateCompany";
-import CompanyConsole from "@/pages/company/CompanyConsole";
-import CompanySettings from "@/pages/company/CompanySettings";
-import AcceptInvite from "@/pages/company/AcceptInvite";
-import CompanyAccess from "@/pages/business/CompanyAccess";
-import MyCompanies from "@/pages/company/MyCompanies";
 import { useRoute, useLocation } from "wouter";
 
 // Gig Management Pages
@@ -42,51 +35,6 @@ import GigApplications from "@/pages/gigs/applications/GigApplications";
 import Reviews from "@/pages/Reviews";
 
 // Wrapper components for route parameters
-function CompanyConsoleWrapper() {
-  const [match, params] = useRoute("/company/:id/console");
-  if (!match || !params?.id) return <NotFound />;
-  return <CompanyConsole companyId={params.id} />;
-}
-
-function CompanyDashboardWrapper() {
-  const { user, isLoading: authLoading } = useAuth();
-  const [, navigate] = useLocation();
-  const { data: companies, isLoading: companiesLoading } = useQuery({
-    queryKey: ['user-companies', user?.id],
-    queryFn: async () => {
-      const response = await apiRequest('GET', `/api/company/mine`);
-      if (!response.ok) throw new Error('Failed to fetch companies');
-      return response.json();
-    },
-    enabled: !!user?.id && !authLoading
-  });
-  
-  // If still loading authentication, show loading state
-  if (authLoading || companiesLoading) {
-    return <div>Loading...</div>;
-  }
-  
-  // If companies are loaded and user has a company, redirect to console
-  if (companies && companies.length > 0) {
-    navigate(`/company/${companies[0].id}/console`);
-    return null;
-  }
-  
-  // If no companies found, show NotFound
-  return <NotFound />;
-}
-
-function CompanySettingsWrapper() {
-  const [match, params] = useRoute("/company/:id/settings");
-  if (!match || !params?.id) return <NotFound />;
-  return <CompanySettings companyId={params.id} />;
-}
-
-function CompanyAccessWrapper() {
-  const [match, params] = useRoute("/business/:id/company-access");  
-  if (!match || !params?.id) return <NotFound />;
-  return <CompanyAccess businessId={params.id} />;
-}
 
 function Router() {
   return (
@@ -109,14 +57,6 @@ function Router() {
       <Route path="/chef/invoices" component={ChefInvoices} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       
-      {/* Company Management Routes */}
-      <Route path="/company/create" component={CreateCompany} />
-      <Route path="/company/my-companies" component={MyCompanies} />
-      <Route path="/company/dashboard" component={CompanyDashboardWrapper} />
-      <Route path="/company/:id/console" component={CompanyConsoleWrapper} />
-      <Route path="/company/:id/settings" component={CompanySettingsWrapper} />
-      <Route path="/company/invites/accept" component={AcceptInvite} />
-      <Route path="/business/:id/company-access" component={CompanyAccessWrapper} />
       
       {/* Gig Management Routes */}
       <Route path="/gigs/create" component={CreateGig} />
