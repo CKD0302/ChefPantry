@@ -83,10 +83,9 @@ export default function Navbar() {
                       Dashboard
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
-                      // Company users should go directly to their company console
+                      // Company users should go to their company management area
                       if (user?.user_metadata?.role === "company") {
-                        // Navigate directly to company console (there's only ever one company)
-                        navigate(`/company/${user.id}/console`);
+                        navigate("/company/mine");
                       } else {
                         navigate("/profile/view");
                       }
@@ -147,7 +146,14 @@ export default function Navbar() {
                 </a>
                 <a 
                   className="block px-3 py-2 text-neutral-800 hover:text-primary font-bold"
-                  onClick={() => handleNavigation("/profile/view")}
+                  onClick={() => {
+                    // Company users should go to their company management area  
+                    if (user?.user_metadata?.role === "company") {
+                      handleNavigation("/company/mine");
+                    } else {
+                      handleNavigation("/profile/view");
+                    }
+                  }}
                 >
                   Profile
                 </a>
