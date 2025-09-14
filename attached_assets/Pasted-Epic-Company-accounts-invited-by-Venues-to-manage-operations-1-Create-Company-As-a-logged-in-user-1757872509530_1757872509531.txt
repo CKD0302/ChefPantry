@@ -1,0 +1,331 @@
+Epic: Company accounts invited by Venues to manage operations
+1) Create Company
+
+As a logged-in user
+I want to create a Company profile
+So that I can manage multiple venues from one place.
+
+Acceptance
+
+Page /company/create with form: name.
+
+On submit: creates companies row; creator auto-added to company_members as owner.
+
+Success toast + redirect to /company/:id/console.
+
+Tech notes
+
+Table companies(id, name, owner_user_id, created_at).
+
+Table company_members(company_id, user_id, role[owner|admin|finance|viewer], created_at).
+
+RLS: members can SELECT; only owners/admins can add/remove members.
+
+2) Company Console & Switcher
+
+As a company member
+I want a console and quick switcher
+So that I can see all linked venues and activity.
+
+Acceptance
+
+Top-nav Company Switcher (if ≥1 company). Persists activeCompanyId in localStorage.
+
+/company/:id/console shows:
+
+cards for linked venues,
+
+cross-venue “Invoice Inbox” (filters: venue, status, date),
+
+recent gigs & applicants.
+
+Empty states handled.
+
+Tech notes
+
+View user_accessible_businesses (see Story 6).
+
+API: GET /api/company/:id/venues, GET /api/company/:id/invoices?….
+
+3) Venue invites a Company
+
+As a venue owner (business owner)
+I want to invite a Company by email and assign a role
+So that the company can help manage my venue.
+
+Acceptance
+
+Venue dashboard “Access → Companies” tab.
+
+Form: invitee_email, role[manager|finance|viewer].
+
+Creates invite with status='pending' and emails accept link.
+
+Invites list with statuses.
+
+Tech notes
+
+Table business_company_invites(id, business_id, invitee_email, role, token, status[pending|accepted|revoked|expired], created_by, created_at, expires_at).
+
+Route POST /api/company/invite-company { business_id, invitee_email, role }.
+
+Email via Resend: link to /company/invites/accept?token=….
+
+4) Accept Invite (Company Owner/Admin)
+
+As a company owner/admin
+I want to accept a venue’s invite into one of my companies
+So that that company gains access to the venue.
+
+Acceptance
+
+Landing page reads token, shows invite summary + dropdown of my companies.
+
+Only proceeds if my auth email matches the invitee email.
+
+On accept: link created; invite marked accepted; success redirect to venue.
+
+Tech notes
+
+Table business_company_links(business_id, company_id, role[manager|finance|viewer], created_at).
+
+Route POST /api/company/accept-invite { token, company_id }.
+
+Validate: user’s email == invite.invitee_email; user role in chosen company ∈ {owner, admin}.
+
+5) Revoke Company Access
+
+As a venue owner
+I want to remove a company’s access at any time
+So that they can no longer manage my venue.
+
+Acceptance
+
+In “Access → Companies” list, Remove button.
+
+After removal, company members immediately lose access.
+
+Email notification sent to company owner(s).
+
+Tech notes
+
+DELETE /api/company/link { business_id, company_id } → delete row in business_company_links.
+
+Audit log entry created.
+
+6) Access Model & RLS
+
+As the system
+I want secure, consistent access checks
+So that only venue owners or linked company members can act.
+
+Acceptance
+
+Users can see/act on a venue if:
+
+they own the business (businesses.owner_user_id = auth.uid()), or
+
+they are a member of a company linked via business_company_links (any role).
+
+RLS updated on core tables (gigs, invoices, applicants) to allow access if business_id in user_accessible_businesses.
+
+Tech notes
+
+View:
+
+create or replace view public.user_accessible_businesses as
+select b.id business_id, b.name
+  from public.businesses b
+ where b.owner_user_id = auth.uid()
+union
+select l.business_id, b2.name
+  from public.business_company_links l
+  join public.company_members m on m.company_id = l.company_id and m.user_id = auth.uid()
+  join public.businesses b2 on b2.id = l.business_id;
+
+
+Apply RLS patterns on gig_invoices, gigs, gig_applicants:
+
+create policy t_select_company on public.<table>
+for select to authenticated
+using (exists (select 1 from public.user_accessible_businesses u where u.business_id = <table>.business_id));
+create policy t_update_company on public.<table>
+for update to authenticated
+using (exists (select 1 from public.user_accessible_businesses u where u.business_id = <table>.business_id));
+-- Add insert policies as needed.
+
+7) Company Role Capabilities
+
+As a company member
+I want capabilities based on my role
+So that duties are limited appropriately.
+
+Acceptance
+
+manager: full venue mgmt (post gigs, review/accept applicants, manage invoices).
+
+finance: view/post invoices, mark paid, export; read-only gigs/applicants.
+
+viewer: read-only.
+
+Tech notes
+
+Enforce in server routes (role check via business_company_links.role + company_members.role).
+
+UI hides/disables actions accordingly.
+
+8) Manage Invoices (Company)
+
+As a company manager or finance
+I want to create & manage invoices for linked venues
+So that payments flow without logging into each venue.
+
+Acceptance
+
+From Company Console:
+
+create invoice for a venue,
+
+see invoice list across venues with filters,
+
+mark invoices paid (manual flow),
+
+resend invoice email.
+
+All email notifications reuse existing templates.
+
+Tech notes
+
+Reuse gig_invoices; RLS handles access.
+
+All sends use snapshot fields on invoice (we already added them).
+
+9) Post Gigs & Manage Applicants (Company)
+
+As a company manager
+I want to create gigs and accept/decline applicants
+So that staffing can be coordinated centrally.
+
+Acceptance
+
+Create/edit gigs for linked venues.
+
+View applicants per gig; accept/decline.
+
+Audit events recorded.
+
+Tech notes
+
+Reuse existing gigs & applicants tables/routes.
+
+Respect role checks from Story 7.
+
+10) Invitations & Status Emails
+
+As a user
+I want clear emails for invites and status changes
+So that I don’t miss access events.
+
+Acceptance
+
+Invite sent to invitee_email with accept link.
+
+Acceptance email to venue owner(s).
+
+Revocation email to company owner(s).
+
+Tech notes
+
+Resend templates: companyInvite, companyAccepted, companyRevoked.
+
+Use verified EMAIL_FROM.
+
+11) Audit Log
+
+As an admin
+I want an audit trail
+So that access changes are traceable.
+
+Acceptance
+
+Log entries for: invite created, invite accepted, link removed, role changed.
+
+List visible to venue owners and company owners/admins.
+
+Tech notes
+
+Table audit_events(id, actor_user_id, action, subject_type, subject_id, meta jsonb, created_at).
+
+Append events from the related routes.
+
+12) Removal/Edge Cases
+
+As a system
+I want robust handling of edge cases
+So that access stays correct.
+
+Acceptance
+
+Invite tokens expire after 14 days.
+
+If a company removes a user, that user immediately loses venue access.
+
+If a venue is deleted, links & invites cascade.
+
+Duplicate invite prevented (same business_id, invitee_email, pending).
+
+Tech notes
+
+Constraints + unique indexes + cascade FKs.
+
+Cron/job not required—expiry enforced at accept time.
+
+13) Backfill (Optional, safe)
+
+As a maintainer
+I want to backfill existing venues
+So that the model works without breaking current users.
+
+Acceptance
+
+No automatic backfill unless explicitly run.
+
+Script to create companies manually and link venues.
+
+Tech notes
+
+Provide SQL snippet and admin route guarded to owner.
+
+14) QA Checklist
+
+As QA
+I want a checklist
+So that we can verify the whole flow.
+
+Acceptance
+
+Create company → switcher works.
+
+Venue sends invite → email received.
+
+Accept invite → link created; venue appears under Company Console.
+
+Manager role: can post gig, accept applicant, create invoice.
+
+Finance role: can create/mark-paid invoice but cannot accept applicants.
+
+Viewer: read-only.
+
+Revoke link → access immediately removed; email sent.
+
+RLS blocks a non-member from fetching the venue’s invoices/gigs.
+
+Implementation Notes (one-time)
+
+Add seed roles to company_members upon creation.
+
+Prefer service-role Supabase client on server; anon on client.
+
+Keep all new server routes under /api/company/*.
+
+Migrations idempotent; never drop existing columns.
