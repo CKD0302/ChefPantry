@@ -224,6 +224,18 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
       return res.status(403).json({ message: "Access denied: You must own this business" });
     }
 
+    // Check for existing pending invite
+    const existingInvites = await storage.getBusinessCompanyInvitesByBusiness(data.businessId);
+    const existingInvite = existingInvites.find(invite => 
+      invite.inviteeEmail === data.inviteeEmail && invite.status === 'pending'
+    );
+    
+    if (existingInvite) {
+      return res.status(400).json({ 
+        message: "An invite to this email is already pending. Please wait for them to respond or revoke the existing invite first." 
+      });
+    }
+
     // Generate invite token
     const token = randomBytes(32).toString("hex");
     
