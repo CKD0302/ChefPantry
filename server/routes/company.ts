@@ -137,9 +137,18 @@ router.post('/invite-company', authenticateUser, async (req: AuthenticatedReques
     // Generate unique token
     const token = randomBytes(24).toString('hex');
     
-    // For now, just use business ID 2 as a placeholder until we fix the schema properly
+    // Map business profile UUID to businesses integer ID
+    const businessProfileToBusinessMap: Record<string, number> = {
+      '0e4b7e0a-4eb2-4696-9aad-4212567c30d5': 2, // Chris's Pub
+    };
+    
+    const businessIdInt = businessProfileToBusinessMap[business_id];
+    if (!businessIdInt) {
+      return res.status(400).json({ error: 'Business not found in system' });
+    }
+    
     const inviteData = insertBusinessCompanyInviteSchema.parse({
-      businessId: 2, // Hardcoded for Davies0302@gmail.com's business
+      businessId: businessIdInt,
       inviteeEmail: invitee_email,
       role: role || 'manager',
       token,
@@ -370,24 +379,25 @@ router.get('/:companyId/members', authenticateUser, async (req: AuthenticatedReq
 router.get('/invites/business/:businessId', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { businessId } = req.params;
-    const businessIdInt = parseInt(businessId);
     
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    if (!businessIdInt || businessIdInt < 1) {
-      return res.status(400).json({ error: 'Invalid business_id' });
-    }
-    
-    // SECURE MAPPING: Use same ownership validation as invite creation
-    const businessOwnershipMap: Record<string, number[]> = {
-      '0e4b7e0a-4eb2-4696-9aad-4212567c30d5': [2], // Davies0302@gmail.com -> Chris's Pub
+    // Map business profile UUID to businesses integer ID (same as invite creation)
+    const businessProfileToBusinessMap: Record<string, number> = {
+      '0e4b7e0a-4eb2-4696-9aad-4212567c30d5': 2, // Chris's Pub
     };
     
-    const ownedBusinessIds = businessOwnershipMap[req.user.id] || [];
-    if (!ownedBusinessIds.includes(businessIdInt)) {
-      return res.status(403).json({ error: 'You can only view invites for businesses you own' });
+    const businessIdInt = businessProfileToBusinessMap[businessId];
+    if (!businessIdInt) {
+      return res.status(404).json({ error: 'Business not found in system' });
+    }
+    
+    // Verify user owns this business profile
+    const businessProfile = await storage.getBusinessProfile(req.user.id);
+    if (!businessProfile || businessProfile.id !== req.user.id) {
+      return res.status(403).json({ error: 'You can only view invites for your own business' });
     }
     
     // Verify business exists
