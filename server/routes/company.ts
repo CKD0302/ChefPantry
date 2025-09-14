@@ -96,7 +96,7 @@ router.get("/:id/members", authenticateUser, async (req: AuthenticatedRequest, r
       return res.status(403).json({ message: "Access denied" });
     }
 
-    res.json(members);
+    res.json({ data: members });
   } catch (error) {
     console.error("Error fetching company members:", error);
     res.status(500).json({ message: "Failed to fetch company members" });
