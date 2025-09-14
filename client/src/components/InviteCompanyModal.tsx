@@ -15,7 +15,7 @@ import { Mail, Building2 } from "lucide-react";
 
 const inviteCompanySchema = z.object({
   inviteeEmail: z.string().email("Please enter a valid email address"),
-  role: z.enum(["admin", "member"], {
+  role: z.enum(["manager", "finance", "viewer"], {
     required_error: "Please select a role",
   }),
 });
@@ -37,7 +37,7 @@ export default function InviteCompanyModal({ businessId, trigger }: InviteCompan
     resolver: zodResolver(inviteCompanySchema),
     defaultValues: {
       inviteeEmail: "",
-      role: "member",
+      role: "manager",
     },
   });
 
@@ -131,11 +131,14 @@ export default function InviteCompanyModal({ businessId, trigger }: InviteCompan
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="member">
-                        Member - Can view and manage basic operations
+                      <SelectItem value="manager">
+                        Manager - Full management access including team management
                       </SelectItem>
-                      <SelectItem value="admin">
-                        Admin - Full management access including team management
+                      <SelectItem value="finance">
+                        Finance - Can handle invoices and payment management
+                      </SelectItem>
+                      <SelectItem value="viewer">
+                        Viewer - Can view operations and basic information
                       </SelectItem>
                     </SelectContent>
                   </Select>
