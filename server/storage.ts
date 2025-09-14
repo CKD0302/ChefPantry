@@ -38,6 +38,18 @@ import {
   reviews,
   type Review,
   type InsertReview,
+  companies,
+  type Company,
+  type InsertCompany,
+  companyMembers,
+  type CompanyMember,
+  type InsertCompanyMember,
+  businessCompanyInvites,
+  type BusinessCompanyInvite,
+  type InsertBusinessCompanyInvite,
+  businessCompanyLinks,
+  type BusinessCompanyLink,
+  type InsertBusinessCompanyLink,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not, sql } from "drizzle-orm";
@@ -47,6 +59,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUserProfile(userId: string): Promise<{ email: string } | undefined>;
   
   // Chef methods
   getChef(id: number): Promise<Chef | undefined>;
@@ -141,7 +154,33 @@ export interface IStorage {
 
   
   // User accessible businesses - for multi-venue access control
-  getUserAccessibleBusinesses(userId: string): Promise<{ businessId: number; businessName: string }[]>;
+  getUserAccessibleBusinesses(userId: string): Promise<{ businessId: string; businessName: string }[]>;
+  isBusinessOwner(userId: string, businessId: string): Promise<boolean>;
+  
+  // Company methods
+  createCompany(company: InsertCompany): Promise<Company>;
+  getCompany(id: string): Promise<Company | undefined>;
+  getCompaniesByOwnerId(ownerId: string): Promise<Company[]>;
+  getCompaniesByUserId(userId: string): Promise<Company[]>;
+  getUserCompanies(userId: string): Promise<(Company & { members: CompanyMember[] })[]>;
+  
+  // Company Member methods
+  createCompanyMember(member: InsertCompanyMember): Promise<CompanyMember>;
+  getCompanyMembers(companyId: string): Promise<CompanyMember[]>;
+  removeCompanyMember(companyId: string, userId: string): Promise<boolean>;
+  
+  // Business Company Invite methods
+  createBusinessCompanyInvite(invite: InsertBusinessCompanyInvite): Promise<BusinessCompanyInvite>;
+  getBusinessCompanyInvite(id: string): Promise<BusinessCompanyInvite | undefined>;
+  getBusinessCompanyInviteByToken(token: string): Promise<BusinessCompanyInvite | undefined>;
+  getBusinessCompanyInvitesByBusiness(businessId: string): Promise<BusinessCompanyInvite[]>;
+  updateBusinessCompanyInviteStatus(id: string, status: string): Promise<BusinessCompanyInvite | undefined>;
+  
+  // Business Company Link methods
+  createBusinessCompanyLink(link: InsertBusinessCompanyLink): Promise<BusinessCompanyLink>;
+  getBusinessCompanyLinks(businessId: string): Promise<BusinessCompanyLink[]>;
+  getCompanyBusinessLinks(companyId: string): Promise<BusinessCompanyLink[]>;
+  removeBusinessCompanyLink(businessId: string, companyId: string): Promise<boolean>;
 }
 
 export class DBStorage implements IStorage {
@@ -159,6 +198,35 @@ export class DBStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
     return result[0];
+  }
+
+  async getUserProfile(userId: string): Promise<{ email: string } | undefined> {
+    try {
+      // Check chef profiles first
+      const chefProfile = await db.select({ email: chefProfiles.email })
+        .from(chefProfiles)
+        .where(eq(chefProfiles.userId, userId))
+        .limit(1);
+      
+      if (chefProfile.length > 0) {
+        return { email: chefProfile[0].email };
+      }
+
+      // Check business profiles
+      const businessProfile = await db.select({ email: businessProfiles.email })
+        .from(businessProfiles)
+        .where(eq(businessProfiles.userId, userId))
+        .limit(1);
+      
+      if (businessProfile.length > 0) {
+        return { email: businessProfile[0].email };
+      }
+
+      return undefined;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return undefined;
+    }
   }
   
   // Chef methods
@@ -1056,11 +1124,178 @@ export class DBStorage implements IStorage {
 
 
   // User accessible businesses - for multi-venue access control
-  async getUserAccessibleBusinesses(userId: string): Promise<{ businessId: number; businessName: string }[]> {
-    // Since the businesses table doesn't exist, return empty array for now
-    // This prevents the 500 error until business linking is fully implemented
-    // TODO: Implement proper business access control with UUID-based business_profiles
-    return [];
+  async getUserAccessibleBusinesses(userId: string): Promise<{ businessId: string; businessName: string }[]> {
+    try {
+      // Use direct userId instead of auth.uid() since we're in server context
+      // Join business_profiles directly since view might not work as expected
+      const result = await db.execute(sql`
+        SELECT bp.id as business_id, bp.name as business_name 
+        FROM business_profiles bp
+        WHERE bp.user_id = ${userId}
+        UNION
+        SELECT bp.id as business_id, bp.name as business_name
+        FROM business_profiles bp
+        INNER JOIN business_company_links bcl ON bp.id = bcl.business_id::uuid
+        INNER JOIN company_members cm ON bcl.company_id = cm.company_id
+        WHERE cm.user_id = ${userId}
+      `);
+      
+      // BUGFIX: Since business IDs are UUIDs, we can't safely convert to int
+      // Return business_id as-is. Note: This may require updating calling code 
+      // that expects number businessId to handle UUID strings instead
+      return (result as any[]).map((row: any) => ({
+        businessId: row.business_id, // Keep as string UUID (may require API updates)
+        businessName: row.business_name
+      }));
+    } catch (error) {
+      console.error('Error fetching user accessible businesses:', error);
+      // Return empty array on error to prevent crashes
+      return [];
+    }
+  }
+
+  // Business ownership validation method
+  async isBusinessOwner(userId: string, businessId: string): Promise<boolean> {
+    try {
+      const business = await db.select()
+        .from(businessProfiles)
+        .where(eq(businessProfiles.id, businessId))
+        .limit(1);
+      
+      return business.length > 0 && business[0].userId === userId;
+    } catch (error) {
+      console.error('Error checking business ownership:', error);
+      return false;
+    }
+  }
+  
+  // Company methods
+  async createCompany(company: InsertCompany): Promise<Company> {
+    const result = await db.insert(companies).values(company).returning();
+    return result[0];
+  }
+  
+  async getCompany(id: string): Promise<Company | undefined> {
+    const result = await db.select().from(companies).where(eq(companies.id, id));
+    return result[0];
+  }
+  
+  async getCompaniesByOwnerId(ownerId: string): Promise<Company[]> {
+    const result = await db.select().from(companies).where(eq(companies.ownerUserId, ownerId));
+    return result;
+  }
+  
+  async getCompaniesByUserId(userId: string): Promise<Company[]> {
+    const result = await db.select({
+      id: companies.id,
+      name: companies.name,
+      ownerUserId: companies.ownerUserId,
+      createdAt: companies.createdAt
+    })
+      .from(companies)
+      .innerJoin(companyMembers, eq(companyMembers.companyId, companies.id))
+      .where(eq(companyMembers.userId, userId));
+    return result;
+  }
+
+  async getUserCompanies(userId: string): Promise<(Company & { members: CompanyMember[] })[]> {
+    try {
+      // Get all companies where user is a member
+      const userCompanies = await this.getCompaniesByUserId(userId);
+
+      // Get all members for each company
+      const companiesWithMembers = await Promise.all(
+        userCompanies.map(async (company) => {
+          const members = await this.getCompanyMembers(company.id);
+          return { ...company, members };
+        })
+      );
+
+      return companiesWithMembers;
+    } catch (error) {
+      console.error('Error fetching user companies with members:', error);
+      return [];
+    }
+  }
+  
+  // Company Member methods
+  async createCompanyMember(member: InsertCompanyMember): Promise<CompanyMember> {
+    const result = await db.insert(companyMembers).values(member).returning();
+    return result[0];
+  }
+  
+  async getCompanyMembers(companyId: string): Promise<CompanyMember[]> {
+    const result = await db.select().from(companyMembers).where(eq(companyMembers.companyId, companyId));
+    return result;
+  }
+  
+  async removeCompanyMember(companyId: string, userId: string): Promise<boolean> {
+    const result = await db.delete(companyMembers)
+      .where(and(
+        eq(companyMembers.companyId, companyId),
+        eq(companyMembers.userId, userId)
+      ));
+    return result.length > 0;
+  }
+  
+  // Business Company Invite methods
+  async createBusinessCompanyInvite(invite: InsertBusinessCompanyInvite & { token: string }): Promise<BusinessCompanyInvite> {
+    const result = await db.insert(businessCompanyInvites).values(invite).returning();
+    return result[0];
+  }
+  
+  async getBusinessCompanyInvite(id: string): Promise<BusinessCompanyInvite | undefined> {
+    const result = await db.select().from(businessCompanyInvites).where(eq(businessCompanyInvites.id, id));
+    return result[0];
+  }
+  
+  async getBusinessCompanyInviteByToken(token: string): Promise<BusinessCompanyInvite | undefined> {
+    const result = await db.select().from(businessCompanyInvites).where(eq(businessCompanyInvites.token, token));
+    return result[0];
+  }
+  
+  async getBusinessCompanyInvitesByBusiness(businessId: string): Promise<BusinessCompanyInvite[]> {
+    const result = await db.select().from(businessCompanyInvites)
+      .where(eq(businessCompanyInvites.businessId, businessId))
+      .orderBy(desc(businessCompanyInvites.createdAt));
+    return result;
+  }
+  
+  async updateBusinessCompanyInviteStatus(id: string, status: string): Promise<BusinessCompanyInvite | undefined> {
+    const result = await db.update(businessCompanyInvites)
+      .set({ status })
+      .where(eq(businessCompanyInvites.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  // Business Company Link methods
+  async createBusinessCompanyLink(link: InsertBusinessCompanyLink): Promise<BusinessCompanyLink> {
+    const result = await db.insert(businessCompanyLinks).values(link).returning();
+    return result[0];
+  }
+  
+  async getBusinessCompanyLinks(businessId: string): Promise<BusinessCompanyLink[]> {
+    const result = await db.select().from(businessCompanyLinks)
+      .where(eq(businessCompanyLinks.businessId, businessId))
+      .orderBy(desc(businessCompanyLinks.createdAt));
+    return result;
+  }
+  
+  async getCompanyBusinessLinks(companyId: string): Promise<BusinessCompanyLink[]> {
+    const result = await db.select().from(businessCompanyLinks)
+      .where(eq(businessCompanyLinks.companyId, companyId))
+      .orderBy(desc(businessCompanyLinks.createdAt));
+    return result;
+  }
+  
+  async removeBusinessCompanyLink(businessId: string, companyId: string): Promise<boolean> {
+    const result = await db.delete(businessCompanyLinks)
+      .where(and(
+        eq(businessCompanyLinks.businessId, businessId),
+        eq(businessCompanyLinks.companyId, companyId)
+      ));
+    return result.length > 0;
   }
 }
 

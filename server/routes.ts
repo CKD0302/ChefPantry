@@ -1,6 +1,7 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import companyRoutes from "./routes/company";
 import { db } from "./db";
 import { z } from "zod";
 import { 
@@ -2127,6 +2128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mount company routes
+  apiRouter.use("/company", companyRoutes);
   
   app.use("/api", apiRouter);
 
