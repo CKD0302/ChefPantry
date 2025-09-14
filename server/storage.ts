@@ -1158,10 +1158,17 @@ export class DBStorage implements IStorage {
   // Business ownership validation method
   async isBusinessOwner(userId: string, businessId: string): Promise<boolean> {
     try {
+      console.log('DEBUG isBusinessOwner - userId:', userId, 'businessId:', businessId);
       const business = await db.select()
         .from(businessProfiles)
         .where(eq(businessProfiles.id, businessId))
         .limit(1);
+      
+      console.log('DEBUG isBusinessOwner - business found:', business.length > 0);
+      if (business.length > 0) {
+        console.log('DEBUG isBusinessOwner - business.userId:', business[0].userId);
+        console.log('DEBUG isBusinessOwner - match:', business[0].userId === userId);
+      }
       
       return business.length > 0 && business[0].userId === userId;
     } catch (error) {
