@@ -269,7 +269,7 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
         const { createNotification } = await import("../lib/notify");
         await createNotification({
           userId: inviteeUser.id,
-          type: 'company_invite_received',
+          type: 'platform_update',  // Using existing type that works
           title: `${businessProfile.businessName} invited your company`,
           body: `You've been invited to manage ${businessProfile.businessName} as ${data.role}. View and respond to this invitation in your notifications.`,
           entityType: 'company_invite',
