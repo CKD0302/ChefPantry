@@ -4,8 +4,12 @@ import {
   insertCompanySchema,
   insertCompanyMemberSchema,
   insertBusinessCompanyInviteSchema,
-  insertBusinessCompanyLinkSchema
+  insertBusinessCompanyLinkSchema,
+  businessCompanyInvites,
+  businessProfiles
 } from "@shared/schema";
+import { db } from "../db";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { sendEmail } from "../lib/email";
 import { authenticateUser, type AuthenticatedRequest } from "../lib/authMiddleware";
@@ -488,6 +492,49 @@ router.delete("/revoke-access", authenticateUser, async (req: AuthenticatedReque
     }
     console.error("Error revoking company access:", error);
     res.status(500).json({ message: "Failed to revoke company access" });
+  }
+});
+
+// Get pending invites for current user
+router.get("/invites/pending", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    
+    // Get user email from Supabase (not profile table since business_profiles doesn't have email)
+    const { getUserEmail } = await import('../lib/supabaseService');
+    const userEmail = await getUserEmail(userId);
+    if (!userEmail) {
+      return res.status(404).json({ message: "User email not found" });
+    }
+
+    // Find pending invites by email
+    const allInvites = await db.select({
+      id: businessCompanyInvites.id,
+      businessId: businessCompanyInvites.businessId,
+      inviteeEmail: businessCompanyInvites.inviteeEmail,
+      role: businessCompanyInvites.role,
+      token: businessCompanyInvites.token,
+      status: businessCompanyInvites.status,
+      createdAt: businessCompanyInvites.createdAt,
+      expiresAt: businessCompanyInvites.expiresAt,
+      businessName: businessProfiles.businessName,
+      businessLocation: businessProfiles.location
+    })
+      .from(businessCompanyInvites)
+      .innerJoin(businessProfiles, eq(businessCompanyInvites.businessId, businessProfiles.id))
+      .where(
+        and(
+          eq(businessCompanyInvites.inviteeEmail, userEmail),
+          eq(businessCompanyInvites.status, "pending"),
+          sql`${businessCompanyInvites.expiresAt} > NOW()`  // Not expired
+        )
+      )
+      .orderBy(desc(businessCompanyInvites.createdAt));
+
+    res.json({ data: allInvites });
+  } catch (error) {
+    console.error("Error fetching pending invites:", error);
+    res.status(500).json({ message: "Failed to fetch pending invites" });
   }
 });
 

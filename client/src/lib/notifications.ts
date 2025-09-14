@@ -43,21 +43,11 @@ export function subscribeToNotifications(userId: string, onNew: (row:any)=>void)
 }
 
 export async function fetchNotifications(limit=20, offset=0): Promise<NotificationRow[]> {
-  // Get the current session for authentication
-  const { data: { session } } = await supabase.auth.getSession();
+  // Import apiRequest dynamically to avoid circular dependency
+  const { apiRequest } = await import('@/lib/queryClient');
   
-  if (!session?.access_token) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await fetch(`/api/notifications?limit=${limit}&offset=${offset}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-  });
-
+  const response = await apiRequest('GET', `/api/notifications?limit=${limit}&offset=${offset}`);
+  
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to fetch notifications: ${response.status} ${errorText}`);
@@ -68,21 +58,11 @@ export async function fetchNotifications(limit=20, offset=0): Promise<Notificati
 }
 
 export async function markAsRead(id: string): Promise<NotificationRow> {
-  // Get the current session for authentication
-  const { data: { session } } = await supabase.auth.getSession();
+  // Import apiRequest dynamically to avoid circular dependency
+  const { apiRequest } = await import('@/lib/queryClient');
   
-  if (!session?.access_token) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await fetch(`/api/notifications/${id}/read`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-  });
-
+  const response = await apiRequest('PATCH', `/api/notifications/${id}/read`);
+  
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to mark notification as read: ${response.status} ${errorText}`);

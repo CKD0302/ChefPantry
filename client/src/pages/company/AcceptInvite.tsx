@@ -22,7 +22,7 @@ export default function AcceptInvite() {
   const token = searchParams.get("token");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
 
-  // Fetch invite details by token
+  // Fetch invite details by token (for specific token-based invites)
   const { data: inviteResponse, isLoading: loadingInvite } = useQuery({
     queryKey: ["business-company-invite", token],
     queryFn: async () => {
@@ -32,6 +32,17 @@ export default function AcceptInvite() {
       return response.json();
     },
     enabled: !!token,
+  });
+
+  // Fetch pending invites for current user (when no token provided)
+  const { data: pendingInvitesResponse, isLoading: loadingPendingInvites } = useQuery({
+    queryKey: ["pending-invites", user?.id],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/company/invites/pending");
+      if (!response.ok) throw new Error("Failed to fetch pending invites");
+      return response.json();
+    },
+    enabled: !!user?.id && !token, // Only fetch when no specific token
   });
 
   // Fetch user's companies for selection
@@ -44,7 +55,7 @@ export default function AcceptInvite() {
     enabled: !!user?.id,
   });
 
-  // Accept invite mutation
+  // Accept invite mutation (for specific token-based invites)
   const acceptInviteMutation = useMutation({
     mutationFn: async () => {
       if (!token) throw new Error("No invite token");
@@ -60,7 +71,34 @@ export default function AcceptInvite() {
         description: "You have successfully accepted the venue management invitation.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/company/mine"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-invites"] });
       navigate("/dashboard");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to accept invite. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Accept invite from pending list mutation
+  const acceptPendingInviteMutation = useMutation({
+    mutationFn: async ({ inviteToken, companyId }: { inviteToken: string; companyId?: string }) => {
+      const response = await apiRequest("POST", "/api/company/accept-invite", {
+        token: inviteToken,
+        companyId: companyId || undefined,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Invite Accepted",
+        description: "You have successfully accepted the venue management invitation.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/mine"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-invites"] });
     },
     onError: (error: any) => {
       toast({
@@ -93,23 +131,115 @@ export default function AcceptInvite() {
     );
   }
 
+  // Show pending invites list when no token provided
   if (!token) {
     return (
       <div className="min-h-screen bg-neutral-100 flex flex-col">
         <Navbar />
         <main className="flex-grow container mx-auto px-4 py-8 mt-16">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="text-center pt-6">
-              <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Invalid Invitation</h2>
-              <p className="text-neutral-600 mb-4">
-                No invitation token was provided in the URL.
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold mb-2">Pending Invitations</h1>
+              <p className="text-neutral-600">
+                These are venue management invitations that are waiting for your response.
               </p>
-              <Button onClick={() => navigate("/dashboard")}>
-                Go to Dashboard
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+
+            {loadingPendingInvites ? (
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+                <p className="text-neutral-600">Loading invitations...</p>
+              </div>
+            ) : pendingInvitesResponse?.data?.length > 0 ? (
+              <div className="space-y-4">
+                {pendingInvitesResponse.data.map((invite: any) => (
+                  <Card key={invite.id} data-testid={`pending-invite-${invite.id}`}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        {invite.businessName}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">Location:</span> {invite.businessLocation}
+                          </div>
+                          <div>
+                            <span className="font-medium">Role:</span>{" "}
+                            <Badge variant="secondary">{invite.role}</Badge>
+                          </div>
+                          <div>
+                            <span className="font-medium">Invited:</span>{" "}
+                            {new Date(invite.createdAt).toLocaleDateString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">Expires:</span>{" "}
+                            {new Date(invite.expiresAt).toLocaleDateString()}
+                          </div>
+                        </div>
+
+                        {/* Company selection if user has multiple companies */}
+                        {userCompanies?.data?.length > 1 && (
+                          <div className="pt-2">
+                            <label className="text-sm font-medium">
+                              Select company to manage this venue:
+                            </label>
+                            <Select onValueChange={(value) => setSelectedCompanyId(value)}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Choose your company" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userCompanies.data.map((company: any) => (
+                                  <SelectItem key={company.id} value={company.id}>
+                                    {company.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            onClick={() => acceptPendingInviteMutation.mutate({
+                              inviteToken: invite.token,
+                              companyId: userCompanies?.data?.length > 1 ? selectedCompanyId : undefined
+                            })}
+                            disabled={acceptPendingInviteMutation.isPending || (userCompanies?.data?.length > 1 && !selectedCompanyId)}
+                            data-testid={`accept-invite-${invite.id}`}
+                          >
+                            {acceptPendingInviteMutation.isPending ? "Accepting..." : "Accept Invitation"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => navigate("/dashboard")}
+                            data-testid="back-to-dashboard"
+                          >
+                            Back to Dashboard
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Mail className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Pending Invitations</h3>
+                  <p className="text-neutral-600 mb-4">
+                    You don't have any pending venue management invitations.
+                  </p>
+                  <Button onClick={() => navigate("/dashboard")} data-testid="back-to-dashboard">
+                    Back to Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </main>
         <Footer />
       </div>
