@@ -36,6 +36,7 @@ import Reviews from "@/pages/Reviews";
 
 // Company Management Pages
 import CreateCompany from "@/pages/company/CreateCompany";
+import MyCompanies from "@/pages/company/MyCompanies";
 import CompanyMembers from "@/pages/company/CompanyMembers";
 import CompanySettings from "@/pages/company/CompanySettings";
 import AcceptInvite from "@/pages/company/AcceptInvite";
@@ -75,6 +76,7 @@ function Router() {
       
       {/* Company Management Routes */}
       <Route path="/company/create" component={CreateCompany} />
+      <Route path="/company/mine" component={MyCompanies} />
       <Route path="/company/:id/members" component={CompanyMembers} />
       <Route path="/company/:id/settings" component={CompanySettings} />
       <Route path="/company/invites/accept" component={AcceptInvite} />

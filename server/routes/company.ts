@@ -33,7 +33,7 @@ router.post("/", authenticateUser, async (req: AuthenticatedRequest, res) => {
       role: "owner"
     });
 
-    res.json(company);
+    res.json({ data: company });
   } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: "Invalid input", errors: error.errors });
@@ -49,7 +49,7 @@ router.get("/mine", authenticateUser, async (req: AuthenticatedRequest, res) => 
     const userId = req.user!.id;
 
     const companies = await storage.getCompaniesByUserId(userId);
-    res.json(companies);
+    res.json({ data: companies });
   } catch (error) {
     console.error("Error fetching user companies:", error);
     res.status(500).json({ message: "Failed to fetch companies" });
@@ -75,7 +75,7 @@ router.get("/:id", authenticateUser, async (req: AuthenticatedRequest, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    res.json(company);
+    res.json({ data: company });
   } catch (error) {
     console.error("Error fetching company:", error);
     res.status(500).json({ message: "Failed to fetch company" });
@@ -205,7 +205,7 @@ router.get("/:id/venues", authenticateUser, async (req: AuthenticatedRequest, re
     }
 
     const links = await storage.getCompanyBusinessLinks(id);
-    res.json(links);
+    res.json({ data: links });
   } catch (error) {
     console.error("Error fetching company venues:", error);
     res.status(500).json({ message: "Failed to fetch company venues" });
@@ -265,7 +265,7 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
       // Don't fail the invitation creation if email fails
     }
 
-    res.json(invite);
+    res.json({ data: invite });
   } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: "Invalid input", errors: error.errors });
