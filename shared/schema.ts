@@ -416,6 +416,8 @@ export const insertBusinessCompanyInviteSchema = createInsertSchema(businessComp
   id: true,
   createdAt: true,
   token: true, // Generated server-side
+  createdBy: true, // Set server-side to authenticated user
+  expiresAt: true, // Set server-side to expiry date
 });
 
 export const insertBusinessCompanyLinkSchema = createInsertSchema(businessCompanyLinks).omit({
