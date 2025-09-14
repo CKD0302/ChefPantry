@@ -233,7 +233,9 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
 
     // Create invite
     const invite = await storage.createBusinessCompanyInvite({
-      ...data,
+      businessId: data.businessId,
+      inviteeEmail: data.inviteeEmail,
+      role: data.role,
       token,
       createdBy: userId,
       expiresAt
