@@ -34,6 +34,12 @@ import MyApplications from "@/pages/gigs/MyApplications";
 import GigApplications from "@/pages/gigs/applications/GigApplications";
 import Reviews from "@/pages/Reviews";
 
+// Company Management Pages
+import CreateCompany from "@/pages/company/CreateCompany";
+import CompanyMembers from "@/pages/company/CompanyMembers";
+import CompanySettings from "@/pages/company/CompanySettings";
+import AcceptInvite from "@/pages/company/AcceptInvite";
+
 // Wrapper components for route parameters
 
 function Router() {
@@ -66,6 +72,12 @@ function Router() {
       <Route path="/gigs/my-applications" component={MyApplications} />
       <Route path="/gigs/applications/:gigId" component={GigApplications} />
       <Route path="/reviews" component={Reviews} />
+      
+      {/* Company Management Routes */}
+      <Route path="/company/create" component={CreateCompany} />
+      <Route path="/company/:id/members" component={CompanyMembers} />
+      <Route path="/company/:id/settings" component={CompanySettings} />
+      <Route path="/company/invites/accept" component={AcceptInvite} />
       
       <Route component={NotFound} />
     </Switch>
