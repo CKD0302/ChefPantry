@@ -444,6 +444,57 @@ router.post("/accept-invite", authenticateUser, async (req: AuthenticatedRequest
   }
 });
 
+// Revoke a pending invite
+router.delete("/invites/:id/revoke", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    // Get the invite
+    const invite = await storage.getBusinessCompanyInvite(id);
+    if (!invite) {
+      return res.status(404).json({ message: "Invite not found" });
+    }
+
+    // Check if user owns the business that sent the invite
+    const isOwner = await storage.isBusinessOwner(userId, invite.businessId);
+    if (!isOwner) {
+      return res.status(403).json({ message: "Access denied: You can only revoke invites for businesses you own" });
+    }
+
+    // Check if invite is still pending
+    if (invite.status !== "pending") {
+      return res.status(400).json({ message: "Only pending invites can be revoked" });
+    }
+
+    // Update invite status to revoked
+    await storage.updateBusinessCompanyInviteStatus(id, "revoked");
+
+    // Send notification to the invitee about revocation
+    try {
+      const businessProfile = await storage.getBusinessProfile(invite.businessId);
+      
+      if (businessProfile) {
+        // Get user email from Supabase for notification
+        const { getUserEmail } = await import('../lib/supabaseService');
+        const inviteeEmail = invite.inviteeEmail;
+        
+        // Find the invitee's user ID by email (if they have an account)
+        // We'll send a notification if they have an account, otherwise it's just revoked silently
+        // Note: This could be enhanced to lookup user by email, but for now we'll just log it
+        console.log(`Invite revoked: ${businessProfile.businessName} revoked invite to ${inviteeEmail}`);
+      }
+    } catch (error) {
+      console.error("Failed to send revocation notification:", error);
+    }
+
+    res.json({ message: "Invite revoked successfully" });
+  } catch (error) {
+    console.error("Error revoking invite:", error);
+    res.status(500).json({ message: "Failed to revoke invite" });
+  }
+});
+
 // Revoke company access
 router.delete("/revoke-access", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
