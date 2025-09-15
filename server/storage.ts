@@ -52,7 +52,7 @@ import {
   type InsertBusinessCompanyLink,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, not, sql } from "drizzle-orm";
+import { eq, and, desc, not, sql, or } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -1441,10 +1441,17 @@ export class DBStorage implements IStorage {
       const { getUserEmail } = await import('./lib/supabaseService');
       
       for (const link of companyLinks) {
-        // Get all company members (no status filtering for now)
+        // Get company members with financial access roles only (owner, admin, finance)
         const members = await db.select()
           .from(companyMembers)
-          .where(eq(companyMembers.companyId, link.companyId));
+          .where(and(
+            eq(companyMembers.companyId, link.companyId),
+            or(
+              eq(companyMembers.role, 'owner'),
+              eq(companyMembers.role, 'admin'),
+              eq(companyMembers.role, 'finance')
+            )
+          ));
         
         // Get emails for all members in batch to reduce N+1 queries
         for (const member of members) {
@@ -1474,7 +1481,7 @@ export class DBStorage implements IStorage {
         index === self.findIndex(u => u.userId === user.userId)
       );
       
-      console.log(`Found ${uniqueUsers.length} unique active company users for business ${businessId}`);
+      console.log(`Found ${uniqueUsers.length} unique company users with financial access for business ${businessId}`);
       return uniqueUsers;
     } catch (error) {
       console.error('Error getting company users for business:', error);
