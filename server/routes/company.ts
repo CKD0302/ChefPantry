@@ -60,6 +60,19 @@ router.get("/mine", authenticateUser, async (req: AuthenticatedRequest, res) => 
   }
 });
 
+// Get accessible businesses for a company user (MUST be before /:id route)
+router.get("/accessible-businesses", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    
+    const businesses = await storage.getUserAccessibleBusinesses(userId);
+    res.json({ data: businesses });
+  } catch (error) {
+    console.error("Error fetching accessible businesses:", error);
+    res.status(500).json({ message: "Failed to fetch accessible businesses" });
+  }
+});
+
 // Get company details
 router.get("/:id", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
@@ -137,19 +150,6 @@ router.put("/:id", authenticateUser, async (req: AuthenticatedRequest, res) => {
     }
     console.error("Error updating company:", error);
     res.status(500).json({ message: "Failed to update company" });
-  }
-});
-
-// Get accessible businesses for a company user
-router.get("/accessible-businesses", authenticateUser, async (req: AuthenticatedRequest, res) => {
-  try {
-    const userId = req.user!.id;
-    
-    const businesses = await storage.getUserAccessibleBusinesses(userId);
-    res.json({ data: businesses });
-  } catch (error) {
-    console.error("Error fetching accessible businesses:", error);
-    res.status(500).json({ message: "Failed to fetch accessible businesses" });
   }
 });
 
