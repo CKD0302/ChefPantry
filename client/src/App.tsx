@@ -41,6 +41,9 @@ import CompanyMembers from "@/pages/company/CompanyMembers";
 import CompanySettings from "@/pages/company/CompanySettings";
 import AcceptInvite from "@/pages/company/AcceptInvite";
 
+// Business Management Pages
+import BusinessDashboard from "@/pages/business/BusinessDashboard";
+
 // Wrapper components for route parameters
 
 function Router() {
@@ -80,6 +83,9 @@ function Router() {
       <Route path="/company/:id/members" component={CompanyMembers} />
       <Route path="/company/:id/settings" component={CompanySettings} />
       <Route path="/company/invites/accept" component={AcceptInvite} />
+      
+      {/* Business Management Routes */}
+      <Route path="/business/:id/dashboard" component={BusinessDashboard} />
       
       <Route component={NotFound} />
     </Switch>
