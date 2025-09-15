@@ -1175,7 +1175,7 @@ export class DBStorage implements IStorage {
         UNION
         SELECT bp.id as business_id, bp.business_name as business_name
         FROM business_profiles bp
-        INNER JOIN business_company_links bcl ON bp.id = bcl.business_id
+        INNER JOIN business_company_links bcl ON bp.id::text = bcl.business_id
         INNER JOIN company_members cm ON bcl.company_id = cm.company_id
         WHERE cm.user_id = ${userId}
       `);

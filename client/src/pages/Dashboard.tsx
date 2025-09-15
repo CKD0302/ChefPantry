@@ -686,7 +686,7 @@ export default function Dashboard() {
                     <p className="text-green-600 font-medium mb-2">✓ Your business profile is complete!</p>
                     <p className="text-neutral-600">You can now post gigs and find chefs.</p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                     <Button 
                       className="bg-primary hover:bg-primary-dark text-white w-full"
                       onClick={() => navigate("/gigs/create")}
@@ -717,6 +717,19 @@ export default function Dashboard() {
                         >
                           <Building2 className="h-4 w-4 text-orange-600" />
                           Invite Company
+                        </Button>
+                      }
+                    />
+                    <ManageOutboundInvites
+                      businessId={user.id}
+                      trigger={
+                        <Button
+                          variant="outline"
+                          className="flex items-center justify-center gap-2 w-full"
+                          data-testid={`manage-invites-${user.id}`}
+                        >
+                          <Mail className="h-4 w-4 text-purple-600" />
+                          Manage Invites
                         </Button>
                       }
                     />
