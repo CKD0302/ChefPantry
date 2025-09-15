@@ -1169,13 +1169,13 @@ export class DBStorage implements IStorage {
       // Use direct userId instead of auth.uid() since we're in server context
       // Join business_profiles directly since view might not work as expected
       const result = await db.execute(sql`
-        SELECT bp.id as business_id, bp.name as business_name 
+        SELECT bp.id as business_id, bp.business_name as business_name 
         FROM business_profiles bp
-        WHERE bp.user_id = ${userId}
+        WHERE bp.id = ${userId}
         UNION
-        SELECT bp.id as business_id, bp.name as business_name
+        SELECT bp.id as business_id, bp.business_name as business_name
         FROM business_profiles bp
-        INNER JOIN business_company_links bcl ON bp.id = bcl.business_id::uuid
+        INNER JOIN business_company_links bcl ON bp.id = bcl.business_id
         INNER JOIN company_members cm ON bcl.company_id = cm.company_id
         WHERE cm.user_id = ${userId}
       `);
@@ -1202,7 +1202,8 @@ export class DBStorage implements IStorage {
         .where(eq(businessProfiles.id, businessId))
         .limit(1);
       
-      // The businessId IS the userId in the businessProfiles table
+      // Check if the business belongs to this user (business profile uses id as primary key but we need to check ownership)
+      // For Supabase integration, the business profile id IS the user id
       return business.length > 0 && business[0].id === userId;
     } catch (error) {
       console.error('Error checking business ownership:', error);

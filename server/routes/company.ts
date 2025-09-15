@@ -578,7 +578,7 @@ router.get("/invites/pending", authenticateUser, async (req: AuthenticatedReques
       businessLocation: businessProfiles.location
     })
       .from(businessCompanyInvites)
-      .innerJoin(businessProfiles, sql`${businessCompanyInvites.businessId}::uuid = ${businessProfiles.id}`)
+      .innerJoin(businessProfiles, sql`${businessCompanyInvites.businessId} = ${businessProfiles.id}`)
       .where(
         and(
           sql`LOWER(TRIM(${businessCompanyInvites.inviteeEmail})) = ${normalizedUserEmail}`,
