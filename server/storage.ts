@@ -158,6 +158,7 @@ export interface IStorage {
   // User accessible businesses - for multi-venue access control
   getUserAccessibleBusinesses(userId: string): Promise<{ businessId: string; businessName: string }[]>;
   isBusinessOwner(userId: string, businessId: string): Promise<boolean>;
+  getCompanyUsersForBusiness(businessId: string): Promise<{ userId: string; userEmail: string }[]>;
   
   // Company methods
   createCompany(company: InsertCompany): Promise<Company>;
@@ -1424,6 +1425,52 @@ export class DBStorage implements IStorage {
         eq(businessCompanyLinks.companyId, companyId)
       ));
     return result.length > 0;
+  }
+
+  async getCompanyUsersForBusiness(businessId: string): Promise<{ userId: string; userEmail: string }[]> {
+    try {
+      // Get all companies that manage this business
+      const companyLinks = await this.getBusinessCompanyLinks(businessId);
+      
+      if (companyLinks.length === 0) {
+        return [];
+      }
+      
+      // Get all company members for each company
+      const allUsers: { userId: string; userEmail: string }[] = [];
+      
+      for (const link of companyLinks) {
+        const members = await this.getCompanyMembers(link.companyId);
+        
+        // Get email for each member using Supabase auth
+        for (const member of members) {
+          try {
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const email = await getUserEmail(member.userId);
+            
+            if (email) {
+              allUsers.push({
+                userId: member.userId,
+                userEmail: email
+              });
+            }
+          } catch (emailError) {
+            console.error(`Failed to get email for user ${member.userId}:`, emailError);
+            // Continue with other users if one fails
+          }
+        }
+      }
+      
+      // Remove duplicates (in case a user is in multiple companies managing the same business)
+      const uniqueUsers = allUsers.filter((user, index, self) => 
+        index === self.findIndex(u => u.userId === user.userId)
+      );
+      
+      return uniqueUsers;
+    } catch (error) {
+      console.error('Error getting company users for business:', error);
+      return [];
+    }
   }
 }
 
