@@ -589,4 +589,38 @@ router.get("/invites/pending", authenticateUser, async (req: AuthenticatedReques
   }
 });
 
+// Get outbound invites for a business (invites sent by business owner)
+router.get("/invites/outbound/:businessId", authenticateUser, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { businessId } = req.params;
+    const userId = req.user!.id;
+    
+    // Check if user owns the business
+    const isOwner = await storage.isBusinessOwner(userId, businessId);
+    if (!isOwner) {
+      return res.status(403).json({ message: "Access denied: You can only view invites for businesses you own" });
+    }
+
+    // Get all invites for this business
+    const invites = await storage.getBusinessCompanyInvitesByBusiness(businessId);
+    
+    // Add business profile name for context
+    const businessProfile = await storage.getBusinessProfile(businessId);
+    
+    res.json({ 
+      data: {
+        business: businessProfile ? {
+          id: businessProfile.id,
+          name: businessProfile.businessName,
+          location: businessProfile.location
+        } : null,
+        invites
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching outbound invites:", error);
+    res.status(500).json({ message: "Failed to fetch outbound invites" });
+  }
+});
+
 export default router;
