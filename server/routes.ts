@@ -1772,6 +1772,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get invoices for a user (includes invoices for all businesses they manage)
+  apiRouter.get("/invoices/user", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      const invoices = await storage.getGigInvoicesForUser(userId);
+      
+      res.status(200).json(invoices);
+    } catch (error) {
+      console.error("Error fetching user invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
   // Mark invoice as paid
   apiRouter.put("/invoices/:invoiceId/mark-paid", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {

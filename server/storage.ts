@@ -140,6 +140,7 @@ export interface IStorage {
   getGigInvoiceByGigAndChef(gigId: string, chefId: string): Promise<GigInvoice | undefined>;
   getGigInvoicesByChef(chefId: string): Promise<GigInvoice[]>;
   getGigInvoicesByBusiness(businessId: string): Promise<GigInvoice[]>;
+  getGigInvoicesForUser(userId: string): Promise<GigInvoice[]>;
   updateInvoiceStatus(invoiceId: string, status: string): Promise<GigInvoice | undefined>;
   
   // Review methods
@@ -945,6 +946,73 @@ export class DBStorage implements IStorage {
       } : null,
       chef: {
         fullName: invoice.chefFullName,
+      }
+    }));
+  }
+
+  async getGigInvoicesForUser(userId: string): Promise<any[]> {
+    // Get all businesses accessible to this user
+    const accessibleBusinesses = await this.getUserAccessibleBusinesses(userId);
+    
+    if (accessibleBusinesses.length === 0) {
+      return [];
+    }
+    
+    const businessIds = accessibleBusinesses.map(business => business.businessId);
+    
+    // Get invoices for all accessible businesses
+    const result = await db.select({
+      id: gigInvoices.id,
+      gigId: gigInvoices.gigId,
+      chefId: gigInvoices.chefId,
+      businessId: gigInvoices.businessId,
+      hoursWorked: gigInvoices.hoursWorked,
+      ratePerHour: gigInvoices.ratePerHour,
+      totalAmount: gigInvoices.totalAmount,
+      notes: gigInvoices.notes,
+      status: gigInvoices.status,
+      submittedAt: gigInvoices.createdAt,
+      isManual: gigInvoices.isManual,
+      serviceTitle: gigInvoices.serviceTitle,
+      serviceDescription: gigInvoices.serviceDescription,
+      paymentType: gigInvoices.paymentType,
+      // Legacy bank fields
+      bankName: gigInvoices.bankName,
+      accountName: gigInvoices.accountName,
+      accountNumber: gigInvoices.accountNumber,
+      sortCode: gigInvoices.sortCode,
+      // Payment method field
+      paymentMethod: gigInvoices.paymentMethod,
+      // Flat fields from joined tables
+      gigTitle: gigs.title,
+      gigLocation: gigs.location,
+      gigStartDate: gigs.startDate,
+      gigEndDate: gigs.endDate,
+      chefFullName: chefProfiles.fullName,
+      // Business name for company users managing multiple venues
+      businessName: businessProfiles.businessName,
+    })
+    .from(gigInvoices)
+    .leftJoin(gigs, eq(gigInvoices.gigId, gigs.id))
+    .leftJoin(chefProfiles, eq(gigInvoices.chefId, chefProfiles.id))
+    .leftJoin(businessProfiles, eq(gigInvoices.businessId, businessProfiles.id))
+    .where(sql`${gigInvoices.businessId} IN (${sql.join(businessIds.map(id => sql`${id}`), sql`, `)})`)
+    .orderBy(desc(gigInvoices.createdAt));
+    
+    // Transform the result to include nested objects
+    return result.map(invoice => ({
+      ...invoice,
+      gig: invoice.gigId ? {
+        title: invoice.gigTitle,
+        location: invoice.gigLocation,
+        startDate: invoice.gigStartDate,
+        endDate: invoice.gigEndDate,
+      } : null,
+      chef: {
+        fullName: invoice.chefFullName,
+      },
+      business: {
+        name: invoice.businessName,
       }
     }));
   }

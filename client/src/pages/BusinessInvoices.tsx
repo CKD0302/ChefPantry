@@ -59,6 +59,9 @@ interface InvoiceData {
   chef: {
     fullName: string;
   };
+  business?: {
+    name: string;
+  };
 }
 
 export default function BusinessInvoices() {
@@ -68,11 +71,11 @@ export default function BusinessInvoices() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
 
-  // Query invoices for this business
+  // Query invoices for this user (includes all managed businesses)
   const { data: invoices, isLoading } = useQuery<InvoiceData[]>({
-    queryKey: ["/api/invoices/business", user?.id],
+    queryKey: ["/api/invoices/user", user?.id],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/invoices/business/${user?.id}`);
+      const response = await apiRequest("GET", `/api/invoices/user`);
       return response.json();
     },
     enabled: !!user?.id,
@@ -467,6 +470,9 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
             {invoice.gig ? invoice.gig.title : (invoice.serviceTitle || 'Manual Invoice')}
           </h3>
           <p className="text-sm text-gray-600">Chef: {invoice.chef.fullName}</p>
+          {invoice.business?.name && (
+            <p className="text-sm text-blue-600 font-medium">Venue: {invoice.business.name}</p>
+          )}
           {invoice.isManual && (
             <div className="flex items-center gap-1 mt-1">
               <Receipt className="h-3 w-3 text-blue-500" />
