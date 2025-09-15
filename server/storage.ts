@@ -214,18 +214,27 @@ export class DBStorage implements IStorage {
         return { email: chefProfile[0].email };
       }
 
-      // For business profiles, we need to get email from Supabase auth
+      // For business/company users, get email from Supabase auth
       // since business profiles don't have email field in our schema
-      // For now, return undefined for business profiles
       const businessProfile = await db.select()
         .from(businessProfiles)
         .where(eq(businessProfiles.id, userId))
         .limit(1);
       
       if (businessProfile.length > 0) {
-        // Business profiles don't have email in our schema
-        // This would need to be fetched from Supabase auth
-        return undefined;
+        // Fetch email from Supabase auth for business users
+        const { getUserEmail } = await import('./lib/supabaseService');
+        const email = await getUserEmail(userId);
+        if (email) {
+          return { email };
+        }
+      }
+
+      // For company users (no chef or business profile), still get email from Supabase auth
+      const { getUserEmail } = await import('./lib/supabaseService');
+      const email = await getUserEmail(userId);
+      if (email) {
+        return { email };
       }
 
       return undefined;
