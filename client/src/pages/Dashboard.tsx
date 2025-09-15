@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, FileText } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, FileText, Mail } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -14,6 +14,7 @@ import ProfessionalDocuments from "@/components/ProfessionalDocuments";
 import { ChefDisclaimerModal } from "@/components/ChefDisclaimerModal";
 import BusinessDisclaimerModal from "@/components/BusinessDisclaimerModal";
 import InviteCompanyModal from "@/components/InviteCompanyModal";
+import ManageOutboundInvites from "@/components/ManageOutboundInvites";
 import { apiRequest } from "@/lib/queryClient";
 
 // Company Dashboard Section Component - Full Console Functionality
@@ -187,15 +188,30 @@ function CompanyConsoleDashboard({ companyId, user, navigate, signOut }: { compa
                       <h4 className="font-medium">{business.businessName}</h4>
                       <p className="text-sm text-neutral-600">Business ID: {business.businessId}</p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/business/${business.businessId}/dashboard`)}
-                      data-testid={`open-venue-${business.businessId}`}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      Open Venue
-                    </Button>
+                    <div className="flex gap-2">
+                      <ManageOutboundInvites
+                        businessId={business.businessId}
+                        trigger={
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-testid={`manage-invites-${business.businessId}`}
+                          >
+                            <Mail className="h-4 w-4 mr-1" />
+                            Invites
+                          </Button>
+                        }
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/business/${business.businessId}/dashboard`)}
+                        data-testid={`open-venue-${business.businessId}`}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Open Venue
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
