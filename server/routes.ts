@@ -1636,6 +1636,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
       });
 
+      // Also create notifications for company users who manage this business
+      try {
+        const companyUsers = await storage.getCompanyUsersForBusiness(validatedData.businessId);
+        
+        for (const companyUser of companyUsers) {
+          await createNotification({
+            userId: companyUser.userId,
+            type: 'invoice_submitted',
+            title: 'New invoice received',
+            body: `${chefName} submitted an invoice for £${Number(amount).toFixed(2)} to ${businessName}.`,
+            entityType: 'invoice',
+            entityId: invoice.id,
+            meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
+          });
+        }
+        
+        console.log(`Created notifications for ${companyUsers.length} company users`);
+      } catch (notificationError) {
+        console.error('Failed to create company user notifications:', notificationError);
+        // Don't fail the invoice creation if notifications fail
+      }
+
       // Send email notification to business (non-blocking)
       setTimeout(async () => {
         try {
@@ -1673,6 +1695,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`✅ Invoice notification email sent successfully to: ${businessEmail}`);
         } catch (emailError) {
           console.error('Failed to send invoice submitted email:', emailError);
+          // Don't fail the request if email fails
+        }
+      }, 0); // Run asynchronously without blocking the response
+
+      // Send email notifications to company users (non-blocking)
+      setTimeout(async () => {
+        try {
+          const companyUsers = await storage.getCompanyUsersForBusiness(validatedData.businessId);
+          
+          if (companyUsers.length === 0) {
+            console.log('No company users found for this business');
+            return;
+          }
+          
+          console.log(`Sending invoice notification emails to ${companyUsers.length} company users`);
+          const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
+          
+          // Send email to each company user
+          for (const companyUser of companyUsers) {
+            try {
+              await sendEmailWithPreferences(
+                companyUser.userId,
+                'invoice_submitted',
+                companyUser.userEmail,
+                "New Invoice Received",
+                tplInvoiceSubmitted({
+                  businessName,
+                  chefName,
+                  invoiceId: invoice.id,
+                  amountGBP: Number(amount),
+                  url: invoiceUrl
+                })
+              );
+              
+              console.log(`✅ Company user invoice notification sent to: ${companyUser.userEmail}`);
+            } catch (emailError) {
+              console.error(`Failed to send email to company user ${companyUser.userEmail}:`, emailError);
+              // Continue with other users if one fails
+            }
+          }
+        } catch (companyEmailError) {
+          console.error('Failed to send company user emails:', companyEmailError);
           // Don't fail the request if email fails
         }
       }, 0); // Run asynchronously without blocking the response
