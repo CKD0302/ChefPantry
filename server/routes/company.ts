@@ -219,7 +219,12 @@ router.get("/:id/venues", authenticateUser, async (req: AuthenticatedRequest, re
 // Send invitation from business to company
 router.post("/invite-business", authenticateUser, async (req: AuthenticatedRequest, res) => {
   try {
-    const data = insertBusinessCompanyInviteSchema.parse(req.body);
+    const rawData = insertBusinessCompanyInviteSchema.parse(req.body);
+    // Normalize email to lowercase to prevent case-sensitive duplicates
+    const data = {
+      ...rawData,
+      inviteeEmail: rawData.inviteeEmail.toLowerCase().trim()
+    };
     const userId = req.user!.id;
 
     // Check if user owns the business
@@ -228,10 +233,10 @@ router.post("/invite-business", authenticateUser, async (req: AuthenticatedReque
       return res.status(403).json({ message: "Access denied: You must own this business" });
     }
 
-    // Check for existing pending invite
+    // Check for existing pending invite (compare normalized emails)
     const existingInvites = await storage.getBusinessCompanyInvitesByBusiness(data.businessId);
     const existingInvite = existingInvites.find(invite => 
-      invite.inviteeEmail === data.inviteeEmail && invite.status === 'pending'
+      invite.inviteeEmail.toLowerCase().trim() === data.inviteeEmail && invite.status === 'pending'
     );
     
     if (existingInvite) {
@@ -353,8 +358,8 @@ router.post("/accept-invite", authenticateUser, async (req: AuthenticatedRequest
       return res.status(403).json({ message: "User profile not found" });
     }
 
-    // Check if the invite email matches user's email
-    if (userProfile.email !== invite.inviteeEmail) {
+    // Check if the invite email matches user's email (normalize both for comparison)
+    if (userProfile.email.toLowerCase().trim() !== invite.inviteeEmail.toLowerCase().trim()) {
       return res.status(403).json({ 
         message: "This invitation was not intended for your account. Invitation email must match your account email." 
       });
@@ -558,7 +563,8 @@ router.get("/invites/pending", authenticateUser, async (req: AuthenticatedReques
       return res.status(404).json({ message: "User email not found" });
     }
 
-    // Find pending invites by email
+    // Find pending invites by email (normalize for comparison)
+    const normalizedUserEmail = userEmail.toLowerCase().trim();
     const allInvites = await db.select({
       id: businessCompanyInvites.id,
       businessId: businessCompanyInvites.businessId,
@@ -575,7 +581,7 @@ router.get("/invites/pending", authenticateUser, async (req: AuthenticatedReques
       .innerJoin(businessProfiles, sql`${businessCompanyInvites.businessId}::uuid = ${businessProfiles.id}`)
       .where(
         and(
-          eq(businessCompanyInvites.inviteeEmail, userEmail),
+          sql`LOWER(TRIM(${businessCompanyInvites.inviteeEmail})) = ${normalizedUserEmail}`,
           eq(businessCompanyInvites.status, "pending"),
           sql`${businessCompanyInvites.expiresAt} > NOW()`  // Not expired
         )
