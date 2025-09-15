@@ -150,7 +150,7 @@ export default function BusinessInvoices() {
       await apiRequest("PUT", `/api/invoices/${invoice.id}/mark-paid`);
       
       // Force a complete refresh of the invoices data
-      await queryClient.invalidateQueries({ queryKey: ["/api/invoices/business", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/invoices/user", user?.id] });
       
       toast({
         title: "Invoice Updated",
