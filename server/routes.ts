@@ -1625,100 +1625,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chefName = chefProfile.fullName;
       const amount = validatedData.totalAmount;
       
-      // Create notification for the business
-      await createNotification({
-        userId: validatedData.businessId,
-        type: 'invoice_submitted',
-        title: 'New invoice received',
-        body: `${chefName} submitted an invoice for £${Number(amount).toFixed(2)}.`,
-        entityType: 'invoice',
-        entityId: invoice.id,
-        meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
-      });
-
-      // Also create notifications for company users who manage this business
+      // Create unified recipient list for notifications (business + company users, excluding chef)
+      const allRecipients = new Map<string, { userId: string; userEmail?: string; isBusinessOwner: boolean }>();
+      
       try {
-        const companyUsers = await storage.getCompanyUsersForBusiness(validatedData.businessId);
+        // Add business owner as recipient
+        const { getUserEmail } = await import('./lib/supabaseService');
+        const businessEmail = await getUserEmail(validatedData.businessId);
+        
+        // Only add business owner if they're not the chef submitting the invoice
+        if (validatedData.businessId !== validatedData.chefId) {
+          allRecipients.set(validatedData.businessId, {
+            userId: validatedData.businessId,
+            userEmail: businessEmail || undefined,
+            isBusinessOwner: true
+          });
+        }
+        
+        // Add company users (excluding the chef who submitted)
+        const companyUsers = await storage.getCompanyUsersForBusiness(
+          validatedData.businessId, 
+          validatedData.chefId // Exclude the chef who submitted the invoice
+        );
         
         for (const companyUser of companyUsers) {
-          await createNotification({
+          // This will overwrite business owner if they're also a company member (avoiding duplicates)
+          allRecipients.set(companyUser.userId, {
             userId: companyUser.userId,
+            userEmail: companyUser.userEmail,
+            isBusinessOwner: allRecipients.has(companyUser.userId)
+          });
+        }
+        
+        console.log(`Invoice ${invoice.id}: Sending notifications to ${allRecipients.size} unique recipients`);
+        
+        // Create notifications for all recipients
+        for (const recipient of Array.from(allRecipients.values())) {
+          const notificationBody = recipient.isBusinessOwner 
+            ? `${chefName} submitted an invoice for £${Number(amount).toFixed(2)}.`
+            : `${chefName} submitted an invoice for £${Number(amount).toFixed(2)} to ${businessName}.`;
+            
+          await createNotification({
+            userId: recipient.userId,
             type: 'invoice_submitted',
             title: 'New invoice received',
-            body: `${chefName} submitted an invoice for £${Number(amount).toFixed(2)} to ${businessName}.`,
+            body: notificationBody,
             entityType: 'invoice',
             entityId: invoice.id,
             meta: { amount: Number(amount), chefName, businessName, invoiceId: invoice.id }
           });
         }
         
-        console.log(`Created notifications for ${companyUsers.length} company users`);
       } catch (notificationError) {
-        console.error('Failed to create company user notifications:', notificationError);
+        console.error('Failed to create invoice notifications:', notificationError);
         // Don't fail the invoice creation if notifications fail
       }
 
-      // Send email notification to business (non-blocking)
+      // Send email notifications to all recipients (non-blocking)
       setTimeout(async () => {
         try {
-          // Get the actual business user's email from Supabase
-          if (!businessProfile) {
-            console.error('Business profile not found - skipping email notification');
-            return;
+          // Recreate recipient list for email sending (allRecipients from above is out of scope)
+          const emailRecipients = new Map<string, { userId: string; userEmail?: string; isBusinessOwner: boolean }>();
+          
+          // Add business owner if they have an email and they're not the chef
+          if (validatedData.businessId !== validatedData.chefId) {
+            const { getUserEmail } = await import('./lib/supabaseService');
+            const businessEmail = await getUserEmail(validatedData.businessId);
+            
+            if (businessEmail) {
+              emailRecipients.set(validatedData.businessId, {
+                userId: validatedData.businessId,
+                userEmail: businessEmail,
+                isBusinessOwner: true
+              });
+            }
           }
           
-          const { getUserEmail } = await import('./lib/supabaseService');
-          const businessEmail = await getUserEmail(businessProfile.id);
-          
-          if (!businessEmail) {
-            console.error('Could not get business email - skipping email notification');
-            return;
-          }
-          
-          console.log(`Sending invoice notification email to: ${businessEmail}`);
-          const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
-          
-          await sendEmailWithPreferences(
+          // Add company users (excluding the chef)
+          const companyUsers = await storage.getCompanyUsersForBusiness(
             validatedData.businessId,
-            'invoice_submitted',
-            businessEmail,
-            "New Invoice Received",
-            tplInvoiceSubmitted({
-              businessName,
-              chefName,
-              invoiceId: invoice.id,
-              amountGBP: Number(amount),
-              url: invoiceUrl
-            })
+            validatedData.chefId
           );
           
-          console.log(`✅ Invoice notification email sent successfully to: ${businessEmail}`);
-        } catch (emailError) {
-          console.error('Failed to send invoice submitted email:', emailError);
-          // Don't fail the request if email fails
-        }
-      }, 0); // Run asynchronously without blocking the response
-
-      // Send email notifications to company users (non-blocking)
-      setTimeout(async () => {
-        try {
-          const companyUsers = await storage.getCompanyUsersForBusiness(validatedData.businessId);
+          for (const companyUser of companyUsers) {
+            if (companyUser.userEmail) {
+              emailRecipients.set(companyUser.userId, {
+                userId: companyUser.userId,
+                userEmail: companyUser.userEmail,
+                isBusinessOwner: emailRecipients.has(companyUser.userId)
+              });
+            }
+          }
           
-          if (companyUsers.length === 0) {
-            console.log('No company users found for this business');
+          if (emailRecipients.size === 0) {
+            console.log(`Invoice ${invoice.id}: No email recipients found`);
             return;
           }
           
-          console.log(`Sending invoice notification emails to ${companyUsers.length} company users`);
+          console.log(`Invoice ${invoice.id}: Sending emails to ${emailRecipients.size} unique recipients`);
           const invoiceUrl = `${process.env.VITE_SITE_URL || 'https://thechefpantry.co'}/business/invoices`;
           
-          // Send email to each company user
-          for (const companyUser of companyUsers) {
+          // Send email to each recipient
+          for (const recipient of Array.from(emailRecipients.values())) {
+            if (!recipient.userEmail) continue;
+            
             try {
               await sendEmailWithPreferences(
-                companyUser.userId,
+                recipient.userId,
                 'invoice_submitted',
-                companyUser.userEmail,
+                recipient.userEmail,
                 "New Invoice Received",
                 tplInvoiceSubmitted({
                   businessName,
@@ -1729,14 +1744,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 })
               );
               
-              console.log(`✅ Company user invoice notification sent to: ${companyUser.userEmail}`);
+              console.log(`✅ Invoice notification email sent to: ${recipient.userEmail} (${recipient.isBusinessOwner ? 'business owner' : 'company user'})`);
             } catch (emailError) {
-              console.error(`Failed to send email to company user ${companyUser.userEmail}:`, emailError);
-              // Continue with other users if one fails
+              console.error(`Failed to send email to ${recipient.userEmail}:`, emailError);
+              // Continue with other recipients if one fails
             }
           }
-        } catch (companyEmailError) {
-          console.error('Failed to send company user emails:', companyEmailError);
+        } catch (emailError) {
+          console.error('Failed to send invoice notification emails:', emailError);
           // Don't fail the request if email fails
         }
       }, 0); // Run asynchronously without blocking the response

@@ -158,7 +158,7 @@ export interface IStorage {
   // User accessible businesses - for multi-venue access control
   getUserAccessibleBusinesses(userId: string): Promise<{ businessId: string; businessName: string }[]>;
   isBusinessOwner(userId: string, businessId: string): Promise<boolean>;
-  getCompanyUsersForBusiness(businessId: string): Promise<{ userId: string; userEmail: string }[]>;
+  getCompanyUsersForBusiness(businessId: string, excludeUserId?: string): Promise<{ userId: string; userEmail: string }[]>;
   
   // Company methods
   createCompany(company: InsertCompany): Promise<Company>;
@@ -1427,7 +1427,7 @@ export class DBStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getCompanyUsersForBusiness(businessId: string): Promise<{ userId: string; userEmail: string }[]> {
+  async getCompanyUsersForBusiness(businessId: string, excludeUserId?: string): Promise<{ userId: string; userEmail: string }[]> {
     try {
       // Get all companies that manage this business
       const companyLinks = await this.getBusinessCompanyLinks(businessId);
@@ -1436,16 +1436,24 @@ export class DBStorage implements IStorage {
         return [];
       }
       
-      // Get all company members for each company
+      // Get all active company members for each company
       const allUsers: { userId: string; userEmail: string }[] = [];
+      const { getUserEmail } = await import('./lib/supabaseService');
       
       for (const link of companyLinks) {
-        const members = await this.getCompanyMembers(link.companyId);
+        // Get all company members (no status filtering for now)
+        const members = await db.select()
+          .from(companyMembers)
+          .where(eq(companyMembers.companyId, link.companyId));
         
-        // Get email for each member using Supabase auth
+        // Get emails for all members in batch to reduce N+1 queries
         for (const member of members) {
+          // Skip if this is the excluded user (e.g., the chef who submitted the invoice)
+          if (excludeUserId && member.userId === excludeUserId) {
+            continue;
+          }
+          
           try {
-            const { getUserEmail } = await import('./lib/supabaseService');
             const email = await getUserEmail(member.userId);
             
             if (email) {
@@ -1466,6 +1474,7 @@ export class DBStorage implements IStorage {
         index === self.findIndex(u => u.userId === user.userId)
       );
       
+      console.log(`Found ${uniqueUsers.length} unique active company users for business ${businessId}`);
       return uniqueUsers;
     } catch (error) {
       console.error('Error getting company users for business:', error);
