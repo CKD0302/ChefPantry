@@ -1,0 +1,94 @@
+Goal: add a minimal Capacitor wrapper so Chef Pantry can ship to iOS/Android.
+Web app is live at https://thechefpantry.co (React/Vite + Supabase). We will load the REMOTE site.
+
+Create a new git branch: mobile/capacitor-shell
+Do NOT modify server APIs, DB, or deployment. Keep changes minimal and scoped.
+
+TASKS
+
+1) Dependencies
+- Install:
+  npm i @capacitor/core
+  npm i -D @capacitor/cli
+- Add NPM scripts to package.json (root):
+  "cap:add": "npx cap add",
+  "cap:sync": "npx cap sync",
+  "cap:open:android": "npx cap open android",
+  "cap:open:ios": "npx cap open ios"
+
+2) Config
+- Create `capacitor.config.ts` in repo root EXACTLY:
+
+  import { CapacitorConfig } from '@capacitor/cli';
+  const config: CapacitorConfig = {
+    appId: 'co.thechefpantry.app',
+    appName: 'Chef Pantry',
+    webDir: 'dist',
+    server: { url: 'https://thechefpantry.co', cleartext: false },
+    ios: { contentInset: 'always' },
+    android: { allowMixedContent: false }
+  };
+  export default config;
+
+3) Platforms
+- Run:
+  npx cap add android
+  npx cap add ios
+- Commit the generated `android/` and `ios/` folders.
+
+4) Deep links (so emails/links open the app)
+- ANDROID: in `android/app/src/main/AndroidManifest.xml` add inside the main activity:
+
+  <intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="https" android:host="thechefpantry.co" />
+  </intent-filter>
+
+- IOS: add a placeholder Associated Domains file:
+  create `client/public/.well-known/apple-app-site-association` with:
+  {
+    "applinks": { "apps": [], "details": [ { "appID": "TEAMID.co.thechefpantry.app", "paths": [ "*" ] } ] }
+  }
+  (Leave TEAMID as TODO comment. We’ll set it in Xcode later.)
+  Do NOT attempt to sign or archive in CI.
+
+5) Minimal native hook
+- Install @capacitor/app:
+  npm i @capacitor/app
+- In `client/src/main.tsx` (or the app root), add:
+
+  import { App } from '@capacitor/app';
+  App.addListener('appUrlOpen', () => {
+    // No-op for now; the web app handles routing once loaded.
+  });
+
+6) Branding placeholders
+- Create `/mobile/assets/app-icon.png` (empty placeholder comment) and `/mobile/assets/splash.png` (empty placeholder comment).
+- Add `README-mobile.md` at repo root with:
+  - How to open in Android Studio (`npm run cap:open:android`) and Xcode (`npm run cap:open:ios`)
+  - Bundle ID: co.thechefpantry.app
+  - TODO: Replace TEAMID, generate icons/splash with Capacitor resources, set store metadata
+  - Deep links instructions we added above
+
+7) Git
+- Commit all changes to `mobile/capacitor-shell`.
+- Print a summary of changed files.
+- DO NOT change existing server/client build commands.
+- DO NOT attempt to build store binaries.
+
+ACCEPTANCE CRITERIA
+- `capacitor.config.ts` exists with server.url = https://thechefpantry.co
+- `android/` and `ios/` projects are added and committed
+- AndroidManifest includes an intent-filter for thechefpantry.co
+- `client/public/.well-known/apple-app-site-association` exists with TEAMID placeholder
+- `client/src/main.tsx` contains the Capacitor `appUrlOpen` listener
+- README-mobile.md explains open/build steps and TODOs
+- Branch `mobile/capacitor-shell` pushed
+
+Output:
+- Commands to open projects locally:
+  - Android: `npm run cap:open:android`
+  - iOS: `npm run cap:open:ios`
+- Any manual TODOs remaining.
