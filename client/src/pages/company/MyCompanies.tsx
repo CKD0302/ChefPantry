@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Settings, AlertCircle } from "lucide-react";
+import { Plus, Users, Settings, AlertCircle, Mail, UserPlus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
@@ -158,6 +158,66 @@ export default function MyCompanies() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* Company Actions Section */}
+        {companyList.length > 0 && (
+          <div className="mt-8 max-w-2xl">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Company Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Accept Invites Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Accept Invites
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-neutral-600 mb-4">
+                    Review and accept pending team member invites
+                  </p>
+                  <Link href="/company/invites/accept">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      data-testid="accept-invites-button"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      View Invites
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              {/* Company Settings Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Company Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-neutral-600 mb-4">
+                    Update company details and preferences
+                  </p>
+                  {companyList.length > 0 && (
+                    <Link href={`/company/${companyList[0].id}/settings`}>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        data-testid="company-settings-button"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Manage Settings
+                      </Button>
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </main>
