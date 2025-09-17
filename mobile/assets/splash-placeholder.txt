@@ -1,0 +1,4 @@
+# Placeholder for splash.png
+# TODO: Replace this placeholder with actual splash screen image
+# Splash should be 2732x2732 pixels for best results
+# Use Capacitor assets to generate all required sizes: npx @capacitor/assets generate

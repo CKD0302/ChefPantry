@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { setupStorageBuckets } from "./utils/setupStorage";
+import { App as CapacitorApp } from '@capacitor/app';
 
 const root = document.getElementById("root");
 
@@ -37,6 +38,11 @@ document.head.appendChild(fontLink);
 // Initialize storage buckets
 setupStorageBuckets().catch(err => {
   console.error('Failed to initialize storage buckets:', err);
+});
+
+// Capacitor App URL listener
+CapacitorApp.addListener('appUrlOpen', () => {
+  // No-op for now; the web app handles routing once loaded.
 });
 
 createRoot(root!).render(<App />);

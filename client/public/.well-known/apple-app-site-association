@@ -1,0 +1,11 @@
+{
+  "applinks": { 
+    "apps": [], 
+    "details": [ 
+      { 
+        "appID": "TEAMID.co.thechefpantry.app", 
+        "paths": [ "*" ] 
+      } 
+    ] 
+  }
+}

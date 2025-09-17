@@ -1,0 +1,4 @@
+# Placeholder for app-icon.png
+# TODO: Replace this placeholder with actual app icon
+# Icon should be 1024x1024 pixels for best results
+# Use Capacitor assets to generate all required sizes: npx @capacitor/assets generate
