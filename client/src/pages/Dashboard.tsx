@@ -300,7 +300,7 @@ function CompanyConsoleDashboard({ companyId, user, navigate, signOut }: { compa
             <Button
               variant="outline"
               className="justify-start h-auto p-4"
-              onClick={() => navigate("/invoices")}
+              onClick={() => navigate("/business/invoices")}
               data-testid="invoice-inbox-button"
             >
               <FileText className="h-5 w-5 mr-2" />
