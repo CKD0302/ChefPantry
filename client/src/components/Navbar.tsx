@@ -122,7 +122,9 @@ export default function Navbar() {
           </div>
           
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            {/* Notification bell for mobile */}
+            {user && <NotificationsBell userId={user.id} />}
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle menu">
               <Menu className="h-6 w-6" />
             </Button>
