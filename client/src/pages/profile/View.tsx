@@ -24,6 +24,9 @@ import {
   User,
   Utensils,
   Image,
+  Bell,
+  Settings,
+  Building2,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +34,8 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ReviewsSection from "@/components/ReviewsSection";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Business profile interface
 interface BusinessProfile {
@@ -83,6 +88,16 @@ export default function ViewProfile() {
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string>("");
 
+  // Get user's company data (only for company users)
+  const { data: userCompanies } = useQuery({
+    queryKey: ['/api/company/mine', user?.id],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/company/mine`);
+      return response.json();
+    },
+    enabled: !!user?.id && userRole === "company"
+  });
+
   useEffect(() => {
     // Redirect if not authenticated
     if (!user) {
@@ -98,6 +113,8 @@ export default function ViewProfile() {
       fetchBusinessProfile();
     } else if (role === "chef") {
       fetchChefProfile();
+    } else if (role === "company") {
+      setLoading(false); // Company users don't need profile fetching
     } else {
       navigate("/dashboard");
       toast({
@@ -751,6 +768,96 @@ export default function ViewProfile() {
     );
   };
 
+  // Render the company profile
+  const renderCompanyProfile = () => {
+    const hasExistingCompany = userCompanies?.data && userCompanies.data.length > 0;
+    const firstCompany = hasExistingCompany ? userCompanies.data[0] : null;
+
+    return (
+      <div className="min-h-screen bg-neutral-50 flex flex-col">
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 py-12 mt-16">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-bold">Company Profile</h1>
+              <Button
+                onClick={() => navigate("/dashboard")}
+                variant="outline"
+                className="gap-2"
+                data-testid="button-back-dashboard"
+              >
+                <Building2 className="h-4 w-4" /> Back to Dashboard
+              </Button>
+            </div>
+
+            {/* Accept Invites Card */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Accept Invites
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-neutral-600 mb-4">
+                  Check and respond to pending business invitations
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate("/company/invites/accept")}
+                  data-testid="view-invites-button"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  View Pending Invites
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Company Settings Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Company Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-neutral-600 mb-4">
+                  Update company details and preferences
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    if (firstCompany) {
+                      navigate(`/company/${firstCompany.id}/settings`);
+                    } else {
+                      navigate("/company/mine");
+                    }
+                  }}
+                  data-testid="company-settings-button"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Settings
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  };
+
   // Determine which profile to render based on user role
-  return userRole === "chef" ? renderChefProfile() : renderBusinessProfile();
+  if (userRole === "chef") {
+    return renderChefProfile();
+  } else if (userRole === "business") {
+    return renderBusinessProfile();
+  } else if (userRole === "company") {
+    return renderCompanyProfile();
+  } else {
+    return renderBusinessProfile(); // fallback
+  }
 }
