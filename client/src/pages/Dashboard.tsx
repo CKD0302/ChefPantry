@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, FileText, Mail } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, Mail } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -167,7 +167,7 @@ function CompanyConsoleDashboard({ companyId, user, navigate, signOut }: { compa
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-2 xl:grid-cols-4 gap-8">
         {/* Managed Venues */}
         <div className="bg-white border border-neutral-200 rounded">
           <div className="p-6 border-b border-neutral-200">
@@ -262,69 +262,56 @@ function CompanyConsoleDashboard({ companyId, user, navigate, signOut }: { compa
             )}
           </div>
         </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="mt-8 bg-white border border-neutral-200 rounded">
-        <div className="p-6 border-b border-neutral-200">
-          <h3 className="text-lg font-semibold">Quick Actions</h3>
-        </div>
-        <div className="p-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Accept Invites */}
+        <div className="bg-white border border-neutral-200 rounded">
+          <div className="p-6 border-b border-neutral-200">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Accept Invites
+            </h3>
+          </div>
+          <div className="p-6">
+            <p className="text-neutral-600 mb-4">
+              Check and respond to pending business invitations
+            </p>
             <Button
               variant="outline"
-              className="justify-start h-auto p-4"
-              onClick={() => navigate(`/company/${companyId}/members`)}
-              data-testid="manage-members-button"
-            >
-              <Users className="h-5 w-5 mr-2" />
-              <div className="text-left">
-                <div className="font-medium">Manage Members</div>
-                <div className="text-sm text-neutral-500">Add or remove team members</div>
-              </div>
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-4"
+              className="w-full justify-start"
               onClick={() => navigate("/company/invites/accept")}
               data-testid="view-invites-button"
             >
-              <Bell className="h-5 w-5 mr-2" />
-              <div className="text-left">
-                <div className="font-medium">Accept Invites</div>
-                <div className="text-sm text-neutral-500">Check pending invitations</div>
-              </div>
+              <Bell className="h-4 w-4 mr-2" />
+              View Pending Invites
             </Button>
-            
+          </div>
+        </div>
+
+        {/* Company Settings */}
+        <div className="bg-white border border-neutral-200 rounded">
+          <div className="p-6 border-b border-neutral-200">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Company Settings
+            </h3>
+          </div>
+          <div className="p-6">
+            <p className="text-neutral-600 mb-4">
+              Update company details and preferences
+            </p>
             <Button
               variant="outline"
-              className="justify-start h-auto p-4"
-              onClick={() => navigate("/business/invoices")}
-              data-testid="invoice-inbox-button"
-            >
-              <FileText className="h-5 w-5 mr-2" />
-              <div className="text-left">
-                <div className="font-medium">Invoice Inbox</div>
-                <div className="text-sm text-neutral-500">Manage all venue invoices</div>
-              </div>
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-4"
+              className="w-full justify-start"
               onClick={() => navigate(`/company/${companyId}/settings`)}
               data-testid="company-settings-button"
             >
-              <Settings className="h-5 w-5 mr-2" />
-              <div className="text-left">
-                <div className="font-medium">Company Settings</div>
-                <div className="text-sm text-neutral-500">Update company details</div>
-              </div>
+              <Settings className="h-4 w-4 mr-2" />
+              Manage Settings
             </Button>
           </div>
         </div>
       </div>
+
     </div>
   );
 }
