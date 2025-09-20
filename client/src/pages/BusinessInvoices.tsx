@@ -463,7 +463,7 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
   };
 
   return (
-    <div className="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
+    <div className="border rounded-lg p-6 hover:bg-gray-50 transition-colors overflow-hidden">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-semibold text-lg">
@@ -580,117 +580,131 @@ function InvoiceCard({ invoice, onPayClick, onReviewClick, onMarkAsPaid, onDownl
 
 
 
-      <div className="flex items-center justify-between pt-4 border-t">
-        <div className="flex items-center gap-4">
-          {invoice.status.toLowerCase() === 'pending' ? (
-            <>
-              {/* Bank Transfer Payment */}
-              {invoice.paymentMethod === 'bank' && (
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-blue-600 font-medium">
-                    Pay via bank transfer using details above
-                  </div>
-                  {onMarkAsPaid && (
-                    <Button 
-                      onClick={() => onMarkAsPaid(invoice)}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                      size="sm"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Mark as Paid
-                    </Button>
-                  )}
+      <div className="pt-4 border-t">
+        {invoice.status.toLowerCase() === 'pending' ? (
+          <>
+            {/* Bank Transfer Payment */}
+            {invoice.paymentMethod === 'bank' && (
+              <div className="actions mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+                <div className="order-1 sm:order-none text-blue-600 underline sm:mr-auto text-sm font-medium">
+                  Pay via bank transfer using details above
                 </div>
+                {onMarkAsPaid && (
+                  <button
+                    type="button"
+                    onClick={() => onMarkAsPaid(invoice)}
+                    className="order-2 sm:order-none w-full sm:w-auto btn btn-success flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Mark as Paid
+                  </button>
+                )}
+                {onDownload && (
+                  <button
+                    type="button"
+                    onClick={() => onDownload(invoice)}
+                    className="order-3 sm:order-none w-full sm:w-auto btn btn-outline flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {/* Fallback for old invoices without payment method */}
+            {!invoice.paymentMethod && (
+              <>
+                {/* Show bank payment if we have bank details */}
+                {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode ? (
+                  <div className="actions mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+                    <div className="order-1 sm:order-none text-blue-600 underline sm:mr-auto text-sm font-medium">
+                      Pay via bank transfer using details above
+                    </div>
+                    {onMarkAsPaid && (
+                      <button
+                        type="button"
+                        onClick={() => onMarkAsPaid(invoice)}
+                        className="order-2 sm:order-none w-full sm:w-auto btn btn-success flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Mark as Paid
+                      </button>
+                    )}
+                    {onDownload && (
+                      <button
+                        type="button"
+                        onClick={() => onDownload(invoice)}
+                        className="order-3 sm:order-none w-full sm:w-auto btn btn-outline flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download PDF
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <Alert className="mt-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      This chef has not set up their payment method yet. Payment cannot be processed.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
+            )}
+            
+            {/* No payment method available */}
+            {invoice.paymentMethod && 
+             invoice.paymentMethod !== 'bank' && (
+              <Alert className="mt-3">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Payment method not properly configured. Please contact support.
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-3">
+            <div className="text-sm text-gray-500 min-w-0">
+              Payment {invoice.status.toLowerCase() === 'paid' ? 'completed' : 'in progress'}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {/* Download Invoice Button - Available for all invoices */}
+              {onDownload && (
+                <button
+                  type="button"
+                  onClick={() => onDownload(invoice)}
+                  className="w-full sm:w-auto btn btn-outline flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </button>
               )}
               
-
-              
-              {/* Fallback for old invoices without payment method */}
-              {!invoice.paymentMethod && (
+              {/* Review Section for Paid Invoices */}
+              {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && (
                 <>
-                  {/* Show bank payment if we have bank details */}
-                  {invoice.bankName && invoice.accountName && invoice.accountNumber && invoice.sortCode ? (
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm text-blue-600 font-medium">
-                        Pay via bank transfer using details above
-                      </div>
-                      {onMarkAsPaid && (
-                        <Button 
-                          onClick={() => onMarkAsPaid(invoice)}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Mark as Paid
-                        </Button>
-                      )}
+                  {reviewCheck?.exists ? (
+                    <div className="flex items-center gap-2 text-green-600 justify-center sm:justify-start">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Review Submitted</span>
                     </div>
                   ) : (
-                    <Alert className="flex-1">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        This chef has not set up their payment method yet. Payment cannot be processed.
-                      </AlertDescription>
-                    </Alert>
+                    <button
+                      type="button"
+                      onClick={() => onReviewClick(invoice)}
+                      className="w-full sm:w-auto btn btn-outline flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      <Star className="h-4 w-4" />
+                      Leave Review
+                    </button>
                   )}
                 </>
               )}
-              
-              {/* No payment method available */}
-              {invoice.paymentMethod && 
-               invoice.paymentMethod !== 'bank' && (
-                <Alert className="flex-1">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Payment method not properly configured. Please contact support.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </>
-          ) : (
-            <div className="text-sm text-gray-500">
-              Payment {invoice.status.toLowerCase() === 'paid' ? 'completed' : 'in progress'}
             </div>
-          )}
-        </div>
-
-        {/* Action buttons section */}
-        <div className="flex items-center gap-2">
-          {/* Download Invoice Button - Available for all invoices */}
-          {onDownload && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDownload(invoice)}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download PDF
-            </Button>
-          )}
-          
-          {/* Review Section for Paid Invoices */}
-          {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && (
-            <>
-              {reviewCheck?.exists ? (
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Review Submitted</span>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onReviewClick(invoice)}
-                  className="flex items-center gap-2"
-                >
-                  <Star className="h-4 w-4" />
-                  Leave Review
-                </Button>
-              )}
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
