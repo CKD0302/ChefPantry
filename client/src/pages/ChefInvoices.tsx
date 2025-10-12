@@ -13,7 +13,8 @@ import {
   CheckCircle,
   Receipt,
   Star,
-  Building
+  Building,
+  Download
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -21,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ReviewSubmissionModal from "@/components/ReviewSubmissionModal";
+import { downloadInvoicePDF } from "@/utils/invoicePDF";
 
 interface ChefInvoiceData {
   id: string;
@@ -29,17 +31,34 @@ interface ChefInvoiceData {
   businessId: string;
   hoursWorked: number;
   hourlyRate: number;
+  ratePerHour?: number;
   totalAmount: number;
   description: string | null;
+  notes?: string | null;
   status: string;
   submittedAt: Date;
   gigTitle: string | null;
   businessName: string | null;
   gigDate: string | null;
+  isManual?: boolean;
+  serviceTitle?: string;
+  sortCode?: string;
+  accountNumber?: string;
+  bankName?: string;
+  accountName?: string;
   gig?: {
     title: string;
     businessName: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
     date: string;
+  };
+  chef?: {
+    fullName: string;
+  };
+  business?: {
+    name: string;
   };
 }
 
@@ -106,6 +125,46 @@ export default function ChefInvoices() {
   const handleReviewClick = (invoice: ChefInvoiceData) => {
     setSelectedInvoice(invoice);
     setReviewModalOpen(true);
+  };
+
+  const handleDownloadInvoice = (invoice: ChefInvoiceData) => {
+    console.log('Download invoice clicked for chef invoice:', invoice.id);
+    
+    try {
+      // Prepare chef profile data with fullName
+      const chefData = {
+        fullName: user?.user_metadata?.full_name || user?.email || 'Chef'
+      };
+
+      // Prepare business data from invoice
+      const businessData = {
+        businessName: invoice.businessName || invoice.business?.name || invoice.gig?.businessName || 'Business',
+        location: invoice.gig?.location || 'Location not specified',
+        description: ''
+      };
+
+      // Prepare invoice data with chef info
+      const invoiceWithChef = {
+        ...invoice,
+        chef: invoice.chef || chefData,
+        ratePerHour: invoice.ratePerHour || invoice.hourlyRate || 0
+      };
+
+      console.log('Generating PDF with data:', { invoiceWithChef, businessData });
+      downloadInvoicePDF(invoiceWithChef as any, businessData);
+      
+      toast({
+        title: "Invoice Downloaded",
+        description: "Your invoice PDF has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filterInvoicesByStatus = (status: string) => {
@@ -239,6 +298,7 @@ export default function ChefInvoices() {
                         key={invoice.id} 
                         invoice={invoice} 
                         onReviewClick={handleReviewClick}
+                        onDownload={handleDownloadInvoice}
                         currentUserId={user.id}
                       />
                     ))}
@@ -269,6 +329,7 @@ export default function ChefInvoices() {
                         key={invoice.id} 
                         invoice={invoice} 
                         onReviewClick={handleReviewClick}
+                        onDownload={handleDownloadInvoice}
                         currentUserId={user.id}
                       />
                     ))}
@@ -299,6 +360,7 @@ export default function ChefInvoices() {
                         key={invoice.id} 
                         invoice={invoice} 
                         onReviewClick={handleReviewClick}
+                        onDownload={handleDownloadInvoice}
                         currentUserId={user.id}
                       />
                     ))}
@@ -334,10 +396,11 @@ export default function ChefInvoices() {
 interface InvoiceCardProps {
   invoice: ChefInvoiceData;
   onReviewClick?: (invoice: ChefInvoiceData) => void;
+  onDownload?: (invoice: ChefInvoiceData) => void;
   currentUserId?: string;
 }
 
-function InvoiceCard({ invoice, onReviewClick, currentUserId }: InvoiceCardProps) {
+function InvoiceCard({ invoice, onReviewClick, onDownload, currentUserId }: InvoiceCardProps) {
   // Check if review exists for this gig and reviewer
   const { data: reviewCheck } = useQuery({
     queryKey: ["/api/reviews/check", invoice.gigId, currentUserId],
@@ -423,34 +486,49 @@ function InvoiceCard({ invoice, onReviewClick, currentUserId }: InvoiceCardProps
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t">
-        <div className="flex items-center gap-4">
+      <div className="pt-4 border-t">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-gray-500">
             Status: {invoice.status}
           </div>
-        </div>
 
-        {/* Review Section for Paid Invoices */}
-        {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && invoice.gigId && (
-          <div className="flex items-center gap-2">
-            {reviewCheck?.exists ? (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <span className="text-sm font-medium">Review Submitted</span>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onReviewClick(invoice)}
-                className="flex items-center gap-2"
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {/* Download PDF Button - Available for all invoices */}
+            {onDownload && (
+              <button
+                type="button"
+                onClick={() => onDownload(invoice)}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                data-testid="button-download-pdf"
               >
-                <Star className="h-4 w-4" />
-                Leave Review
-              </Button>
+                <Download className="h-4 w-4" />
+                Download PDF
+              </button>
+            )}
+
+            {/* Review Section for Paid Invoices */}
+            {invoice.status.toLowerCase() === 'paid' && onReviewClick && currentUserId && invoice.gigId && (
+              <>
+                {reviewCheck?.exists ? (
+                  <div className="flex items-center gap-2 text-green-600 justify-center sm:justify-start">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Review Submitted</span>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onReviewClick(invoice)}
+                    className="flex items-center gap-2 w-full sm:w-auto"
+                  >
+                    <Star className="h-4 w-4" />
+                    Leave Review
+                  </Button>
+                )}
+              </>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -82,13 +82,17 @@ export default function BusinessInvoices() {
   });
 
   // Query business profile for PDF generation
-  const { data: businessProfile } = useQuery({
+  const { data: businessProfile, isLoading: isLoadingProfile, error: profileError } = useQuery({
     queryKey: ["/api/profiles/business", user?.id],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/profiles/business/${user?.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to load business profile');
+      }
       return response.json();
     },
     enabled: !!user?.id,
+    retry: 2,
   });
 
   if (!user) {
@@ -167,22 +171,60 @@ export default function BusinessInvoices() {
   };
 
   const handleDownloadInvoice = (invoice: InvoiceData) => {
-    if (!businessProfile) {
+    console.log('Download invoice clicked for:', invoice.id);
+    
+    if (isLoadingProfile) {
       toast({
-        title: "Error",
-        description: "Business profile not found. Cannot generate invoice.",
+        title: "Loading",
+        description: "Please wait while we load your business profile...",
+      });
+      return;
+    }
+
+    if (profileError) {
+      toast({
+        title: "Profile Error",
+        description: "Unable to load business profile. Please refresh the page and try again.",
         variant: "destructive",
       });
       return;
     }
 
+    if (!businessProfile) {
+      // Try to use invoice business data as fallback
+      const fallbackBusinessData = {
+        businessName: invoice.business?.name || 'Business',
+        location: 'Location not specified',
+        description: ''
+      };
+      
+      try {
+        console.log('Using fallback business data for PDF generation');
+        downloadInvoicePDF(invoice, fallbackBusinessData);
+        
+        toast({
+          title: "Invoice Downloaded",
+          description: "Your invoice PDF has been downloaded successfully.",
+        });
+      } catch (error) {
+        console.error("Error downloading invoice with fallback data:", error);
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to download invoice. Please try again.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
     try {
       const businessData = {
-        businessName: businessProfile.businessName || 'Business',
+        businessName: businessProfile.businessName || invoice.business?.name || 'Business',
         location: businessProfile.location || 'Location not specified',
         description: businessProfile.description || ''
       };
 
+      console.log('Generating PDF with business data:', businessData);
       downloadInvoicePDF(invoice, businessData);
       
       toast({
@@ -193,7 +235,7 @@ export default function BusinessInvoices() {
       console.error("Error downloading invoice:", error);
       toast({
         title: "Error",
-        description: "Failed to download invoice. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to download invoice. Please try again.",
         variant: "destructive",
       });
     }
