@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Calendar, Settings, ArrowLeft, MapPin, Globe, Instagram, Linkedin } from "lucide-react";
+import { Building2, Users, Calendar, Settings, ArrowLeft, MapPin, Globe, Instagram, Linkedin, Clock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -175,7 +175,7 @@ export default function BusinessDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <Button 
                     variant="outline" 
                     className="flex flex-col items-center p-4 h-auto"
@@ -193,6 +193,15 @@ export default function BusinessDashboard() {
                   >
                     <Building2 className="h-6 w-6 mb-2 text-green-600" />
                     <span className="text-sm">Manage Gigs</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col items-center p-4 h-auto"
+                    onClick={() => navigate(`/business/${businessId}/timesheets`)}
+                    data-testid="view-timesheets-button"
+                  >
+                    <Clock className="h-6 w-6 mb-2 text-cyan-600" />
+                    <span className="text-sm">Timesheets</span>
                   </Button>
                   <Button 
                     variant="outline" 

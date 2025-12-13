@@ -44,6 +44,10 @@ import AcceptInvite from "@/pages/company/AcceptInvite";
 // Business Management Pages
 import BusinessDashboard from "@/pages/business/BusinessDashboard";
 
+// Time Tracking Pages
+import ChefTime from "@/pages/ChefTime";
+import VenueTimesheets from "@/pages/VenueTimesheets";
+
 // Wrapper components for route parameters
 
 function Router() {
@@ -86,6 +90,10 @@ function Router() {
       
       {/* Business Management Routes */}
       <Route path="/business/:id/dashboard" component={BusinessDashboard} />
+      <Route path="/business/:id/timesheets" component={VenueTimesheets} />
+      
+      {/* Time Tracking Routes */}
+      <Route path="/chef/time" component={ChefTime} />
       
       <Route component={NotFound} />
     </Switch>

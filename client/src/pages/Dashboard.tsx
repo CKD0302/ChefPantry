@@ -510,7 +510,7 @@ export default function Dashboard() {
                     <p className="text-green-600 font-medium mb-2">✓ Your profile is complete!</p>
                     <p className="text-neutral-600">You can now browse and apply for gigs.</p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                     <Button 
                       variant="outline"
                       onClick={() => navigate("/gigs/browse")}
@@ -524,6 +524,15 @@ export default function Dashboard() {
                       className="w-full"
                     >
                       Applied Gigs
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate("/chef/time")}
+                      className="flex items-center justify-center gap-2 w-full"
+                      data-testid="button-time-tracking"
+                    >
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      Time
                     </Button>
                     <Button 
                       variant="outline"

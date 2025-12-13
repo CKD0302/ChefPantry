@@ -50,6 +50,12 @@ import {
   businessCompanyLinks,
   type BusinessCompanyLink,
   type InsertBusinessCompanyLink,
+  venueStaff,
+  type VenueStaff,
+  type InsertVenueStaff,
+  workShifts,
+  type WorkShift,
+  type InsertWorkShift,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not, sql, or } from "drizzle-orm";
@@ -185,6 +191,24 @@ export interface IStorage {
   getBusinessCompanyLinks(businessId: string): Promise<BusinessCompanyLink[]>;
   getCompanyBusinessLinks(companyId: string): Promise<BusinessCompanyLink[]>;
   removeBusinessCompanyLink(businessId: string, companyId: string): Promise<boolean>;
+  
+  // Venue Staff methods - for linking chefs to venues they already work at
+  getVenueStaffByVenue(venueId: string): Promise<VenueStaff[]>;
+  getVenueStaffByChef(chefId: string): Promise<VenueStaff[]>;
+  getVenueStaffMembership(venueId: string, chefId: string): Promise<VenueStaff | undefined>;
+  addVenueStaff(staff: InsertVenueStaff): Promise<VenueStaff>;
+  updateVenueStaffStatus(id: string, isActive: boolean): Promise<VenueStaff | undefined>;
+  removeVenueStaff(id: string): Promise<boolean>;
+  
+  // Work Shifts methods - for time tracking
+  getOpenShiftByChef(chefId: string): Promise<WorkShift | undefined>;
+  getShiftById(id: string): Promise<WorkShift | undefined>;
+  getShiftsByChef(chefId: string, options?: { fromDate?: Date; toDate?: Date; venueId?: string; gigId?: string }): Promise<WorkShift[]>;
+  getShiftsByVenue(venueId: string, options?: { fromDate?: Date; toDate?: Date; status?: string }): Promise<WorkShift[]>;
+  createShift(shift: InsertWorkShift): Promise<WorkShift>;
+  clockOutShift(shiftId: string, clockOutMethod?: string): Promise<WorkShift | undefined>;
+  updateShiftStatus(shiftId: string, status: string, venueNote?: string): Promise<WorkShift | undefined>;
+  linkShiftToInvoice(shiftId: string, invoiceId: string): Promise<WorkShift | undefined>;
 }
 
 export class DBStorage implements IStorage {
@@ -1487,6 +1511,157 @@ export class DBStorage implements IStorage {
       console.error('Error getting company users for business:', error);
       return [];
     }
+  }
+
+  // Venue Staff methods
+  async getVenueStaffByVenue(venueId: string): Promise<VenueStaff[]> {
+    const result = await db.select().from(venueStaff)
+      .where(eq(venueStaff.venueId, venueId))
+      .orderBy(desc(venueStaff.createdAt));
+    return result;
+  }
+
+  async getVenueStaffByChef(chefId: string): Promise<VenueStaff[]> {
+    const result = await db.select().from(venueStaff)
+      .where(and(
+        eq(venueStaff.chefId, chefId),
+        eq(venueStaff.isActive, true)
+      ))
+      .orderBy(desc(venueStaff.createdAt));
+    return result;
+  }
+
+  async getVenueStaffMembership(venueId: string, chefId: string): Promise<VenueStaff | undefined> {
+    const result = await db.select().from(venueStaff)
+      .where(and(
+        eq(venueStaff.venueId, venueId),
+        eq(venueStaff.chefId, chefId)
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async addVenueStaff(staff: InsertVenueStaff): Promise<VenueStaff> {
+    const result = await db.insert(venueStaff).values(staff).returning();
+    return result[0];
+  }
+
+  async updateVenueStaffStatus(id: string, isActive: boolean): Promise<VenueStaff | undefined> {
+    const result = await db.update(venueStaff)
+      .set({ isActive })
+      .where(eq(venueStaff.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async removeVenueStaff(id: string): Promise<boolean> {
+    const result = await db.delete(venueStaff)
+      .where(eq(venueStaff.id, id));
+    return true;
+  }
+
+  // Work Shifts methods
+  async getOpenShiftByChef(chefId: string): Promise<WorkShift | undefined> {
+    const result = await db.select().from(workShifts)
+      .where(and(
+        eq(workShifts.chefId, chefId),
+        eq(workShifts.status, 'open')
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async getShiftById(id: string): Promise<WorkShift | undefined> {
+    const result = await db.select().from(workShifts)
+      .where(eq(workShifts.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getShiftsByChef(chefId: string, options?: { fromDate?: Date; toDate?: Date; venueId?: string; gigId?: string }): Promise<WorkShift[]> {
+    const conditions = [eq(workShifts.chefId, chefId)];
+    
+    if (options?.fromDate) {
+      conditions.push(sql`${workShifts.clockInAt} >= ${options.fromDate}`);
+    }
+    if (options?.toDate) {
+      conditions.push(sql`${workShifts.clockInAt} <= ${options.toDate}`);
+    }
+    if (options?.venueId) {
+      conditions.push(eq(workShifts.venueId, options.venueId));
+    }
+    if (options?.gigId) {
+      conditions.push(eq(workShifts.gigId, options.gigId));
+    }
+    
+    const result = await db.select().from(workShifts)
+      .where(and(...conditions))
+      .orderBy(desc(workShifts.clockInAt));
+    return result;
+  }
+
+  async getShiftsByVenue(venueId: string, options?: { fromDate?: Date; toDate?: Date; status?: string }): Promise<WorkShift[]> {
+    const conditions = [eq(workShifts.venueId, venueId)];
+    
+    if (options?.fromDate) {
+      conditions.push(sql`${workShifts.clockInAt} >= ${options.fromDate}`);
+    }
+    if (options?.toDate) {
+      conditions.push(sql`${workShifts.clockInAt} <= ${options.toDate}`);
+    }
+    if (options?.status) {
+      conditions.push(eq(workShifts.status, options.status));
+    }
+    
+    const result = await db.select().from(workShifts)
+      .where(and(...conditions))
+      .orderBy(desc(workShifts.clockInAt));
+    return result;
+  }
+
+  async createShift(shift: InsertWorkShift): Promise<WorkShift> {
+    const result = await db.insert(workShifts).values(shift).returning();
+    return result[0];
+  }
+
+  async clockOutShift(shiftId: string, clockOutMethod: string = 'manual'): Promise<WorkShift | undefined> {
+    const result = await db.update(workShifts)
+      .set({ 
+        clockOutAt: new Date(),
+        clockOutMethod,
+        status: 'submitted',
+        updatedAt: new Date()
+      })
+      .where(eq(workShifts.id, shiftId))
+      .returning();
+    return result[0];
+  }
+
+  async updateShiftStatus(shiftId: string, status: string, venueNote?: string): Promise<WorkShift | undefined> {
+    const updateData: Partial<WorkShift> = { 
+      status,
+      updatedAt: new Date()
+    };
+    if (venueNote !== undefined) {
+      updateData.venueNote = venueNote;
+    }
+    
+    const result = await db.update(workShifts)
+      .set(updateData)
+      .where(eq(workShifts.id, shiftId))
+      .returning();
+    return result[0];
+  }
+
+  async linkShiftToInvoice(shiftId: string, invoiceId: string): Promise<WorkShift | undefined> {
+    const result = await db.update(workShifts)
+      .set({ 
+        invoiceId,
+        updatedAt: new Date()
+      })
+      .where(eq(workShifts.id, shiftId))
+      .returning();
+    return result[0];
   }
 }
 
