@@ -470,36 +470,74 @@ export class DBStorage implements IStorage {
 
   async searchChefProfiles(query: string, excludeVenueId?: string): Promise<ChefProfile[]> {
     const searchPattern = `%${query}%`;
+    const lowerQuery = query.toLowerCase();
     
+    // Get chef IDs already staff at this venue (if excludeVenueId provided)
+    let excludeIds: string[] = [];
     if (excludeVenueId) {
-      // Get chef IDs already staff at this venue
       const existingStaff = await db.select({ chefId: venueStaff.chefId })
         .from(venueStaff)
         .where(eq(venueStaff.venueId, excludeVenueId));
-      
-      const excludeIds = existingStaff.map(s => s.chefId);
-      
-      if (excludeIds.length > 0) {
-        return db.select()
-          .from(chefProfiles)
-          .where(and(
-            or(
-              sql`LOWER(${chefProfiles.fullName}) LIKE LOWER(${searchPattern})`,
-              sql`LOWER(${chefProfiles.email}) LIKE LOWER(${searchPattern})`
-            ),
-            not(sql`${chefProfiles.id} = ANY(ARRAY[${sql.join(excludeIds.map(id => sql`${id}`), sql`, `)}]::text[])`)
-          ))
-          .limit(20);
-      }
+      excludeIds = existingStaff.map(s => s.chefId);
     }
     
-    return db.select()
-      .from(chefProfiles)
-      .where(or(
-        sql`LOWER(${chefProfiles.fullName}) LIKE LOWER(${searchPattern})`,
-        sql`LOWER(${chefProfiles.email}) LIKE LOWER(${searchPattern})`
-      ))
-      .limit(20);
+    // Search by name in chef_profiles
+    let nameResults: ChefProfile[];
+    if (excludeIds.length > 0) {
+      nameResults = await db.select()
+        .from(chefProfiles)
+        .where(and(
+          sql`LOWER(${chefProfiles.fullName}) LIKE LOWER(${searchPattern})`,
+          not(sql`${chefProfiles.id} = ANY(ARRAY[${sql.join(excludeIds.map(id => sql`${id}`), sql`, `)}]::text[])`)
+        ))
+        .limit(20);
+    } else {
+      nameResults = await db.select()
+        .from(chefProfiles)
+        .where(sql`LOWER(${chefProfiles.fullName}) LIKE LOWER(${searchPattern})`)
+        .limit(20);
+    }
+    
+    // Also search by email in Supabase auth users
+    const foundIds = new Set(nameResults.map(r => r.id));
+    
+    try {
+      const { supabaseService } = await import("./lib/supabaseService");
+      const { data: authData } = await supabaseService.auth.admin.listUsers();
+      
+      if (authData?.users) {
+        // Find users whose email contains the search query
+        const matchingUsers = authData.users.filter(u => 
+          u.email?.toLowerCase().includes(lowerQuery)
+        );
+        
+        // Get chef profiles for these users
+        for (const user of matchingUsers) {
+          if (foundIds.has(user.id)) continue; // Already in results
+          if (excludeIds.includes(user.id)) continue; // Already staff at venue
+          
+          // Check if this user has a chef profile
+          const chefProfile = await db.select()
+            .from(chefProfiles)
+            .where(eq(chefProfiles.id, user.id))
+            .limit(1);
+          
+          if (chefProfile.length > 0) {
+            // Add email to the result for display purposes
+            const profileWithEmail = { ...chefProfile[0], email: user.email || null };
+            nameResults.push(profileWithEmail);
+            foundIds.add(user.id);
+          }
+          
+          if (nameResults.length >= 20) break;
+        }
+      }
+    } catch (error) {
+      console.error('Error searching Supabase auth users:', error);
+      // Continue with name-only results if auth search fails
+    }
+    
+    return nameResults.slice(0, 20);
   }
   
   // Business Profiles methods (Supabase)
