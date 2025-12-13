@@ -1,0 +1,171 @@
+You are an elite full-stack engineer working in a Replit project.
+
+Stack/constraints
+	•	Backend: Supabase (Postgres + Auth + RLS)
+	•	Frontend: existing Chef Pantry/Chefy web app (same codebase you’ve been using)
+	•	We must implement Time Tracking (Clock In / Clock Out) in a way that supports:
+	1.	Gig shifts (chef is working a gig sourced via the gig flow)
+	2.	Venue staff shifts (chef already works at venue; no gig needed)
+	•	We will build Phase 1 now: manual clock in/out, plus the data model that supports later QR/NFC deep-link clock-in.
+	•	Do NOT implement QR/NFC UI now, but create the fields + endpoints so it’s easy later.
+
+⸻
+
+Phase 1: Database (Supabase SQL Migration)
+
+1) Create table: venue_staff
+
+Purpose: allow a venue to link chefs who already work there.
+
+Columns:
+	•	id uuid pk default gen_random_uuid()
+	•	venue_id uuid not null references venues(id) on delete cascade
+	•	chef_id uuid not null references chef_profiles(id) on delete cascade  (NOTE: we link to chef_profiles, not auth.users)
+	•	is_active boolean not null default true
+	•	role text null
+	•	created_by uuid not null references auth.users(id)
+	•	created_at timestamptz not null default now()
+
+Constraints:
+	•	unique(venue_id, chef_id)
+
+Indexes:
+	•	index on venue_id
+	•	index on chef_id
+
+2) Create table: work_shifts
+
+Purpose: store raw clock in/out shifts. Can be linked to a gig OR just a venue.
+
+Columns:
+	•	id uuid pk default gen_random_uuid()
+	•	chef_id uuid not null references chef_profiles(id) on delete restrict
+	•	venue_id uuid not null references venues(id) on delete restrict
+	•	gig_id uuid null references gigs(id) on delete set null
+	•	clock_in_at timestamptz not null default now()
+	•	clock_out_at timestamptz null
+	•	break_minutes int not null default 0
+	•	status text not null default ‘open’  – allowed: open, submitted, approved, disputed, void
+	•	clock_in_method text not null default ‘manual’ – manual, qr, nfc
+	•	clock_out_method text not null default ‘manual’
+	•	clock_in_lat numeric null
+	•	clock_in_lng numeric null
+	•	clock_out_lat numeric null
+	•	clock_out_lng numeric null
+	•	chef_note text null
+	•	venue_note text null
+	•	created_at timestamptz not null default now()
+	•	updated_at timestamptz not null default now()
+
+Constraints:
+	•	check (status in (‘open’,‘submitted’,‘approved’,‘disputed’,‘void’))
+	•	check (break_minutes >= 0)
+	•	check (clock_out_at is null OR clock_out_at >= clock_in_at)
+
+Critical index:
+	•	Ensure only ONE open shift per chef:
+	•	Create a partial unique index on (chef_id) where status=‘open’
+
+Add trigger:
+	•	update updated_at on row update
+
+3) Optional but recommended for invoicing alignment (Phase 1.5 friendly)
+
+Add columns to gig_invoices OR create link:
+	•	Create table shift_invoice_links (if you want clean normalization), OR simplest:
+	•	Add column invoice_id uuid null references gig_invoices(id) on work_shifts
+	•	Add index on invoice_id
+This allows invoices to “consume” shifts so they don’t get double-invoiced.
+
+✅ Implement the “simplest” approach: add invoice_id to work_shifts.
+
+⸻
+
+Phase 1: RLS Policies (Supabase)
+
+Enable RLS on: venue_staff, work_shifts.
+
+Assumptions:
+	•	chef_profiles has user_id linking to auth.users
+	•	venues has owner_user_id or similar for venue admins (if different, adapt to your schema)
+	•	gigs has venue_id and a way to identify the accepted/assigned chef (e.g. gig_applications)
+
+Policies:
+
+venue_staff
+	1.	Chef can SELECT rows where venue_staff.chef_id is theirs.
+	2.	Venue admin can SELECT rows where venue_id belongs to a venue they admin/own.
+	3.	Venue admin can INSERT/UPDATE/DELETE rows for venues they admin/own.
+	4.	Chef cannot add themselves unless we explicitly support “request access” later (not now).
+
+work_shifts
+
+Chef permissions:
+	•	Chef can INSERT a shift if:
+	•	their chef_id matches
+	•	they are allowed to work for venue via either:
+a) they are accepted/assigned to the gig (if gig_id not null), OR
+b) they exist in venue_staff for that venue and is_active=true (if gig_id is null)
+	•	Chef can UPDATE their own shift only if status is open/submitted and invoice_id is null
+	•	Clock out should be an UPDATE (set clock_out_at, set status submitted)
+
+Venue admin permissions:
+	•	Venue admin can SELECT shifts for their venue
+	•	Venue admin can UPDATE status to approved/disputed, and add venue_note (but cannot alter clock_in/out timestamps once submitted unless you add an audit system later)
+
+Important:
+	•	Do NOT allow arbitrary UPDATE of timestamps without controls.
+
+✅ Implement policies using SQL with auth.uid() and joins via chef_profiles.user_id and venue ownership.
+
+⸻
+
+Phase 1: API Layer (in the app code)
+
+Create a small service module timeTrackingService that calls Supabase.
+
+Functions:
+	1.	getMyOpenShift()
+	2.	clockIn({ venueId, gigId?: string | null, method?: 'manual' })
+	3.	clockOut({ shiftId, method?: 'manual' })
+	4.	listMyShifts({ fromDate?, toDate?, venueId?, gigId? })
+	5.	listVenueShifts({ venueId, fromDate?, toDate?, status? })  (venue admin only)
+
+Validation rules in code (in addition to RLS):
+	•	Prevent clockIn if an open shift exists
+	•	If gigId is provided:
+	•	enforce venueId matches the gig’s venue_id
+	•	Clock out:
+	•	require open shift exists
+	•	set clock_out_at = now()
+	•	set status = 'submitted'
+
+⸻
+
+Phase 1: UI Implementation
+
+Chef UI
+
+Add a “Time” tab/page:
+	•	Card at top:
+	•	If open shift exists: show “Clocked in at HH:MM” + running timer + Clock Out button
+	•	If no open shift: show Clock In button
+
+Clock In flow (MVP):
+	•	Let chef pick:
+	•	“Clock into a gig” (dropdown list of gigs where they are accepted/assigned and date is today or upcoming)
+	•	OR “Clock into a venue” (dropdown list of venues they are staff at via venue_staff)
+	•	When selected, call clockIn with venueId and optional gigId
+
+Shift History:
+	•	List last 14/30 days
+	•	Filter: All / By venue / By gig
+	•	Show: date, venue name, gig badge (if gig_id), duration, status
+
+Venue Admin UI
+
+On venue dashboard:
+	•	“Timesheets” page
+	•	Table of shifts (filters: date range, status, chef)
+	•	Approve / Dispute actions
+	•	Show totals per chef per week (simple aggregation in UI)

@@ -332,6 +332,46 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Venue Staff table - links chefs who already work at a venue (no gig needed)
+export const venueStaff = pgTable("venue_staff", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  venueId: text("venue_id").notNull(), // References business_profiles.id
+  chefId: text("chef_id").notNull(), // References chef_profiles.id
+  isActive: boolean("is_active").notNull().default(true),
+  role: text("role"), // Optional role description
+  createdBy: text("created_by").notNull(), // UUID from Supabase auth
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueVenueChef: uniqueIndex("unique_venue_chef").on(table.venueId, table.chefId),
+}));
+
+// Work Shifts table - stores clock in/out records for time tracking
+export const workShifts = pgTable("work_shifts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  chefId: text("chef_id").notNull(), // References chef_profiles.id
+  venueId: text("venue_id").notNull(), // References business_profiles.id
+  gigId: uuid("gig_id").references(() => gigs.id, { onDelete: 'set null' }), // Optional gig reference
+  clockInAt: timestamp("clock_in_at").notNull().defaultNow(),
+  clockOutAt: timestamp("clock_out_at"),
+  breakMinutes: integer("break_minutes").notNull().default(0),
+  status: text("status").notNull().default("open"), // open, submitted, approved, disputed, void
+  clockInMethod: text("clock_in_method").notNull().default("manual"), // manual, qr, nfc
+  clockOutMethod: text("clock_out_method").notNull().default("manual"), // manual, qr, nfc
+  clockInLat: numeric("clock_in_lat"),
+  clockInLng: numeric("clock_in_lng"),
+  clockOutLat: numeric("clock_out_lat"),
+  clockOutLng: numeric("clock_out_lng"),
+  chefNote: text("chef_note"),
+  venueNote: text("venue_note"),
+  invoiceId: uuid("invoice_id").references(() => gigInvoices.id, { onDelete: 'set null' }), // For invoice linking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  statusCheck: check("shift_status_check", sql`status IN ('open', 'submitted', 'approved', 'disputed', 'void')`),
+  breakCheck: check("break_minutes_check", sql`break_minutes >= 0`),
+  clockOutCheck: check("clock_out_check", sql`clock_out_at IS NULL OR clock_out_at >= clock_in_at`),
+}));
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -426,6 +466,17 @@ export const insertBusinessCompanyLinkSchema = createInsertSchema(businessCompan
   createdAt: true,
 });
 
+export const insertVenueStaffSchema = createInsertSchema(venueStaff).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWorkShiftSchema = createInsertSchema(workShifts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -478,6 +529,12 @@ export type BusinessCompanyInvite = typeof businessCompanyInvites.$inferSelect;
 
 export type InsertBusinessCompanyLink = z.infer<typeof insertBusinessCompanyLinkSchema>;
 export type BusinessCompanyLink = typeof businessCompanyLinks.$inferSelect;
+
+export type InsertVenueStaff = z.infer<typeof insertVenueStaffSchema>;
+export type VenueStaff = typeof venueStaff.$inferSelect;
+
+export type InsertWorkShift = z.infer<typeof insertWorkShiftSchema>;
+export type WorkShift = typeof workShifts.$inferSelect;
 
 // Additional validation schemas for route inputs
 export const updateChefProfileSchema = z.object({
