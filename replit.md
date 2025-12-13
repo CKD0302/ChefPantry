@@ -124,9 +124,17 @@ Chef Pantry is a full-stack web application connecting freelance chefs with hosp
 
 Preferred communication style: Simple, everyday language.
 
+### Time Tracking System
+- Venue Staff table linking chefs to venues for direct clock in/out
+- Work Shifts table for tracking clock in/out records
+- Chef Time page with live timer, venue/gig selection for clock in, shift history
+- Venue Timesheets page for businesses to review and approve/dispute shifts
+- Secure API routes with Supabase JWT authentication
+
 ## Changelog
 
 Changelog:
+- December 13, 2025. **TIME TRACKING PHASE 1 (CLOCK IN/OUT)**: Implemented comprehensive time tracking system for chefs. Added venue_staff and work_shifts tables to database schema. Created Time page for chefs to clock in/out of accepted gigs or venues where they're registered as staff, with live running timer and shift history. Added Timesheets page for businesses to review, approve, or dispute submitted shifts. All API routes secured with Supabase JWT authentication middleware. Navigation links added to chef dashboard ("Time" button) and business dashboard ("Timesheets" quick action).
 - October 12, 2025. **CHEF INVOICE PDF DOWNLOADS & ENHANCED ERROR HANDLING**: Extended PDF download functionality to chef users - chefs can now download their own invoices from /chef/invoices page. Enhanced invoicePDF.ts utility with comprehensive error handling, input validation, and improved safeNumber function with explicit Number type conversion to prevent toFixed() errors. Added fallback mechanisms for missing business profile data in both business and chef invoice pages. PDF generation now robust against null/undefined values with detailed console logging for debugging.
 - September 10, 2025. **EMAIL NOTIFICATION SYSTEM COMPLETED**: Successfully resolved critical DNS resolution issues and implemented fully working email notification system. Fixed container DNS problems with custom DNS-over-HTTPS resolver, resolved Resend API configuration issues, and established complete invoice workflow emails. Both business invoice notifications and chef payment confirmations now work reliably with proper domain verification.
 - September 08, 2025. **NOTIFICATIONS SYSTEM IMPLEMENTATION**: Implemented comprehensive notifications system with database table, API routes, and automatic invoice notifications. Added notifications table with proper RLS policies, API endpoints for fetching and marking notifications as read, and automatic notification creation when invoices are submitted. System supports structured metadata and extensible notification types.
