@@ -175,7 +175,7 @@ export default function BusinessDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                   <Button 
                     variant="outline" 
                     className="flex flex-col items-center p-4 h-auto"
@@ -206,10 +206,19 @@ export default function BusinessDashboard() {
                   <Button 
                     variant="outline" 
                     className="flex flex-col items-center p-4 h-auto"
+                    onClick={() => navigate(`/business/${businessId}/staff`)}
+                    data-testid="manage-staff-button"
+                  >
+                    <Users className="h-6 w-6 mb-2 text-indigo-600" />
+                    <span className="text-sm">Manage Staff</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col items-center p-4 h-auto"
                     onClick={() => navigate("/business/invoices")}
                     data-testid="view-invoices-button"
                   >
-                    <Users className="h-6 w-6 mb-2 text-purple-600" />
+                    <Settings className="h-6 w-6 mb-2 text-purple-600" />
                     <span className="text-sm">Invoices</span>
                   </Button>
                   <Button 

@@ -26,6 +26,11 @@ const addVenueStaffSchema = z.object({
   role: z.string().optional(),
 });
 
+const updateVenueStaffSchema = z.object({
+  isActive: z.boolean().optional(),
+  role: z.string().optional().nullable(),
+});
+
 // Get my current open shift
 router.get('/shifts/open', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -444,6 +449,44 @@ router.delete('/venue/:venueId/staff/:staffId', authenticateUser, async (req: Au
   } catch (error) {
     console.error('Error removing venue staff:', error);
     return res.status(500).json({ error: 'Failed to remove venue staff' });
+  }
+});
+
+// Update staff member (toggle active status, update role)
+router.patch('/venue/:venueId/staff/:staffId', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    const { venueId, staffId } = req.params;
+    const validation = updateVenueStaffSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'Invalid input', details: validation.error.errors });
+    }
+
+    const { isActive, role } = validation.data;
+
+    // Check if user owns this venue
+    const isOwner = await storage.isBusinessOwner(userId, venueId);
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Not authorized to update staff at this venue' });
+    }
+
+    // Update staff member
+    const updated = await storage.updateVenueStaff(staffId, { isActive, role });
+    if (!updated) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    // Enrich with chef details
+    const chef = await storage.getChefProfile(updated.chefId);
+    
+    return res.json({
+      ...updated,
+      chef: chef ? { id: chef.id, fullName: chef.fullName, profileImageUrl: chef.profileImageUrl } : null
+    });
+  } catch (error) {
+    console.error('Error updating venue staff:', error);
+    return res.status(500).json({ error: 'Failed to update venue staff' });
   }
 });
 

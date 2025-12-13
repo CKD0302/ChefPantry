@@ -1,0 +1,128 @@
+You are an elite full-stack engineer working in our Replit app.
+
+Goal: Add a business UI to manage venue_staff so venues can enable existing chefs to clock in/out without gigs.
+
+Existing state
+	•	The API endpoint exists: POST /api/time/venue/:venueId/staff
+	•	Chefs can clock in if:
+	•	accepted to gig OR
+	•	present in venue_staff (but currently only addable via API)
+	•	Backend is Supabase; ensure all calls remain protected.
+
+Do NOT implement Phase 2 QR/NFC yet. This is Phase 1 completion.
+
+⸻
+
+Requirements
+
+1) Add a new business page: Manage Staff
+
+Create a page accessible from the venue dashboard:
+	•	Route: /venue/:venueId/staff (or align with existing routing patterns)
+	•	Add a “Staff” / “Manage Staff” button in venue dashboard quick actions.
+
+Page sections:
+	1.	Add Staff Member
+	•	Search input (name or email)
+	•	Results list (top 10–20)
+	•	Each result shows: chef name, email, location (if available), profile status
+	•	Button: Add as Staff
+	•	On add, call existing API endpoint to create venue_staff row.
+	2.	Current Staff List
+	•	Table of existing staff members for this venue:
+	•	Chef name
+	•	Email
+	•	Role (optional)
+	•	Status: Active / Inactive
+	•	Added date
+	•	Actions:
+	•	Toggle Active/Inactive
+	•	Remove (optional; if removal exists, otherwise keep to toggle only)
+	3.	Basic UX
+	•	Toast/snackbar on success/fail
+	•	Confirm dialog for deactivate/remove
+	•	Loading states
+
+⸻
+
+2) Create/confirm supporting API endpoints (if missing)
+
+We need full CRUD from the UI. Use existing patterns under /api/time/venue/:venueId/….
+
+Endpoints:
+	1.	GET /api/time/venue/:venueId/staff
+	•	Returns list of staff for venue with chef details joined (name, email)
+	2.	POST /api/time/venue/:venueId/staff
+	•	Body: { chefUserId?: string, chefProfileId?: string, email?: string }
+	•	Implement in a way that matches your actual identity mapping:
+	•	Prefer using chef_profiles.id if that’s what venue_staff.chef_id references.
+	•	Server must verify caller is the venue owner/admin.
+	3.	PATCH /api/time/venue/:venueId/staff/:staffId
+	•	Body: { is_active?: boolean, role?: string }
+	4.	Optional: DELETE /api/time/venue/:venueId/staff/:staffId
+	•	If you already have “deactivate” functionality, deletion is optional.
+
+Important: Do not trust client input for venue ownership. Validate on server using Supabase auth + venue ownership check.
+
+⸻
+
+3) Chef search implementation
+
+We need to search chefs for “Add Staff”.
+
+Implement:
+	•	GET /api/chefs/search?q=...
+Return minimal fields for results:
+	•	chef_profile_id
+	•	user_id (if relevant)
+	•	name
+	•	email
+	•	location (optional)
+
+Search rules:
+	•	case-insensitive partial match on name and email
+	•	limit 20
+	•	exclude chefs already added to this venue (if easy)
+
+Note: If emails are stored in auth.users and not in chef_profiles, join accordingly on the server. Do not expose unnecessary auth fields.
+
+⸻
+
+4) Supabase / RLS alignment
+	•	Ensure venue_staff RLS allows:
+	•	Venue owner/admin to SELECT/INSERT/UPDATE staff rows for their venue
+	•	Chef to SELECT rows where chef_id is theirs (optional)
+	•	If you’re currently relying on API routes only, keep it that way, but DO NOT open permissive RLS.
+	•	All business UI actions must go through the API endpoints (server-side checks).
+
+⸻
+
+5) Acceptance criteria (manual test checklist)
+	1.	As venue owner:
+	•	open Manage Staff page
+	•	search a chef by email
+	•	add them as staff
+	•	see them appear in staff list
+	•	toggle them inactive and confirm they can no longer clock into venue
+	2.	As chef who was added:
+	•	go to /chef/time
+	•	see venue in “Clock into a venue” dropdown
+	•	clock in/out successfully
+	3.	As non-owner business user (or another venue owner):
+	•	cannot view or modify staff for a venue they don’t own
+
+⸻
+
+Output
+
+Implement all of the above, keep styling consistent with existing dashboard UI, and ensure build passes.
+
+⸻
+
+One more thing (don’t skip)
+
+When implementing “add staff”, ensure we store the correct identifier:
+	•	If venue_staff.chef_id references chef_profiles.id, store that.
+	•	Do not store auth.users.id unless the schema is built for it.
+
+Proceed now.

@@ -104,6 +104,7 @@ export interface IStorage {
     bankSortCode?: string;
     bankAccountNumber?: string;
   }): Promise<ChefProfile | undefined>;
+  searchChefProfiles(query: string, excludeVenueId?: string): Promise<ChefProfile[]>;
   
   // Business Profiles methods (Supabase)
   getBusinessProfile(id: string): Promise<BusinessProfile | undefined>;
@@ -198,6 +199,7 @@ export interface IStorage {
   getVenueStaffMembership(venueId: string, chefId: string): Promise<VenueStaff | undefined>;
   addVenueStaff(staff: InsertVenueStaff): Promise<VenueStaff>;
   updateVenueStaffStatus(id: string, isActive: boolean): Promise<VenueStaff | undefined>;
+  updateVenueStaff(id: string, updates: { isActive?: boolean; role?: string | null }): Promise<VenueStaff | undefined>;
   removeVenueStaff(id: string): Promise<boolean>;
   
   // Work Shifts methods - for time tracking
@@ -464,6 +466,40 @@ export class DBStorage implements IStorage {
       .where(eq(chefProfiles.id, id))
       .returning();
     return result[0];
+  }
+
+  async searchChefProfiles(query: string, excludeVenueId?: string): Promise<ChefProfile[]> {
+    const searchPattern = `%${query}%`;
+    
+    if (excludeVenueId) {
+      // Get chef IDs already staff at this venue
+      const existingStaff = await db.select({ chefId: venueStaff.chefId })
+        .from(venueStaff)
+        .where(eq(venueStaff.venueId, excludeVenueId));
+      
+      const excludeIds = existingStaff.map(s => s.chefId);
+      
+      if (excludeIds.length > 0) {
+        return db.select()
+          .from(chefProfiles)
+          .where(and(
+            or(
+              sql`LOWER(${chefProfiles.fullName}) LIKE LOWER(${searchPattern})`,
+              sql`LOWER(${chefProfiles.email}) LIKE LOWER(${searchPattern})`
+            ),
+            not(sql`${chefProfiles.id} = ANY(ARRAY[${sql.join(excludeIds.map(id => sql`${id}`), sql`, `)}]::text[])`)
+          ))
+          .limit(20);
+      }
+    }
+    
+    return db.select()
+      .from(chefProfiles)
+      .where(or(
+        sql`LOWER(${chefProfiles.fullName}) LIKE LOWER(${searchPattern})`,
+        sql`LOWER(${chefProfiles.email}) LIKE LOWER(${searchPattern})`
+      ))
+      .limit(20);
   }
   
   // Business Profiles methods (Supabase)
@@ -1549,6 +1585,28 @@ export class DBStorage implements IStorage {
   async updateVenueStaffStatus(id: string, isActive: boolean): Promise<VenueStaff | undefined> {
     const result = await db.update(venueStaff)
       .set({ isActive })
+      .where(eq(venueStaff.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateVenueStaff(id: string, updates: { isActive?: boolean; role?: string | null }): Promise<VenueStaff | undefined> {
+    const updateData: Partial<{ isActive: boolean; role: string | null }> = {};
+    if (updates.isActive !== undefined) {
+      updateData.isActive = updates.isActive;
+    }
+    if (updates.role !== undefined) {
+      updateData.role = updates.role;
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      // No updates to make, return existing record
+      const existing = await db.select().from(venueStaff).where(eq(venueStaff.id, id)).limit(1);
+      return existing[0];
+    }
+    
+    const result = await db.update(venueStaff)
+      .set(updateData)
       .where(eq(venueStaff.id, id))
       .returning();
     return result[0];

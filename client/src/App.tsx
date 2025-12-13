@@ -47,6 +47,7 @@ import BusinessDashboard from "@/pages/business/BusinessDashboard";
 // Time Tracking Pages
 import ChefTime from "@/pages/ChefTime";
 import VenueTimesheets from "@/pages/VenueTimesheets";
+import VenueStaff from "@/pages/VenueStaff";
 
 // Wrapper components for route parameters
 
@@ -91,6 +92,7 @@ function Router() {
       {/* Business Management Routes */}
       <Route path="/business/:id/dashboard" component={BusinessDashboard} />
       <Route path="/business/:id/timesheets" component={VenueTimesheets} />
+      <Route path="/business/:id/staff" component={VenueStaff} />
       
       {/* Time Tracking Routes */}
       <Route path="/chef/time" component={ChefTime} />

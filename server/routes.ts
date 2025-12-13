@@ -1795,6 +1795,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search chefs by name or email (for adding staff to venues)
+  // Requires venueId and verifies business ownership for security
+  apiRouter.get("/chefs/search", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const { q, venueId } = req.query;
+      
+      // venueId is required for authorization
+      if (!venueId || typeof venueId !== 'string') {
+        return res.status(400).json({ message: "venueId is required" });
+      }
+      
+      // Verify user owns this venue
+      const isOwner = await storage.isBusinessOwner(userId, venueId);
+      if (!isOwner) {
+        return res.status(403).json({ message: "Not authorized to search chefs for this venue" });
+      }
+      
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.status(400).json({ message: "Search query (q) must be at least 2 characters" });
+      }
+      
+      const chefs = await storage.searchChefProfiles(q.trim(), venueId);
+      
+      res.status(200).json({
+        data: chefs.map(chef => ({
+          id: chef.id,
+          fullName: chef.fullName,
+          email: chef.email,
+          location: chef.location,
+          profileImageUrl: chef.profileImageUrl
+        }))
+      });
+    } catch (error) {
+      console.error("Error searching chefs:", error);
+      res.status(500).json({ message: "Failed to search chefs" });
+    }
+  });
+
   // Check if invoice exists for a gig and chef
   apiRouter.get("/invoices/check", async (req: Request, res: Response) => {
     try {
