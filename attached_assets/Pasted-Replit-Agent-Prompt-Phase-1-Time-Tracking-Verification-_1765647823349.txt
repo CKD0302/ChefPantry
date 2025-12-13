@@ -1,0 +1,170 @@
+Replit Agent Prompt — Phase 1 Time Tracking Verification (Supabase + App)
+
+You are an elite engineer auditing an existing “Time Tracking Phase 1” implementation.
+
+Goal: Verify the implementation is genuinely correct and secure end-to-end. Do not assume anything from prior summaries. Inspect the real Supabase schema + RLS + code.
+
+Stack constraints
+	•	Backend: Supabase Postgres + Auth + RLS
+	•	App code: Replit project (existing Chef Pantry/Chefy code)
+	•	You must produce a structured Audit Report with PASS/FAIL per check, evidence (what you found), and fixes (SQL/code) where needed.
+
+⸻
+
+Step 0 — Collect Facts (no guessing)
+	1.	Locate the Supabase client setup in the codebase (env vars, URL/key usage).
+	2.	Identify the relevant tables used by time tracking:
+	•	work_shifts, venue_staff (or whatever names actually exist)
+	•	venues, gigs, and the table that represents “accepted chef” (e.g. gig_applications)
+	•	chef_profiles and how it links to auth.users (e.g. chef_profiles.user_id)
+	3.	Print the actual table and column names you find in the code and/or migrations.
+
+⸻
+
+Step 1 — Verify Database Schema + Constraints
+
+For work_shifts:
+	•	Confirm required columns exist:
+	•	chef_id, venue_id, gig_id (nullable)
+	•	clock_in_at, clock_out_at
+	•	break_minutes
+	•	status (with allowed values)
+	•	created_at, updated_at
+	•	Confirm integrity constraints exist:
+	•	clock_out_at >= clock_in_at (if clock_out_at not null)
+	•	break_minutes >= 0
+	•	status is restricted to known values
+	•	Confirm one open shift per chef is enforced:
+	•	A partial unique index (or equivalent) must exist for status='open'.
+	•	Confirm invoice protection exists:
+	•	Either invoice_id on work_shifts OR a join table that prevents double-invoicing.
+
+For venue_staff:
+	•	Confirm unique constraint on (venue_id, chef_id)
+	•	Confirm is_active or equivalent exists
+
+Deliverable: In the audit report, include the exact DDL/index evidence (from migrations or introspection).
+
+If any item is missing: generate the exact SQL migration to add it.
+
+⸻
+
+Step 2 — Verify RLS is Enabled and Correct
+
+You must verify RLS status in Supabase for:
+	•	work_shifts
+	•	venue_staff
+
+Then verify policies align with requirements:
+
+Chef permissions (work_shifts)
+
+A chef can:
+	•	SELECT their own shifts
+	•	INSERT a shift only if:
+	•	the shift belongs to their chef profile AND
+	•	(gig shift) they are accepted/assigned for that gig
+OR
+	•	(staff shift) they are in venue_staff for that venue and active
+	•	UPDATE their own shift only to:
+	•	clock out when status is open
+	•	(optionally) add chef_note/break_minutes before approval
+	•	They must NOT be able to:
+	•	approve/dispute
+	•	edit timestamps after approval
+	•	modify shifts once invoiced (if invoice_id present)
+
+Venue admin permissions (work_shifts)
+
+Venue owner/admin can:
+	•	SELECT shifts for their venue
+	•	UPDATE only limited fields:
+	•	status to approved / disputed
+	•	venue_note
+They must NOT be able to:
+	•	change chef_id, clock_in_at, clock_out_at (unless explicitly allowed later)
+
+venue_staff policies
+
+Venue owner/admin can manage (insert/update/delete) staff links for their venue.
+Chefs can read their own venue_staff rows.
+
+Important: Do not rely on API route JWT alone. Policies must be correct because users can call Supabase directly.
+
+Deliverable: Audit report includes:
+	•	whether RLS enabled (PASS/FAIL)
+	•	list policies found with definitions
+	•	PASS/FAIL for each policy requirement
+	•	exact SQL to fix/replace policies if needed
+
+⸻
+
+Step 3 — Verify Identity Mapping (chef_id correctness)
+
+Confirm what chef_id means everywhere:
+	•	Is work_shifts.chef_id referencing chef_profiles.id or auth.users.id?
+	•	Check the code in clock-in/out routes and pages:
+	•	What ID does it use when inserting shifts?
+	•	Check FK constraints to confirm expected ID type.
+
+Deliverable: PASS/FAIL and, if mismatched, a concrete refactor plan (either DB or code) with minimal breaking changes.
+
+⸻
+
+Step 4 — Verify Gig Acceptance Logic Matches Real Schema
+
+Identify how “accepted gig” is represented.
+Examples:
+	•	gig_applications.status='accepted' and gig_applications.chef_id=...
+	•	gigs.accepted_chef_id=...
+
+Then verify the clock-in eligibility checks use the same source of truth as the UI list of accepted gigs.
+
+Deliverable: PASS/FAIL + exact fix if mismatch.
+
+⸻
+
+Step 5 — Verify Time Calculations and Edge Cases
+
+Confirm duration is computed as:
+	•	(clock_out_at - clock_in_at) - break_minutes
+
+Check edge cases:
+	•	clock out before clock in should be impossible
+	•	break minutes cannot exceed total minutes
+	•	timezone display consistency (UK users)
+
+Deliverable: PASS/FAIL + fix.
+
+⸻
+
+Step 6 — Verify UI Routes and Access Control
+
+Confirm routes exist and are accessible only to correct roles:
+	•	/chef/time
+	•	business venue dashboard timesheets page
+
+Confirm the UI prevents:
+	•	clock-in if an open shift exists
+	•	clock-out if no open shift exists
+
+Deliverable: PASS/FAIL + fix.
+
+⸻
+
+Step 7 — Produce Final Audit Report + Patch Pack
+
+Output a single report with sections:
+	1.	Summary
+	2.	Schema & Indexes
+	3.	RLS & Security
+	4.	Identity Mapping
+	5.	Gig Eligibility
+	6.	Time Logic & Edge Cases
+	7.	UI & UX Guardrails
+	8.	Fixes (copy/paste SQL + code diffs guidance)
+
+If anything fails, produce:
+	•	SQL migrations to apply in Supabase
+	•	minimal code changes in the Replit project
+	•	a short regression test checklist (manual steps) to validate fixes
