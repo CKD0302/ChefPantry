@@ -688,6 +688,15 @@ export default function Dashboard() {
                     >
                       Reviews
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/business/${user.id}/staff`)}
+                      className="flex items-center justify-center gap-2 w-full"
+                      data-testid="manage-staff-button"
+                    >
+                      <Users className="h-4 w-4 text-indigo-600" />
+                      Manage Staff
+                    </Button>
                   </div>
                 </div>
               </div>
