@@ -88,6 +88,8 @@ export const chefProfiles = pgTable("chef_profiles", {
   bankSortCode: text("bank_sort_code"), // Bank sort code
   // Payment method - only bank transfer supported
   paymentMethod: text("payment_method").default("bank"), // Always 'bank'
+  // Hourly rate for time tracking
+  hourlyRate: numeric("hourly_rate"), // Chef's hourly rate in GBP
   // Disclaimer acceptance
   chefDisclaimerAccepted: boolean("chef_disclaimer_accepted").default(false).notNull(),
   chefDisclaimerAcceptedAt: timestamp("chef_disclaimer_accepted_at"),
@@ -116,6 +118,8 @@ export const businessProfiles = pgTable("business_profiles", {
   // Disclaimer acceptance
   businessDisclaimerAccepted: boolean("business_disclaimer_accepted").default(false).notNull(),
   businessDisclaimerAcceptedAt: timestamp("business_disclaimer_accepted_at"),
+  // Pay frequency for time tracking
+  payFrequency: text("pay_frequency").default("weekly"), // 'weekly' or 'monthly'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

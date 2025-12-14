@@ -16,8 +16,20 @@ import {
   History,
   CheckCircle,
   AlertCircle,
-  XCircle
+  XCircle,
+  FileText
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -147,6 +159,19 @@ export default function ChefTime() {
     },
     enabled: !!user?.id,
   });
+
+  // Fetch chef profile to get hourly rate
+  const { data: chefProfile } = useQuery<{ hourlyRate: string | null }>({
+    queryKey: ["/api/profiles/chef", user?.id],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/profiles/chef/${user?.id}`);
+      const data = await response.json();
+      return data?.data || data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const hourlyRate = chefProfile?.hourlyRate ? parseFloat(chefProfile.hourlyRate) : null;
 
   // Clock in mutation
   const clockInMutation = useMutation({
@@ -524,7 +549,7 @@ export default function ChefTime() {
                   ) : (
                     <div className="space-y-4">
                       {filterShiftsByStatus(tabValue).map((shift) => (
-                        <ShiftCard key={shift.id} shift={shift} />
+                        <ShiftCard key={shift.id} shift={shift} hourlyRate={hourlyRate} chefId={user?.id} />
                       ))}
                     </div>
                   )}
@@ -541,9 +566,85 @@ export default function ChefTime() {
 
 interface ShiftCardProps {
   shift: ShiftHistoryItem;
+  hourlyRate?: number | null;
+  chefId?: string;
 }
 
-function ShiftCard({ shift }: ShiftCardProps) {
+function ShiftCard({ shift, hourlyRate, chefId }: ShiftCardProps) {
+  const { toast } = useToast();
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notes, setNotes] = useState("");
+
+  const calculateWorkedHours = () => {
+    if (!shift.clockOutAt) return 0;
+    const totalMs = new Date(shift.clockOutAt).getTime() - new Date(shift.clockInAt).getTime();
+    const breakMs = (shift.breakMinutes || 0) * 60 * 1000;
+    return Math.max(0, (totalMs - breakMs) / (1000 * 60 * 60));
+  };
+
+  const calculateEarnings = () => {
+    if (!hourlyRate) return 0;
+    return calculateWorkedHours() * hourlyRate;
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!chefId || !hourlyRate) {
+      toast({
+        title: "Error",
+        description: "Missing chef ID or hourly rate. Please set your hourly rate in your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const workedHours = calculateWorkedHours();
+      const totalAmount = workedHours * hourlyRate;
+
+      const invoiceData = {
+        chefId,
+        businessId: shift.venueId,
+        gigId: shift.gigId || null,
+        isManual: false,
+        serviceTitle: shift.gig?.title || `Shift at ${shift.venue?.name || 'venue'}`,
+        serviceDescription: `Work shift on ${new Date(shift.clockInAt).toLocaleDateString('en-GB')}`,
+        paymentType: 'hourly',
+        hoursWorked: workedHours.toFixed(2),
+        ratePerHour: hourlyRate.toFixed(2),
+        totalAmount: totalAmount.toFixed(2),
+        notes: notes || null,
+        status: "pending",
+      };
+
+      const response = await apiRequest("POST", "/api/invoices", invoiceData);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create invoice");
+      }
+
+      toast({
+        title: "Invoice Created",
+        description: `Invoice for £${totalAmount.toFixed(2)} has been sent to ${shift.venue?.name || 'the venue'}.`,
+      });
+
+      setIsInvoiceModalOpen(false);
+      setNotes("");
+      queryClient.invalidateQueries({ queryKey: ["/api/chef/invoices"] });
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create invoice",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('en-GB', {
       weekday: 'short',
@@ -627,10 +728,20 @@ function ShiftCard({ shift }: ShiftCardProps) {
           <span className="font-medium">{formatShiftDuration(shift.clockInAt, shift.clockOutAt)}</span>
         </div>
         <div>
-          <span className="text-gray-500 block">Location</span>
-          <span className="font-medium text-gray-600 flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            {shift.venue?.location || 'N/A'}
+          <span className="text-gray-500 block">Earnings</span>
+          <span className="font-medium text-green-600" data-testid={`earnings-${shift.id}`}>
+            {shift.clockOutAt && hourlyRate ? (
+              (() => {
+                const totalMs = new Date(shift.clockOutAt).getTime() - new Date(shift.clockInAt).getTime();
+                const breakMs = (shift.breakMinutes || 0) * 60 * 1000;
+                const workedHours = Math.max(0, (totalMs - breakMs) / (1000 * 60 * 60));
+                return `£${(workedHours * hourlyRate).toFixed(2)}`;
+              })()
+            ) : hourlyRate ? (
+              <span className="text-gray-400">£{hourlyRate}/hr</span>
+            ) : (
+              <span className="text-gray-400">Set rate in profile</span>
+            )}
           </span>
         </div>
       </div>
@@ -651,6 +762,80 @@ function ShiftCard({ shift }: ShiftCardProps) {
           )}
         </div>
       )}
+
+      {shift.status.toLowerCase() === 'approved' && shift.clockOutAt && (
+        <div className="mt-3 pt-3 border-t">
+          <Button
+            size="sm"
+            onClick={() => setIsInvoiceModalOpen(true)}
+            className="w-full sm:w-auto"
+            data-testid={`button-create-invoice-${shift.id}`}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Create Invoice
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Invoice from Shift</DialogTitle>
+            <DialogDescription>
+              Send an invoice to {shift.venue?.name || 'the venue'} for this approved shift
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Venue:</span>
+                <span className="font-medium">{shift.venue?.name || 'Unknown'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium">{new Date(shift.clockInAt).toLocaleDateString('en-GB')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Hours Worked:</span>
+                <span className="font-medium">{calculateWorkedHours().toFixed(2)} hrs</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Rate:</span>
+                <span className="font-medium">£{hourlyRate?.toFixed(2) || '0.00'}/hr</span>
+              </div>
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Total:</span>
+                <span className="text-green-600">£{calculateEarnings().toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invoice-notes">Notes (optional)</Label>
+              <Textarea
+                id="invoice-notes"
+                placeholder="Add any notes for this invoice..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                data-testid="input-invoice-notes"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInvoiceModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateInvoice}
+              disabled={isSubmitting || !hourlyRate}
+              data-testid="button-submit-invoice"
+            >
+              {isSubmitting ? 'Creating...' : 'Create Invoice'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

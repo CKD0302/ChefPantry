@@ -43,6 +43,7 @@ interface ShiftData {
     id: string;
     fullName: string;
     profileImageUrl: string | null;
+    hourlyRate: number | null;
   } | null;
   gig: {
     id: string;
@@ -497,7 +498,7 @@ function ShiftRow({ shift, onApprove, onDispute }: ShiftRowProps) {
         </div>
 
         {/* Shift Details */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm flex-grow">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm flex-grow">
           <div>
             <span className="text-gray-500 block">Clock In</span>
             <span className="font-medium">{formatDateTime(shift.clockInAt)}</span>
@@ -511,6 +512,23 @@ function ShiftRow({ shift, onApprove, onDispute }: ShiftRowProps) {
           <div>
             <span className="text-gray-500 block">Duration</span>
             <span className="font-medium">{formatShiftDuration(shift.clockInAt, shift.clockOutAt)}</span>
+          </div>
+          <div>
+            <span className="text-gray-500 block">Earnings</span>
+            <span className="font-medium text-green-600" data-testid={`earnings-${shift.id}`}>
+              {shift.clockOutAt && shift.chef?.hourlyRate ? (
+                (() => {
+                  const totalMs = new Date(shift.clockOutAt).getTime() - new Date(shift.clockInAt).getTime();
+                  const breakMs = (shift.breakMinutes || 0) * 60 * 1000;
+                  const workedHours = Math.max(0, (totalMs - breakMs) / (1000 * 60 * 60));
+                  return `£${(workedHours * shift.chef.hourlyRate).toFixed(2)}`;
+                })()
+              ) : shift.chef?.hourlyRate ? (
+                <span className="text-gray-400">£{shift.chef.hourlyRate}/hr</span>
+              ) : (
+                <span className="text-gray-400">No rate set</span>
+              )}
+            </span>
           </div>
         </div>
 

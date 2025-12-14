@@ -65,6 +65,12 @@ const chefProfileSchema = z.object({
   paymentMethod: z.literal("bank"),
   bankSortCode: z.string().regex(/^\d{2}-\d{2}-\d{2}$/, "Sort code must be in format XX-XX-XX").optional().or(z.literal("")),
   bankAccountNumber: z.string().regex(/^\d{8}$/, "Account number must be 8 digits").optional().or(z.literal("")),
+  // Hourly rate for time tracking
+  hourlyRate: z.union([
+    z.string().transform(val => val === "" ? null : parseFloat(val)),
+    z.number(),
+    z.null()
+  ]).pipe(z.number().min(0, "Hourly rate must be a positive number").nullable()),
 });
 
 // Business profile schema
@@ -83,6 +89,8 @@ const businessProfileSchema = z.object({
   businessSize: z.string().optional(),
   isHiring: z.boolean().default(false),
   availabilityNotes: z.string().optional(),
+  // Pay frequency for time tracking
+  payFrequency: z.enum(["weekly", "monthly"]).default("weekly"),
 });
 
 type ChefProfileFormValues = z.infer<typeof chefProfileSchema>;
@@ -124,6 +132,8 @@ export default function EditProfile() {
       paymentMethod: "bank",
       bankSortCode: "",
       bankAccountNumber: "",
+      // Hourly rate default
+      hourlyRate: null,
     },
     // This allows the document upload to not interfere with form submission
     shouldUseNativeValidation: false,
@@ -144,6 +154,8 @@ export default function EditProfile() {
       venueType: "",
       cuisineSpecialties: "",
       businessSize: "",
+      // Pay frequency default
+      payFrequency: "weekly" as const,
     },
   });
 
@@ -228,6 +240,8 @@ export default function EditProfile() {
           paymentMethod: "bank",
           bankSortCode: data.bank_sort_code || "",
           bankAccountNumber: data.bank_account_number || "",
+          // Hourly rate
+          hourlyRate: data.hourly_rate ? parseFloat(data.hourly_rate) : undefined,
         });
       } else {
         // No profile found, redirect to create
@@ -291,6 +305,8 @@ export default function EditProfile() {
           businessSize: data.business_size || "",
           isHiring: data.is_hiring || false,
           availabilityNotes: data.availability_notes || "",
+          // Pay frequency
+          payFrequency: (data.pay_frequency === "monthly" ? "monthly" : "weekly") as "weekly" | "monthly",
         });
       } else {
         // No profile found, redirect to create
@@ -343,6 +359,8 @@ export default function EditProfile() {
         payment_method: "bank",
         bank_sort_code: data.bankSortCode || null,
         bank_account_number: data.bankAccountNumber || null,
+        // Hourly rate
+        hourly_rate: data.hourlyRate || null,
         // Dish photos
         dish_photos_urls: dishPhotos,
       };
@@ -397,6 +415,8 @@ export default function EditProfile() {
         business_size: data.businessSize || null,
         is_hiring: data.isHiring,
         availability_notes: data.availabilityNotes || null,
+        // Pay frequency
+        pay_frequency: data.payFrequency || "weekly",
       };
       
       const { error } = await supabase
@@ -677,10 +697,37 @@ export default function EditProfile() {
                       )}
                     />
 
-                    {/* Bank Transfer Details Section */}
+                    {/* Payment & Rate Settings Section */}
                     <div className="space-y-6 pt-4">
-                      <h3 className="text-lg font-medium">Bank Transfer Details</h3>
-                      <p className="text-sm text-gray-500 mb-4">Enter your bank details to receive payments from businesses</p>
+                      <h3 className="text-lg font-medium">Payment & Rate Settings</h3>
+                      <p className="text-sm text-gray-500 mb-4">Set your hourly rate and bank details for payments</p>
+                      
+                      <FormField
+                        control={chefForm.control}
+                        name="hourlyRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hourly Rate (£)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                step="0.50" 
+                                placeholder="15.00" 
+                                {...field}
+                                value={field.value ?? ""}
+                                data-testid="input-hourly-rate"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Your standard hourly rate for time tracking and invoices
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <h4 className="text-md font-medium mt-6">Bank Transfer Details</h4>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
@@ -920,6 +967,38 @@ export default function EditProfile() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Pay Frequency Section */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h3 className="text-lg font-medium">Time Tracking Settings</h3>
+                      <FormField
+                        control={businessForm.control}
+                        name="payFrequency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pay Frequency</FormLabel>
+                            <FormControl>
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <SelectTrigger data-testid="select-pay-frequency">
+                                  <SelectValue placeholder="Select pay frequency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormDescription>
+                              How often you pay your staff (used for grouping timesheets)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField

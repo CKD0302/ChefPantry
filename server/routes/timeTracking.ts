@@ -118,7 +118,7 @@ router.get('/shifts/venue/:venueId', authenticateUser, async (req: Authenticated
 
     const shifts = await storage.getShiftsByVenue(venueId, options);
     
-    // Enrich with chef details
+    // Enrich with chef details including hourly rate
     const enrichedShifts = await Promise.all(shifts.map(async (shift) => {
       const chef = await storage.getChefProfile(shift.chefId);
       let gig = null;
@@ -127,7 +127,12 @@ router.get('/shifts/venue/:venueId', authenticateUser, async (req: Authenticated
       }
       return {
         ...shift,
-        chef: chef ? { id: chef.id, fullName: chef.fullName, profileImageUrl: chef.profileImageUrl } : null,
+        chef: chef ? { 
+          id: chef.id, 
+          fullName: chef.fullName, 
+          profileImageUrl: chef.profileImageUrl,
+          hourlyRate: chef.hourlyRate ? parseFloat(chef.hourlyRate) : null
+        } : null,
         gig: gig ? { id: gig.id, title: gig.title } : null
       };
     }));
