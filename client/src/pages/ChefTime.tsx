@@ -234,21 +234,31 @@ export default function ChefTime() {
     },
   });
 
-  // QR scan clock-in mutation
+  // QR scan clock-in/out mutation (toggles based on current shift status)
   const qrClockInMutation = useMutation({
     mutationFn: async (token: string) => {
       const response = await apiRequest("POST", "/api/time/qr/validate", { token });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to clock in with QR code");
+        throw new Error(errorData.error || "QR code action failed");
       }
       return response.json();
     },
     onSuccess: (data) => {
-      toast({
-        title: "Clocked In via QR",
-        description: `You're now clocked in at ${data.venueName || 'the venue'}. Have a great shift!`,
-      });
+      const venueName = data.venue?.name || 'the venue';
+      
+      if (data.action === 'clock_out') {
+        toast({
+          title: "Clocked Out",
+          description: `You've clocked out at ${venueName}. Great work!`,
+        });
+      } else {
+        toast({
+          title: "Clocked In",
+          description: `You're now clocked in at ${venueName}. Have a great shift!`,
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/time/shifts/open"] });
       queryClient.invalidateQueries({ queryKey: ["/api/time/shifts/my"] });
       setIsQRScannerOpen(false);
@@ -264,7 +274,7 @@ export default function ChefTime() {
       }
       
       toast({
-        title: "QR Clock In Failed",
+        title: "QR Scan Failed",
         description: errorMessage,
         variant: "destructive",
       });

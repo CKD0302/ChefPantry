@@ -376,15 +376,12 @@ export const workShifts = pgTable("work_shifts", {
   clockOutCheck: check("clock_out_check", sql`clock_out_at IS NULL OR clock_out_at >= clock_in_at`),
 }));
 
-// Venue Check-in Tokens table - stores QR code tokens for clock-in
+// Venue Check-in Tokens table - stores PERMANENT QR code tokens for clock-in/out
+// Each venue gets ONE permanent token that never expires and can be reused
 export const venueCheckinTokens = pgTable("venue_checkin_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
-  venueId: text("venue_id").notNull(), // References business_profiles.id
-  token: text("token").notNull().unique(), // Unique token for QR code
-  gigId: uuid("gig_id").references(() => gigs.id, { onDelete: 'set null' }), // Optional gig context
-  expiresAt: timestamp("expires_at").notNull(), // Token expiration time
-  usedAt: timestamp("used_at"), // When token was used (null if unused)
-  usedBy: text("used_by"), // Chef ID who used the token
+  venueId: text("venue_id").notNull().unique(), // One token per venue
+  token: text("token").notNull().unique(), // Unique permanent token for QR code
   createdBy: text("created_by").notNull(), // Business user who created the token
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -498,9 +495,6 @@ export const insertVenueCheckinTokenSchema = createInsertSchema(venueCheckinToke
   id: true,
   createdAt: true,
   token: true, // Generated server-side
-  expiresAt: true, // Set server-side
-  usedAt: true, // Set when used
-  usedBy: true, // Set when used
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
