@@ -76,19 +76,30 @@ router.get('/shifts/my', authenticateUser, async (req: AuthenticatedRequest, res
 
     const shifts = await storage.getShiftsByChef(userId, options);
     
-    // Enrich with venue and gig details
-    const enrichedShifts = await Promise.all(shifts.map(async (shift) => {
-      const venue = await storage.getBusinessProfile(shift.venueId);
-      let gig = null;
-      if (shift.gigId) {
-        gig = await storage.getGig(shift.gigId);
-      }
+    // Batch fetch all unique venues and gigs to avoid N+1 queries
+    const uniqueVenueIds = Array.from(new Set(shifts.map(s => s.venueId)));
+    const uniqueGigIds = Array.from(new Set(shifts.filter(s => s.gigId).map(s => s.gigId!)));
+    
+    // Fetch all venues and gigs in parallel
+    const [venues, gigs] = await Promise.all([
+      Promise.all(uniqueVenueIds.map(id => storage.getBusinessProfile(id))),
+      Promise.all(uniqueGigIds.map(id => storage.getGig(id)))
+    ]);
+    
+    // Create lookup maps for O(1) access
+    const venueMap = new Map(venues.filter(Boolean).map(v => [v!.id, v!]));
+    const gigMap = new Map(gigs.filter(Boolean).map(g => [g!.id, g!]));
+    
+    // Enrich shifts using lookup maps (no additional DB calls)
+    const enrichedShifts = shifts.map(shift => {
+      const venue = venueMap.get(shift.venueId);
+      const gig = shift.gigId ? gigMap.get(shift.gigId) : null;
       return {
         ...shift,
         venue: venue ? { id: venue.id, name: venue.businessName, location: venue.location } : null,
         gig: gig ? { id: gig.id, title: gig.title } : null
       };
-    }));
+    });
     
     return res.json(enrichedShifts);
   } catch (error) {
@@ -118,13 +129,24 @@ router.get('/shifts/venue/:venueId', authenticateUser, async (req: Authenticated
 
     const shifts = await storage.getShiftsByVenue(venueId, options);
     
-    // Enrich with chef details including hourly rate
-    const enrichedShifts = await Promise.all(shifts.map(async (shift) => {
-      const chef = await storage.getChefProfile(shift.chefId);
-      let gig = null;
-      if (shift.gigId) {
-        gig = await storage.getGig(shift.gigId);
-      }
+    // Batch fetch all unique chefs and gigs to avoid N+1 queries
+    const uniqueChefIds = Array.from(new Set(shifts.map(s => s.chefId)));
+    const uniqueGigIds = Array.from(new Set(shifts.filter(s => s.gigId).map(s => s.gigId!)));
+    
+    // Fetch all chefs and gigs in parallel
+    const [chefs, gigs] = await Promise.all([
+      Promise.all(uniqueChefIds.map(id => storage.getChefProfile(id))),
+      Promise.all(uniqueGigIds.map(id => storage.getGig(id)))
+    ]);
+    
+    // Create lookup maps for O(1) access
+    const chefMap = new Map(chefs.filter(Boolean).map(c => [c!.id, c!]));
+    const gigMap = new Map(gigs.filter(Boolean).map(g => [g!.id, g!]));
+    
+    // Enrich shifts using lookup maps (no additional DB calls)
+    const enrichedShifts = shifts.map(shift => {
+      const chef = chefMap.get(shift.chefId);
+      const gig = shift.gigId ? gigMap.get(shift.gigId) : null;
       return {
         ...shift,
         chef: chef ? { 
@@ -135,7 +157,7 @@ router.get('/shifts/venue/:venueId', authenticateUser, async (req: Authenticated
         } : null,
         gig: gig ? { id: gig.id, title: gig.title } : null
       };
-    }));
+    });
     
     return res.json(enrichedShifts);
   } catch (error) {
