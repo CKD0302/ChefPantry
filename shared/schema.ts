@@ -376,6 +376,19 @@ export const workShifts = pgTable("work_shifts", {
   clockOutCheck: check("clock_out_check", sql`clock_out_at IS NULL OR clock_out_at >= clock_in_at`),
 }));
 
+// Venue Check-in Tokens table - stores QR code tokens for clock-in
+export const venueCheckinTokens = pgTable("venue_checkin_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  venueId: text("venue_id").notNull(), // References business_profiles.id
+  token: text("token").notNull().unique(), // Unique token for QR code
+  gigId: uuid("gig_id").references(() => gigs.id, { onDelete: 'set null' }), // Optional gig context
+  expiresAt: timestamp("expires_at").notNull(), // Token expiration time
+  usedAt: timestamp("used_at"), // When token was used (null if unused)
+  usedBy: text("used_by"), // Chef ID who used the token
+  createdBy: text("created_by").notNull(), // Business user who created the token
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
