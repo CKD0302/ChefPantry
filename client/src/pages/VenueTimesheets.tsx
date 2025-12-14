@@ -16,7 +16,9 @@ import {
   FileText,
   QrCode,
   RefreshCw,
-  Download
+  Download,
+  Check,
+  X
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
