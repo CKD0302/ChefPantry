@@ -697,6 +697,15 @@ export default function Dashboard() {
                       <Users className="h-4 w-4 text-indigo-600" />
                       Manage Staff
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/business/${user.id}/timesheets`)}
+                      className="flex items-center justify-center gap-2 w-full"
+                      data-testid="button-timesheets"
+                    >
+                      <Clock className="h-4 w-4 text-cyan-600" />
+                      Timesheets
+                    </Button>
                   </div>
                 </div>
               </div>
