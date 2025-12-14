@@ -21,7 +21,10 @@ import {
   applicationStatusSchema,
   chefPaymentMethodSchema,
   gigs,
-  gigApplications
+  gigApplications,
+  chefProfiles,
+  businessProfiles,
+  gigInvoices
 } from "@shared/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { createNotification } from "./lib/notify";
@@ -202,6 +205,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   apiRouter.get("/health", (req: Request, res: Response) => {
     res.json({ status: "ok", message: "Chef Pantry API is working!" });
+  });
+  
+  // Public stats endpoint for homepage (bypasses RLS by querying server-side)
+  apiRouter.get("/stats", async (req: Request, res: Response) => {
+    try {
+      // Query chef count
+      const chefCountResult = await db.select({ count: sql<number>`count(*)` })
+        .from(chefProfiles);
+      
+      // Query business count
+      const businessCountResult = await db.select({ count: sql<number>`count(*)` })
+        .from(businessProfiles);
+      
+      // Query confirmed bookings (accepted or confirmed status)
+      const confirmedBookingsResult = await db.select({ count: sql<number>`count(*)` })
+        .from(gigApplications)
+        .where(sql`${gigApplications.status} IN ('accepted', 'confirmed')`);
+      
+      // Query paid invoices
+      const paidInvoicesResult = await db.select({ count: sql<number>`count(*)` })
+        .from(gigInvoices)
+        .where(eq(gigInvoices.status, 'paid'));
+      
+      const chefCount = Number(chefCountResult[0]?.count || 0);
+      const businessCount = Number(businessCountResult[0]?.count || 0);
+      const confirmedBookings = Number(confirmedBookingsResult[0]?.count || 0);
+      const paidInvoices = Number(paidInvoicesResult[0]?.count || 0);
+      
+      // Combine confirmed bookings + paid invoices for "Successful Bookings"
+      const bookingCount = confirmedBookings + paidInvoices;
+      
+      res.json({
+        chefCount,
+        businessCount,
+        bookingCount
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
   });
   
   // Contact form submission
