@@ -255,17 +255,27 @@ export default function ChefTime() {
       setIsScanningQR(false);
     },
     onError: (error: Error) => {
+      let errorMessage = error.message;
+      try {
+        const parsed = JSON.parse(error.message.replace(/^[^{]*/, ''));
+        errorMessage = parsed.error || error.message;
+      } catch {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "QR Clock In Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      setIsQRScannerOpen(false);
       setIsScanningQR(false);
     },
   });
 
   const handleQRScan = (result: Array<{ rawValue: string }>) => {
-    if (!isScanningQR && result && result.length > 0) {
+    if (!isScanningQR && !qrClockInMutation.isPending && result && result.length > 0) {
       const scannedValue = result[0]?.rawValue;
       if (scannedValue) {
         setIsScanningQR(true);
