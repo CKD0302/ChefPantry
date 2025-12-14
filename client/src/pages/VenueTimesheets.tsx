@@ -22,7 +22,8 @@ import {
   FileText,
   QrCode,
   RefreshCw,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -31,6 +32,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useRoute } from "wouter";
 import QRCode from "react-qr-code";
+import { jsPDF } from "jspdf";
 
 interface ShiftData {
   id: string;
@@ -217,6 +219,72 @@ export default function VenueTimesheets() {
     if (diffMins < 60) return `${diffMins} min left`;
     const diffHours = Math.floor(diffMins / 60);
     return `${diffHours}h ${diffMins % 60}m left`;
+  };
+
+  const downloadQRCodePDF = async (token: QRToken) => {
+    const doc = new jsPDF();
+    const venueName = businessProfile?.businessName || 'Venue';
+    const expiryDate = new Date(token.expiresAt);
+    
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("Chef Pantry", 105, 25, { align: "center" });
+    
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "normal");
+    doc.text("Clock-In QR Code", 105, 40, { align: "center" });
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(venueName, 105, 55, { align: "center" });
+    
+    const qrElement = document.querySelector(`[data-testid="qr-code-${token.id}"]`) as SVGElement;
+    if (qrElement) {
+      const svgData = new XMLSerializer().serializeToString(qrElement);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, 400, 400);
+          ctx.drawImage(img, 0, 0, 400, 400);
+          const imgData = canvas.toDataURL('image/png');
+          
+          doc.addImage(imgData, 'PNG', 55, 65, 100, 100);
+          
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Valid until: ${expiryDate.toLocaleString('en-GB')}`, 105, 180, { align: "center" });
+          
+          doc.setFontSize(14);
+          doc.setFont("helvetica", "bold");
+          doc.text("Instructions for Chefs:", 105, 200, { align: "center" });
+          
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "normal");
+          doc.text("1. Open the Chef Pantry app on your phone", 105, 215, { align: "center" });
+          doc.text("2. Go to Time Tracking > Scan QR Code", 105, 225, { align: "center" });
+          doc.text("3. Point your camera at this QR code", 105, 235, { align: "center" });
+          doc.text("4. You will be automatically clocked in!", 105, 245, { align: "center" });
+          
+          doc.save(`${venueName.replace(/\s+/g, '_')}_QR_Code.pdf`);
+        }
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    } else {
+      toast({
+        title: "Error",
+        description: "Could not generate PDF. QR code not found.",
+        variant: "destructive",
+      });
+    }
   };
 
   const openActionDialog = (shift: ShiftData, type: "approve" | "dispute") => {
@@ -603,16 +671,27 @@ export default function VenueTimesheets() {
                           <Badge variant="secondary" className="text-xs">
                             {formatExpiryTime(token.expiresAt)}
                           </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => deleteTokenMutation.mutate(token.id)}
-                            disabled={deleteTokenMutation.isPending}
-                            data-testid={`button-delete-qr-${token.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => downloadQRCodePDF(token)}
+                              data-testid={`button-download-qr-${token.id}`}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => deleteTokenMutation.mutate(token.id)}
+                              disabled={deleteTokenMutation.isPending}
+                              data-testid={`button-delete-qr-${token.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         <p className="text-xs text-center text-gray-500">
                           Chefs can scan this code to clock in

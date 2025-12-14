@@ -1794,11 +1794,10 @@ export class DBStorage implements IStorage {
   }
 
   async getActiveCheckinTokensByVenue(venueId: string): Promise<VenueCheckinToken[]> {
-    const now = new Date();
     const result = await db.select().from(venueCheckinTokens)
       .where(and(
         eq(venueCheckinTokens.venueId, venueId),
-        sql`${venueCheckinTokens.expiresAt} > ${now}`,
+        sql`${venueCheckinTokens.expiresAt} > NOW()`,
         sql`${venueCheckinTokens.usedAt} IS NULL`
       ))
       .orderBy(desc(venueCheckinTokens.createdAt));
