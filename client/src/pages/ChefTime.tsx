@@ -17,7 +17,10 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
-  FileText
+  FileText,
+  QrCode,
+  Camera,
+  X
 } from "lucide-react";
 import {
   Dialog,
@@ -35,6 +38,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Scanner } from "@yudiel/react-qr-scanner";
 
 interface OpenShiftData {
   shift: {
@@ -118,6 +122,8 @@ export default function ChefTime() {
   const [selectedTab, setSelectedTab] = useState("all");
   const [selectedClockInOption, setSelectedClockInOption] = useState<string>("");
   const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [isScanningQR, setIsScanningQR] = useState(false);
 
   // Fetch current open shift
   const { data: openShiftData, isLoading: loadingOpenShift } = useQuery<OpenShiftData>({
@@ -227,6 +233,46 @@ export default function ChefTime() {
       });
     },
   });
+
+  // QR scan clock-in mutation
+  const qrClockInMutation = useMutation({
+    mutationFn: async (token: string) => {
+      const response = await apiRequest("POST", "/api/time/qr/validate", { token });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to clock in with QR code");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Clocked In via QR",
+        description: `You're now clocked in at ${data.venueName || 'the venue'}. Have a great shift!`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/time/shifts/open"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/time/shifts/my"] });
+      setIsQRScannerOpen(false);
+      setIsScanningQR(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "QR Clock In Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsScanningQR(false);
+    },
+  });
+
+  const handleQRScan = (result: Array<{ rawValue: string }>) => {
+    if (!isScanningQR && result && result.length > 0) {
+      const scannedValue = result[0]?.rawValue;
+      if (scannedValue) {
+        setIsScanningQR(true);
+        qrClockInMutation.mutate(scannedValue);
+      }
+    }
+  };
 
   // Timer effect for running shift
   useEffect(() => {
@@ -483,7 +529,7 @@ export default function ChefTime() {
                     </SelectContent>
                   </Select>
 
-                  <div className="flex justify-center">
+                  <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <Button 
                       size="lg" 
                       onClick={handleClockIn}
@@ -494,13 +540,23 @@ export default function ChefTime() {
                       <Play className="h-5 w-5 mr-2" />
                       {clockInMutation.isPending ? "Clocking In..." : "Clock In"}
                     </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => setIsQRScannerOpen(true)}
+                      className="px-8"
+                      data-testid="button-scan-qr"
+                    >
+                      <QrCode className="h-5 w-5 mr-2" />
+                      Scan QR Code
+                    </Button>
                   </div>
                 </div>
 
                 {/* Help Text */}
                 <div className="text-center text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
                   <p>Select a gig you've been accepted for, or a venue where you're registered as staff.</p>
-                  <p className="mt-1">Your time will be tracked and submitted for approval.</p>
+                  <p className="mt-1">Or scan a QR code provided by the venue to clock in instantly.</p>
                 </div>
               </div>
             )}
@@ -558,6 +614,73 @@ export default function ChefTime() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* QR Scanner Modal */}
+        <Dialog open={isQRScannerOpen} onOpenChange={(open) => {
+          setIsQRScannerOpen(open);
+          if (!open) setIsScanningQR(false);
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Scan QR Code to Clock In
+              </DialogTitle>
+              <DialogDescription>
+                Point your camera at the QR code displayed at the venue to clock in.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {isScanningQR || qrClockInMutation.isPending ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-4" />
+                  <p className="text-gray-600">Processing clock-in...</p>
+                </div>
+              ) : (
+                <div className="relative rounded-lg overflow-hidden bg-black" data-testid="qr-scanner-container">
+                  <Scanner
+                    onScan={handleQRScan}
+                    onError={(error) => {
+                      console.error('QR Scanner error:', error);
+                      toast({
+                        title: "Scanner Error",
+                        description: "Unable to access camera. Please check permissions.",
+                        variant: "destructive",
+                      });
+                    }}
+                    styles={{
+                      container: { width: '100%', paddingTop: '100%', position: 'relative' },
+                      video: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
+                    }}
+                    constraints={{
+                      facingMode: 'environment'
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="text-center text-sm text-gray-500 p-3 bg-gray-50 rounded-lg">
+                <QrCode className="h-6 w-6 mx-auto mb-2 text-gray-400" />
+                <p>Ask your venue manager to display their QR code</p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsQRScannerOpen(false);
+                  setIsScanningQR(false);
+                }}
+                data-testid="button-close-scanner"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
       <Footer />
     </div>

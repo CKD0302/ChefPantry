@@ -129,11 +129,13 @@ Preferred communication style: Simple, everyday language.
 - Work Shifts table for tracking clock in/out records
 - Chef Time page with live timer, venue/gig selection for clock in, shift history
 - Venue Timesheets page for businesses to review and approve/dispute shifts
+- QR code clock-in: Venues can generate QR codes, chefs scan to clock in instantly
 - Secure API routes with Supabase JWT authentication
 
 ## Changelog
 
 Changelog:
+- December 14, 2025. **QR CODE CLOCK-IN FEATURE**: Added QR code-based clock-in functionality. Venues can generate time-limited QR codes from their Timesheets page (with configurable expiration: 15 min to 8 hours). Chefs can scan these QR codes using their phone camera from the Time page to instantly clock in. Added venue_checkin_tokens table for secure token storage, API endpoints for QR generation/validation, react-qr-code for display, and @yudiel/react-qr-scanner for camera scanning.
 - December 14, 2025. **TIME TRACKING PHASE 2 (EARNINGS & INVOICING)**: Added hourly rate field to chef profiles and pay frequency field to business profiles. Shift displays now show calculated earnings (hours worked minus breaks × hourly rate). Added "Create Invoice" button on approved shifts in ChefTime.tsx, allowing chefs to create invoices directly from their approved timesheets with pre-filled shift data.
 - December 13, 2025. **TIME TRACKING PHASE 1 (CLOCK IN/OUT)**: Implemented comprehensive time tracking system for chefs. Added venue_staff and work_shifts tables to database schema. Created Time page for chefs to clock in/out of accepted gigs or venues where they're registered as staff, with live running timer and shift history. Added Timesheets page for businesses to review, approve, or dispute submitted shifts. All API routes secured with Supabase JWT authentication middleware. Navigation links added to chef dashboard ("Time" button) and business dashboard ("Timesheets" quick action).
 - October 12, 2025. **CHEF INVOICE PDF DOWNLOADS & ENHANCED ERROR HANDLING**: Extended PDF download functionality to chef users - chefs can now download their own invoices from /chef/invoices page. Enhanced invoicePDF.ts utility with comprehensive error handling, input validation, and improved safeNumber function with explicit Number type conversion to prevent toFixed() errors. Added fallback mechanisms for missing business profile data in both business and chef invoice pages. PDF generation now robust against null/undefined values with detailed console logging for debugging.

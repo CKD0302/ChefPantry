@@ -19,7 +19,10 @@ import {
   XCircle,
   Check,
   X,
-  FileText
+  FileText,
+  QrCode,
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -27,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useRoute } from "wouter";
+import QRCode from "react-qr-code";
 
 interface ShiftData {
   id: string;
@@ -57,6 +61,18 @@ interface BusinessProfile {
   location: string;
 }
 
+interface QRToken {
+  id: string;
+  venueId: string;
+  token: string;
+  gigId: string | null;
+  expiresAt: string;
+  usedAt: string | null;
+  usedBy: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
 export default function VenueTimesheets() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,6 +83,8 @@ export default function VenueTimesheets() {
   const [selectedShift, setSelectedShift] = useState<ShiftData | null>(null);
   const [actionType, setActionType] = useState<"approve" | "dispute" | null>(null);
   const [venueNote, setVenueNote] = useState("");
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [qrExpirationMinutes, setQrExpirationMinutes] = useState("30");
 
   // Fetch business profile
   const { data: businessProfile } = useQuery<BusinessProfile>({
@@ -120,6 +138,86 @@ export default function VenueTimesheets() {
       });
     },
   });
+
+  // Fetch active QR tokens for this venue
+  const { data: activeTokens, isLoading: loadingTokens } = useQuery<QRToken[]>({
+    queryKey: ["/api/time/qr/venue", venueId],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/time/qr/venue/${venueId}`);
+      return response.json();
+    },
+    enabled: !!venueId && !!user?.id && isQRModalOpen,
+  });
+
+  // Generate QR token mutation
+  const generateQRMutation = useMutation({
+    mutationFn: async (expiresInMinutes: number) => {
+      const response = await apiRequest("POST", "/api/time/qr/generate", {
+        venueId,
+        expiresInMinutes,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate QR code");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "QR Code Generated",
+        description: "Chefs can now scan this code to clock in.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/time/qr/venue", venueId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Generate QR",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete QR token mutation
+  const deleteTokenMutation = useMutation({
+    mutationFn: async (tokenId: string) => {
+      const response = await apiRequest("DELETE", `/api/time/qr/${tokenId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete QR code");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "QR Code Deleted",
+        description: "The QR code has been invalidated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/time/qr/venue", venueId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Delete",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerateQR = () => {
+    generateQRMutation.mutate(parseInt(qrExpirationMinutes));
+  };
+
+  const formatExpiryTime = (expiresAt: string) => {
+    const expiry = new Date(expiresAt);
+    const now = new Date();
+    const diffMs = expiry.getTime() - now.getTime();
+    if (diffMs <= 0) return "Expired";
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins} min left`;
+    const diffHours = Math.floor(diffMins / 60);
+    return `${diffHours}h ${diffMins % 60}m left`;
+  };
 
   const openActionDialog = (shift: ShiftData, type: "approve" | "dispute") => {
     setSelectedShift(shift);
@@ -230,11 +328,21 @@ export default function VenueTimesheets() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8 mt-16">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Timesheets</h1>
-          <p className="text-gray-600 mt-2">
-            {businessProfile?.businessName || 'Loading...'} - Review and approve staff shifts
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Timesheets</h1>
+            <p className="text-gray-600 mt-2">
+              {businessProfile?.businessName || 'Loading...'} - Review and approve staff shifts
+            </p>
+          </div>
+          <Button
+            onClick={() => setIsQRModalOpen(true)}
+            className="flex items-center gap-2"
+            data-testid="button-generate-qr"
+          >
+            <QrCode className="h-5 w-5" />
+            Generate QR Code
+          </Button>
         </div>
 
         {/* Summary Cards */}
@@ -417,6 +525,114 @@ export default function VenueTimesheets() {
                   ? 'Processing...' 
                   : actionType === 'approve' ? 'Approve Shift' : 'Mark as Disputed'
                 }
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* QR Code Generation Modal */}
+        <Dialog open={isQRModalOpen} onOpenChange={setIsQRModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5" />
+                QR Clock-In Code
+              </DialogTitle>
+              <DialogDescription>
+                Generate a QR code for chefs to scan and clock in at {businessProfile?.businessName || 'your venue'}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Generate New QR Code Section */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="expiration">Code Expiration</Label>
+                  <Select value={qrExpirationMinutes} onValueChange={setQrExpirationMinutes}>
+                    <SelectTrigger id="expiration" data-testid="select-qr-expiration">
+                      <SelectValue placeholder="Select expiration time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 minutes</SelectItem>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                      <SelectItem value="480">8 hours (full shift)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={handleGenerateQR}
+                  disabled={generateQRMutation.isPending}
+                  className="w-full"
+                  data-testid="button-create-qr"
+                >
+                  {generateQRMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Generate New QR Code
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Active QR Codes */}
+              <div className="space-y-3">
+                <Label>Active QR Codes</Label>
+                {loadingTokens ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                  </div>
+                ) : activeTokens && activeTokens.length > 0 ? (
+                  <div className="space-y-4">
+                    {activeTokens.map((token) => (
+                      <div key={token.id} className="border rounded-lg p-4 space-y-3" data-testid={`qr-token-${token.id}`}>
+                        <div className="flex justify-center bg-white p-4 rounded">
+                          <QRCode
+                            value={token.token}
+                            size={180}
+                            data-testid={`qr-code-${token.id}`}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <Badge variant="secondary" className="text-xs">
+                            {formatExpiryTime(token.expiresAt)}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => deleteTokenMutation.mutate(token.id)}
+                            disabled={deleteTokenMutation.isPending}
+                            data-testid={`button-delete-qr-${token.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-center text-gray-500">
+                          Chefs can scan this code to clock in
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
+                    <QrCode className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No active QR codes</p>
+                    <p className="text-xs">Generate one above for chefs to scan</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsQRModalOpen(false)}>
+                Close
               </Button>
             </DialogFooter>
           </DialogContent>

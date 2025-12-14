@@ -494,6 +494,15 @@ export const insertWorkShiftSchema = createInsertSchema(workShifts).omit({
   updatedAt: true,
 });
 
+export const insertVenueCheckinTokenSchema = createInsertSchema(venueCheckinTokens).omit({
+  id: true,
+  createdAt: true,
+  token: true, // Generated server-side
+  expiresAt: true, // Set server-side
+  usedAt: true, // Set when used
+  usedBy: true, // Set when used
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -552,6 +561,9 @@ export type VenueStaff = typeof venueStaff.$inferSelect;
 
 export type InsertWorkShift = z.infer<typeof insertWorkShiftSchema>;
 export type WorkShift = typeof workShifts.$inferSelect;
+
+export type InsertVenueCheckinToken = z.infer<typeof insertVenueCheckinTokenSchema>;
+export type VenueCheckinToken = typeof venueCheckinTokens.$inferSelect;
 
 // Additional validation schemas for route inputs
 export const updateChefProfileSchema = z.object({

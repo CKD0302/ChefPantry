@@ -56,6 +56,9 @@ import {
   workShifts,
   type WorkShift,
   type InsertWorkShift,
+  venueCheckinTokens,
+  type VenueCheckinToken,
+  type InsertVenueCheckinToken,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not, sql, or } from "drizzle-orm";
@@ -211,6 +214,13 @@ export interface IStorage {
   clockOutShift(shiftId: string, clockOutMethod?: string): Promise<WorkShift | undefined>;
   updateShiftStatus(shiftId: string, status: string, venueNote?: string): Promise<WorkShift | undefined>;
   linkShiftToInvoice(shiftId: string, invoiceId: string): Promise<WorkShift | undefined>;
+  
+  // Venue Check-in Token methods - for QR code clock-in
+  createCheckinToken(venueId: string, createdBy: string, gigId?: string, expiresInMinutes?: number): Promise<VenueCheckinToken>;
+  getCheckinTokenByToken(token: string): Promise<VenueCheckinToken | undefined>;
+  getActiveCheckinTokensByVenue(venueId: string): Promise<VenueCheckinToken[]>;
+  useCheckinToken(tokenId: string, chefId: string): Promise<VenueCheckinToken | undefined>;
+  invalidateCheckinToken(tokenId: string): Promise<boolean>;
 }
 
 export class DBStorage implements IStorage {
@@ -1758,6 +1768,59 @@ export class DBStorage implements IStorage {
       .where(eq(workShifts.id, shiftId))
       .returning();
     return result[0];
+  }
+
+  // Venue Check-in Token methods
+  async createCheckinToken(venueId: string, createdBy: string, gigId?: string, expiresInMinutes: number = 60): Promise<VenueCheckinToken> {
+    // Generate a unique token
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+    
+    const result = await db.insert(venueCheckinTokens).values({
+      venueId,
+      token,
+      gigId: gigId || null,
+      expiresAt,
+      createdBy,
+    }).returning();
+    return result[0];
+  }
+
+  async getCheckinTokenByToken(token: string): Promise<VenueCheckinToken | undefined> {
+    const result = await db.select().from(venueCheckinTokens)
+      .where(eq(venueCheckinTokens.token, token))
+      .limit(1);
+    return result[0];
+  }
+
+  async getActiveCheckinTokensByVenue(venueId: string): Promise<VenueCheckinToken[]> {
+    const now = new Date();
+    const result = await db.select().from(venueCheckinTokens)
+      .where(and(
+        eq(venueCheckinTokens.venueId, venueId),
+        sql`${venueCheckinTokens.expiresAt} > ${now}`,
+        sql`${venueCheckinTokens.usedAt} IS NULL`
+      ))
+      .orderBy(desc(venueCheckinTokens.createdAt));
+    return result;
+  }
+
+  async useCheckinToken(tokenId: string, chefId: string): Promise<VenueCheckinToken | undefined> {
+    const result = await db.update(venueCheckinTokens)
+      .set({ 
+        usedAt: new Date(),
+        usedBy: chefId
+      })
+      .where(eq(venueCheckinTokens.id, tokenId))
+      .returning();
+    return result[0];
+  }
+
+  async invalidateCheckinToken(tokenId: string): Promise<boolean> {
+    const result = await db.delete(venueCheckinTokens)
+      .where(eq(venueCheckinTokens.id, tokenId))
+      .returning();
+    return result.length > 0;
   }
 }
 
