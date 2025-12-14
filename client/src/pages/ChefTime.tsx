@@ -638,7 +638,7 @@ export default function ChefTime() {
                   <p className="text-gray-600">Processing clock-in...</p>
                 </div>
               ) : (
-                <div className="relative rounded-lg overflow-hidden bg-black" data-testid="qr-scanner-container">
+                <div className="relative rounded-lg overflow-hidden bg-black aspect-square" data-testid="qr-scanner-container">
                   <Scanner
                     onScan={handleQRScan}
                     onError={(error) => {
@@ -648,10 +648,6 @@ export default function ChefTime() {
                         description: "Unable to access camera. Please check permissions.",
                         variant: "destructive",
                       });
-                    }}
-                    styles={{
-                      container: { width: '100%', paddingTop: '100%', position: 'relative' },
-                      video: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
                     }}
                     constraints={{
                       facingMode: 'environment'
