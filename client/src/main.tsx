@@ -3,6 +3,13 @@ import App from "./App";
 import "./index.css";
 import { setupStorageBuckets } from "./utils/setupStorage";
 import { App as CapacitorApp } from '@capacitor/app';
+import { BarcodeDetector } from "barcode-detector/ponyfill";
+
+// Polyfill BarcodeDetector for iOS Safari (native API not supported)
+if (!("BarcodeDetector" in window)) {
+  (window as unknown as { BarcodeDetector: typeof BarcodeDetector }).BarcodeDetector = BarcodeDetector;
+  console.log("[QR Scanner] BarcodeDetector polyfill loaded for Safari/iOS");
+}
 
 const root = document.getElementById("root");
 

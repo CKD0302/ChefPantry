@@ -676,10 +676,13 @@ export default function ChefTime() {
                   </Button>
                 </div>
               ) : (
-                <div className="relative rounded-lg overflow-hidden bg-black aspect-square" data-testid="qr-scanner-container">
+                <div className="relative rounded-lg overflow-hidden bg-black" style={{ minHeight: '300px' }} data-testid="qr-scanner-container">
                   {isQRScannerOpen && (
                     <Scanner
-                      onScan={handleQRScan}
+                      onScan={(result) => {
+                        console.log('QR Scan result:', result);
+                        handleQRScan(result);
+                      }}
                       onError={(error: unknown) => {
                         console.error('QR Scanner error:', error);
                         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -690,14 +693,23 @@ export default function ChefTime() {
                         } else if (errorMessage.includes('NotReadableError')) {
                           setCameraError('Camera is in use by another app. Please close other apps using the camera.');
                         } else {
-                          setCameraError('Unable to access camera. Please check permissions and try again.');
+                          setCameraError(`Camera error: ${errorMessage}`);
                         }
                       }}
+                      formats={['qr_code']}
+                      scanDelay={300}
+                      styles={{
+                        container: { width: '100%', height: '300px' },
+                        video: { width: '100%', height: '100%', objectFit: 'cover' }
+                      }}
                       constraints={{
-                        facingMode: 'environment'
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
                       }}
                       components={{
-                        torch: false
+                        torch: false,
+                        finder: true
                       }}
                     />
                   )}
