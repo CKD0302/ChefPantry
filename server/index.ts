@@ -46,15 +46,23 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
       scriptSrc: process.env.NODE_ENV === 'production' 
-        ? ["'self'"]
-        : ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts in development for Vite HMR
-      connectSrc: ["'self'", "wss:", "https:"],
+        ? ["'self'", "blob:"]
+        : ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
+      connectSrc: ["'self'", "wss:", "https:", "blob:"],
+      workerSrc: ["'self'", "blob:"],
+      mediaSrc: ["'self'", "blob:", "data:"],
     },
   },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
 }));
+
+// Permissions-Policy header for camera access (not natively supported by Helmet)
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=()');
+  next();
+});
 
 // CORS configuration
 app.use(cors({
