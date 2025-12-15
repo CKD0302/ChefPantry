@@ -125,7 +125,6 @@ export default function ChefTime() {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isScanningQR, setIsScanningQR] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [cameraReady, setCameraReady] = useState(false);
 
   // Fetch current open shift
   const { data: openShiftData, isLoading: loadingOpenShift } = useQuery<OpenShiftData>({
@@ -643,7 +642,6 @@ export default function ChefTime() {
           if (!open) {
             setIsScanningQR(false);
             setCameraError(null);
-            setCameraReady(false);
           }
         }}>
           <DialogContent className="sm:max-w-md">
@@ -672,7 +670,6 @@ export default function ChefTime() {
                     variant="outline"
                     onClick={() => {
                       setCameraError(null);
-                      setCameraReady(false);
                     }}
                   >
                     Try Again
@@ -680,18 +677,9 @@ export default function ChefTime() {
                 </div>
               ) : (
                 <div className="relative rounded-lg overflow-hidden bg-black aspect-square" data-testid="qr-scanner-container">
-                  {!cameraReady && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
-                      <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mb-4" />
-                      <p className="text-white text-sm">Starting camera...</p>
-                    </div>
-                  )}
                   {isQRScannerOpen && (
                     <Scanner
-                      onScan={(result) => {
-                        if (!cameraReady) setCameraReady(true);
-                        handleQRScan(result);
-                      }}
+                      onScan={handleQRScan}
                       onError={(error: unknown) => {
                         console.error('QR Scanner error:', error);
                         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -709,7 +697,6 @@ export default function ChefTime() {
                         facingMode: 'environment'
                       }}
                       components={{
-                        audio: false,
                         torch: false
                       }}
                     />
@@ -730,7 +717,6 @@ export default function ChefTime() {
                   setIsQRScannerOpen(false);
                   setIsScanningQR(false);
                   setCameraError(null);
-                  setCameraReady(false);
                 }}
                 data-testid="button-close-scanner"
               >
