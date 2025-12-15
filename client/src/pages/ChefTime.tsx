@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Scanner } from "@yudiel/react-qr-scanner";
+import { Html5Qrcode } from "html5-qrcode";
 
 interface OpenShiftData {
   shift: {
@@ -125,6 +125,8 @@ export default function ChefTime() {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isScanningQR, setIsScanningQR] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerId = "qr-reader";
 
   // Fetch current open shift
   const { data: openShiftData, isLoading: loadingOpenShift } = useQuery<OpenShiftData>({
@@ -285,15 +287,80 @@ export default function ChefTime() {
     },
   });
 
-  const handleQRScan = (result: Array<{ rawValue: string }>) => {
-    if (!isScanningQR && !qrClockInMutation.isPending && result && result.length > 0) {
-      const scannedValue = result[0]?.rawValue;
-      if (scannedValue) {
-        setIsScanningQR(true);
-        qrClockInMutation.mutate(scannedValue);
+  const handleQRScan = (scannedValue: string) => {
+    if (!isScanningQR && !qrClockInMutation.isPending && scannedValue) {
+      setIsScanningQR(true);
+      // Stop the scanner before processing
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
       }
+      qrClockInMutation.mutate(scannedValue);
     }
   };
+
+  // Effect to manage html5-qrcode scanner lifecycle
+  useEffect(() => {
+    if (isQRScannerOpen && !isScanningQR && !cameraError) {
+      // Small delay to ensure the container element is mounted
+      const startScanner = async () => {
+        try {
+          // Create new scanner instance
+          scannerRef.current = new Html5Qrcode(scannerContainerId);
+          
+          await scannerRef.current.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+            },
+            (decodedText) => {
+              console.log('QR Code detected:', decodedText);
+              handleQRScan(decodedText);
+            },
+            (errorMessage) => {
+              // QR code not found in frame - this is normal, don't treat as error
+              // Only log if it's something other than "QR code parse error"
+              if (!errorMessage.includes('No QR code found') && !errorMessage.includes('QR code parse error')) {
+                console.log('Scan error:', errorMessage);
+              }
+            }
+          );
+        } catch (err) {
+          console.error('Failed to start scanner:', err);
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission')) {
+            setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
+          } else if (errorMessage.includes('NotFoundError')) {
+            setCameraError('No camera found on this device.');
+          } else if (errorMessage.includes('NotReadableError')) {
+            setCameraError('Camera is in use by another app. Please close other apps using the camera.');
+          } else {
+            setCameraError(`Camera error: ${errorMessage}`);
+          }
+        }
+      };
+
+      // Delay to ensure DOM is ready
+      const timeoutId = setTimeout(startScanner, 100);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        if (scannerRef.current) {
+          scannerRef.current.stop().catch(console.error);
+          scannerRef.current = null;
+        }
+      };
+    }
+    
+    // Cleanup when modal closes
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
+        scannerRef.current = null;
+      }
+    };
+  }, [isQRScannerOpen, isScanningQR, cameraError]);
 
   // Timer effect for running shift
   useEffect(() => {
@@ -676,44 +743,12 @@ export default function ChefTime() {
                   </Button>
                 </div>
               ) : (
-                <div className="relative rounded-lg overflow-hidden bg-black" style={{ minHeight: '300px' }} data-testid="qr-scanner-container">
-                  {isQRScannerOpen && (
-                    <Scanner
-                      onScan={(result) => {
-                        console.log('QR Scan result:', result);
-                        handleQRScan(result);
-                      }}
-                      onError={(error: unknown) => {
-                        console.error('QR Scanner error:', error);
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-                        if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission')) {
-                          setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
-                        } else if (errorMessage.includes('NotFoundError')) {
-                          setCameraError('No camera found on this device.');
-                        } else if (errorMessage.includes('NotReadableError')) {
-                          setCameraError('Camera is in use by another app. Please close other apps using the camera.');
-                        } else {
-                          setCameraError(`Camera error: ${errorMessage}`);
-                        }
-                      }}
-                      formats={['qr_code']}
-                      scanDelay={300}
-                      styles={{
-                        container: { width: '100%', height: '300px' },
-                        video: { width: '100%', height: '100%', objectFit: 'cover' }
-                      }}
-                      constraints={{
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                      }}
-                      components={{
-                        torch: false,
-                        finder: true
-                      }}
-                    />
-                  )}
-                </div>
+                <div 
+                  id={scannerContainerId}
+                  className="relative rounded-lg overflow-hidden bg-black" 
+                  style={{ minHeight: '300px', width: '100%' }} 
+                  data-testid="qr-scanner-container"
+                />
               )}
 
               <div className="text-center text-sm text-gray-500 p-3 bg-gray-50 rounded-lg">
