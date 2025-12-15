@@ -124,6 +124,8 @@ export default function ChefTime() {
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isScanningQR, setIsScanningQR] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
 
   // Fetch current open shift
   const { data: openShiftData, isLoading: loadingOpenShift } = useQuery<OpenShiftData>({
@@ -638,7 +640,11 @@ export default function ChefTime() {
         {/* QR Scanner Modal */}
         <Dialog open={isQRScannerOpen} onOpenChange={(open) => {
           setIsQRScannerOpen(open);
-          if (!open) setIsScanningQR(false);
+          if (!open) {
+            setIsScanningQR(false);
+            setCameraError(null);
+            setCameraReady(false);
+          }
         }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -655,24 +661,59 @@ export default function ChefTime() {
               {isScanningQR || qrClockInMutation.isPending ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-4" />
-                  <p className="text-gray-600">Processing clock-in...</p>
+                  <p className="text-gray-600">Processing...</p>
+                </div>
+              ) : cameraError ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                  <p className="text-red-600 font-medium mb-2">Camera Error</p>
+                  <p className="text-sm text-gray-600 mb-4">{cameraError}</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCameraError(null);
+                      setCameraReady(false);
+                    }}
+                  >
+                    Try Again
+                  </Button>
                 </div>
               ) : (
                 <div className="relative rounded-lg overflow-hidden bg-black aspect-square" data-testid="qr-scanner-container">
-                  <Scanner
-                    onScan={handleQRScan}
-                    onError={(error) => {
-                      console.error('QR Scanner error:', error);
-                      toast({
-                        title: "Scanner Error",
-                        description: "Unable to access camera. Please check permissions.",
-                        variant: "destructive",
-                      });
-                    }}
-                    constraints={{
-                      facingMode: 'environment'
-                    }}
-                  />
+                  {!cameraReady && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
+                      <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mb-4" />
+                      <p className="text-white text-sm">Starting camera...</p>
+                    </div>
+                  )}
+                  {isQRScannerOpen && (
+                    <Scanner
+                      onScan={(result) => {
+                        if (!cameraReady) setCameraReady(true);
+                        handleQRScan(result);
+                      }}
+                      onError={(error: unknown) => {
+                        console.error('QR Scanner error:', error);
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission')) {
+                          setCameraError('Camera permission denied. Please allow camera access in your browser settings.');
+                        } else if (errorMessage.includes('NotFoundError')) {
+                          setCameraError('No camera found on this device.');
+                        } else if (errorMessage.includes('NotReadableError')) {
+                          setCameraError('Camera is in use by another app. Please close other apps using the camera.');
+                        } else {
+                          setCameraError('Unable to access camera. Please check permissions and try again.');
+                        }
+                      }}
+                      constraints={{
+                        facingMode: 'environment'
+                      }}
+                      components={{
+                        audio: false,
+                        torch: false
+                      }}
+                    />
+                  )}
                 </div>
               )}
 
@@ -688,6 +729,8 @@ export default function ChefTime() {
                 onClick={() => {
                   setIsQRScannerOpen(false);
                   setIsScanningQR(false);
+                  setCameraError(null);
+                  setCameraReady(false);
                 }}
                 data-testid="button-close-scanner"
               >
