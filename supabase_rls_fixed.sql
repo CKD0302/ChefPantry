@@ -1,11 +1,15 @@
 -- Supabase RLS Security Policies for Chef Pantry
--- FIXED VERSION - Matches actual database schema with correct type casting
+-- FIXED VERSION - Matches actual database schema
 -- Run this in the Supabase SQL Editor
 
 -- ============================================================
--- TYPE REFERENCE (from actual database):
--- UUID columns: business_profiles.id, chef_profiles.id, gig_invoices.chef_id/business_id, gigs.created_by
--- TEXT columns: venue_staff.*, work_shifts.chef_id/venue_id, venue_checkin_tokens.*, business_company_links.business_id
+-- VERIFIED TYPE REFERENCE (from actual database):
+-- UUID: business_profiles.id, chef_profiles.id, chef_documents.chef_id,
+--       gig_applications.chef_id, gig_applications.gig_id, gigs.created_by,
+--       gig_invoices.chef_id, gig_invoices.business_id, company_members.company_id
+-- TEXT: venue_staff.chef_id/venue_id/created_by, work_shifts.chef_id/venue_id,
+--       venue_checkin_tokens.venue_id/created_by, business_company_links.business_id,
+--       companies.owner_user_id, company_members.user_id
 -- ============================================================
 
 -- ============================================================
@@ -17,7 +21,7 @@ ALTER TABLE public.work_shifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.venue_checkin_tokens ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- PHASE 2: VENUE_STAFF POLICIES (all TEXT columns)
+-- PHASE 2: VENUE_STAFF POLICIES (chef_id, venue_id, created_by are TEXT)
 -- ============================================================
 
 DROP POLICY IF EXISTS "venue_staff_select" ON public.venue_staff;
@@ -115,7 +119,8 @@ FOR DELETE USING (
 );
 
 -- ============================================================
--- PHASE 5: BUSINESS_COMPANY_LINKS POLICIES (business_id is TEXT, company_id is UUID)
+-- PHASE 5: BUSINESS_COMPANY_LINKS POLICIES 
+-- (business_id is TEXT, company_id is UUID, companies.owner_user_id is TEXT)
 -- ============================================================
 
 DROP POLICY IF EXISTS "business_company_links_select" ON public.business_company_links;
@@ -167,8 +172,8 @@ DROP POLICY IF EXISTS "gig_applications_company_access" ON public.gig_applicatio
 -- Drop and recreate view
 DROP VIEW IF EXISTS public.user_accessible_businesses;
 
--- business_profiles.id is UUID, so compare with auth.uid() directly
--- company_members.user_id is TEXT, so compare with auth.uid()::text
+-- business_profiles.id is UUID, business_company_links.business_id is TEXT
+-- company_members.user_id is TEXT
 CREATE VIEW public.user_accessible_businesses AS
 SELECT 
   bp.id as business_id,
@@ -186,17 +191,15 @@ SELECT
   bp.profile_image_url,
   cm.role as access_type
 FROM public.business_profiles bp
-INNER JOIN public.business_company_links bcl ON bp.id::text = bcl.business_id
+INNER JOIN public.business_company_links bcl ON bcl.business_id = bp.id::text
 INNER JOIN public.company_members cm ON bcl.company_id = cm.company_id
 WHERE cm.user_id = auth.uid()::text;
 
--- Recreate gig_invoices policy (chef_id and business_id are UUID in this table)
+-- gig_invoices (chef_id and business_id are UUID)
 CREATE POLICY "gig_invoices_company_access" ON public.gig_invoices
 FOR SELECT USING (
   auth.uid() = chef_id
-  OR EXISTS (
-    SELECT 1 FROM public.user_accessible_businesses uab WHERE uab.business_id = gig_invoices.business_id
-  )
+  OR auth.uid() = business_id
 );
 
 -- ============================================================
@@ -247,23 +250,23 @@ FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "business_profiles_delete" ON public.business_profiles
 FOR DELETE USING (auth.uid() = id);
 
--- chef_documents (chef_id is TEXT)
+-- chef_documents (chef_id is UUID)
 DROP POLICY IF EXISTS "chef_documents_select" ON public.chef_documents;
 DROP POLICY IF EXISTS "chef_documents_insert" ON public.chef_documents;
 DROP POLICY IF EXISTS "chef_documents_update" ON public.chef_documents;
 DROP POLICY IF EXISTS "chef_documents_delete" ON public.chef_documents;
 
 CREATE POLICY "chef_documents_select" ON public.chef_documents
-FOR SELECT USING (auth.uid()::text = chef_id);
+FOR SELECT USING (auth.uid() = chef_id);
 
 CREATE POLICY "chef_documents_insert" ON public.chef_documents
-FOR INSERT WITH CHECK (auth.uid()::text = chef_id);
+FOR INSERT WITH CHECK (auth.uid() = chef_id);
 
 CREATE POLICY "chef_documents_update" ON public.chef_documents
-FOR UPDATE USING (auth.uid()::text = chef_id);
+FOR UPDATE USING (auth.uid() = chef_id);
 
 CREATE POLICY "chef_documents_delete" ON public.chef_documents
-FOR DELETE USING (auth.uid()::text = chef_id);
+FOR DELETE USING (auth.uid() = chef_id);
 
 -- gigs (created_by is UUID)
 DROP POLICY IF EXISTS "gigs_select" ON public.gigs;
@@ -283,7 +286,7 @@ FOR UPDATE USING (auth.uid() = created_by);
 CREATE POLICY "gigs_delete" ON public.gigs
 FOR DELETE USING (auth.uid() = created_by);
 
--- gig_applications (chef_id is TEXT, gig.created_by is UUID)
+-- gig_applications (chef_id is UUID, gig_id is UUID)
 DROP POLICY IF EXISTS "gig_applications_select" ON public.gig_applications;
 DROP POLICY IF EXISTS "gig_applications_insert" ON public.gig_applications;
 DROP POLICY IF EXISTS "gig_applications_update" ON public.gig_applications;
@@ -291,25 +294,25 @@ DROP POLICY IF EXISTS "gig_applications_delete" ON public.gig_applications;
 
 CREATE POLICY "gig_applications_select" ON public.gig_applications
 FOR SELECT USING (
-  auth.uid()::text = chef_id
+  auth.uid() = chef_id
   OR EXISTS (
     SELECT 1 FROM public.gigs WHERE id = gig_id AND created_by = auth.uid()
   )
 );
 
 CREATE POLICY "gig_applications_insert" ON public.gig_applications
-FOR INSERT WITH CHECK (auth.uid()::text = chef_id);
+FOR INSERT WITH CHECK (auth.uid() = chef_id);
 
 CREATE POLICY "gig_applications_update" ON public.gig_applications
 FOR UPDATE USING (
-  auth.uid()::text = chef_id
+  auth.uid() = chef_id
   OR EXISTS (
     SELECT 1 FROM public.gigs WHERE id = gig_id AND created_by = auth.uid()
   )
 );
 
 CREATE POLICY "gig_applications_delete" ON public.gig_applications
-FOR DELETE USING (auth.uid()::text = chef_id);
+FOR DELETE USING (auth.uid() = chef_id);
 
 -- contact_messages (insert only for anyone)
 DROP POLICY IF EXISTS "contact_messages_insert" ON public.contact_messages;
