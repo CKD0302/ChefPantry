@@ -5,6 +5,8 @@
 -- IMPORTANT: Run these in order. Test after each section before proceeding.
 -- The server uses service role key (bypasses RLS), so these primarily protect
 -- client-side direct Supabase access.
+--
+-- Note: All comparisons use TEXT casting for maximum compatibility
 
 -- ============================================================
 -- PHASE 1: ENABLE RLS ON TABLES (Critical - Fixes Errors)
@@ -33,30 +35,30 @@ DROP POLICY IF EXISTS "venue_staff_delete" ON public.venue_staff;
 -- Select: Chef sees their own records, venue owner sees their venue's staff
 CREATE POLICY "venue_staff_select" ON public.venue_staff
 FOR SELECT USING (
-  auth.uid() = chef_id::uuid 
-  OR auth.uid() = venue_id::uuid  -- business_profiles.id = user's auth UID
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = chef_id::text 
+  OR auth.uid()::text = venue_id::text
+  OR auth.uid()::text = created_by::text
 );
 
 -- Insert: Only venue owners can add staff
 CREATE POLICY "venue_staff_insert" ON public.venue_staff
 FOR INSERT WITH CHECK (
-  auth.uid() = venue_id::uuid 
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text 
+  OR auth.uid()::text = created_by::text
 );
 
 -- Update: Venue owners can update staff status
 CREATE POLICY "venue_staff_update" ON public.venue_staff
 FOR UPDATE USING (
-  auth.uid() = venue_id::uuid 
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text 
+  OR auth.uid()::text = created_by::text
 );
 
 -- Delete: Venue owners can remove staff
 CREATE POLICY "venue_staff_delete" ON public.venue_staff
 FOR DELETE USING (
-  auth.uid() = venue_id::uuid 
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text 
+  OR auth.uid()::text = created_by::text
 );
 
 -- ============================================================
@@ -73,27 +75,27 @@ DROP POLICY IF EXISTS "work_shifts_delete" ON public.work_shifts;
 -- Select: Chef sees their own shifts, venue owner sees their venue's shifts
 CREATE POLICY "work_shifts_select" ON public.work_shifts
 FOR SELECT USING (
-  auth.uid() = chef_id::uuid
-  OR auth.uid() = venue_id::uuid  -- business_profiles.id = user's auth UID
+  auth.uid()::text = chef_id::text
+  OR auth.uid()::text = venue_id::text
 );
 
 -- Insert: Chefs create their own shifts
 CREATE POLICY "work_shifts_insert" ON public.work_shifts
 FOR INSERT WITH CHECK (
-  auth.uid() = chef_id::uuid
+  auth.uid()::text = chef_id::text
 );
 
 -- Update: Chef can update their shifts, venue owner can approve/dispute
 CREATE POLICY "work_shifts_update" ON public.work_shifts
 FOR UPDATE USING (
-  auth.uid() = chef_id::uuid
-  OR auth.uid() = venue_id::uuid
+  auth.uid()::text = chef_id::text
+  OR auth.uid()::text = venue_id::text
 );
 
 -- Delete: Generally shifts shouldn't be deleted, only by venue owner if needed
 CREATE POLICY "work_shifts_delete" ON public.work_shifts
 FOR DELETE USING (
-  auth.uid() = venue_id::uuid
+  auth.uid()::text = venue_id::text
 );
 
 -- ============================================================
@@ -109,29 +111,29 @@ DROP POLICY IF EXISTS "venue_checkin_tokens_delete" ON public.venue_checkin_toke
 -- Select: Only venue owner/creator can view tokens
 CREATE POLICY "venue_checkin_tokens_select" ON public.venue_checkin_tokens
 FOR SELECT USING (
-  auth.uid() = venue_id::uuid
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text
+  OR auth.uid()::text = created_by::text
 );
 
 -- Insert: Only venue owners can create tokens
 CREATE POLICY "venue_checkin_tokens_insert" ON public.venue_checkin_tokens
 FOR INSERT WITH CHECK (
-  auth.uid() = venue_id::uuid
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text
+  OR auth.uid()::text = created_by::text
 );
 
 -- Update: Tokens generally don't need updating
 CREATE POLICY "venue_checkin_tokens_update" ON public.venue_checkin_tokens
 FOR UPDATE USING (
-  auth.uid() = venue_id::uuid
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text
+  OR auth.uid()::text = created_by::text
 );
 
 -- Delete: Venue owners can delete tokens
 CREATE POLICY "venue_checkin_tokens_delete" ON public.venue_checkin_tokens
 FOR DELETE USING (
-  auth.uid() = venue_id::uuid
-  OR auth.uid() = created_by::uuid
+  auth.uid()::text = venue_id::text
+  OR auth.uid()::text = created_by::text
 );
 
 -- ============================================================
@@ -147,24 +149,24 @@ DROP POLICY IF EXISTS "business_company_invites_delete" ON public.business_compa
 
 CREATE POLICY "business_company_invites_select" ON public.business_company_invites
 FOR SELECT USING (
-  auth.uid() = created_by::uuid
+  auth.uid()::text = created_by::text
   OR auth.email() = invitee_email
 );
 
 CREATE POLICY "business_company_invites_insert" ON public.business_company_invites
 FOR INSERT WITH CHECK (
-  auth.uid() = created_by::uuid
+  auth.uid()::text = created_by::text
 );
 
 CREATE POLICY "business_company_invites_update" ON public.business_company_invites
 FOR UPDATE USING (
-  auth.uid() = created_by::uuid
+  auth.uid()::text = created_by::text
   OR auth.email() = invitee_email
 );
 
 CREATE POLICY "business_company_invites_delete" ON public.business_company_invites
 FOR DELETE USING (
-  auth.uid() = created_by::uuid
+  auth.uid()::text = created_by::text
 );
 
 -- --- business_company_links ---
@@ -175,33 +177,33 @@ DROP POLICY IF EXISTS "business_company_links_delete" ON public.business_company
 
 CREATE POLICY "business_company_links_select" ON public.business_company_links
 FOR SELECT USING (
-  auth.uid() = business_id::uuid
-  OR auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text = business_id::text
+  OR auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
-  OR auth.uid() IN (
-    SELECT user_id FROM public.company_members WHERE company_id = business_company_links.company_id
+  OR auth.uid()::text IN (
+    SELECT user_id::text FROM public.company_members WHERE company_id = business_company_links.company_id
   )
 );
 
 CREATE POLICY "business_company_links_insert" ON public.business_company_links
 FOR INSERT WITH CHECK (
-  auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
 CREATE POLICY "business_company_links_update" ON public.business_company_links
 FOR UPDATE USING (
-  auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
 CREATE POLICY "business_company_links_delete" ON public.business_company_links
 FOR DELETE USING (
-  auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
@@ -213,25 +215,25 @@ DROP POLICY IF EXISTS "companies_delete" ON public.companies;
 
 CREATE POLICY "companies_select" ON public.companies
 FOR SELECT USING (
-  auth.uid() = owner_user_id::uuid
-  OR auth.uid() IN (
-    SELECT user_id FROM public.company_members WHERE company_id = id::uuid
+  auth.uid()::text = owner_user_id::text
+  OR auth.uid()::text IN (
+    SELECT user_id::text FROM public.company_members WHERE company_id = id
   )
 );
 
 CREATE POLICY "companies_insert" ON public.companies
 FOR INSERT WITH CHECK (
-  auth.uid() = owner_user_id::uuid
+  auth.uid()::text = owner_user_id::text
 );
 
 CREATE POLICY "companies_update" ON public.companies
 FOR UPDATE USING (
-  auth.uid() = owner_user_id::uuid
+  auth.uid()::text = owner_user_id::text
 );
 
 CREATE POLICY "companies_delete" ON public.companies
 FOR DELETE USING (
-  auth.uid() = owner_user_id::uuid
+  auth.uid()::text = owner_user_id::text
 );
 
 -- --- company_members ---
@@ -242,30 +244,30 @@ DROP POLICY IF EXISTS "company_members_delete" ON public.company_members;
 
 CREATE POLICY "company_members_select" ON public.company_members
 FOR SELECT USING (
-  auth.uid() = user_id::uuid
-  OR auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text = user_id::text
+  OR auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
 CREATE POLICY "company_members_insert" ON public.company_members
 FOR INSERT WITH CHECK (
-  auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
 CREATE POLICY "company_members_update" ON public.company_members
 FOR UPDATE USING (
-  auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
 CREATE POLICY "company_members_delete" ON public.company_members
 FOR DELETE USING (
-  auth.uid() IN (
-    SELECT owner_user_id FROM public.companies WHERE id = company_id
+  auth.uid()::text IN (
+    SELECT owner_user_id::text FROM public.companies WHERE id = company_id
   )
 );
 
@@ -285,7 +287,7 @@ DROP POLICY IF EXISTS "gig_applications_company_access" ON public.gig_applicatio
 DROP VIEW IF EXISTS public.user_accessible_businesses;
 
 -- Step 3: Recreate the view as SECURITY INVOKER (default)
--- Note: business_profiles.id is UUID, user_id fields are TEXT containing UUID strings
+-- All comparisons cast to TEXT for type safety
 CREATE VIEW public.user_accessible_businesses AS
 SELECT 
   bp.id as business_id,
@@ -294,7 +296,7 @@ SELECT
   bp.profile_image_url,
   'owner' as access_type
 FROM public.business_profiles bp
-WHERE bp.id = auth.uid()
+WHERE bp.id::text = auth.uid()::text
 UNION ALL
 SELECT 
   bp.id as business_id,
@@ -303,36 +305,36 @@ SELECT
   bp.profile_image_url,
   cm.role as access_type
 FROM public.business_profiles bp
-INNER JOIN public.business_company_links bcl ON bp.id::text = bcl.business_id
+INNER JOIN public.business_company_links bcl ON bp.id::text = bcl.business_id::text
 INNER JOIN public.company_members cm ON bcl.company_id = cm.company_id
-WHERE cm.user_id::uuid = auth.uid();
+WHERE cm.user_id::text = auth.uid()::text;
 
 -- Step 4: Recreate the dependent policies that allow company members to access related data
 -- These policies allow users to access gigs/invoices/applications for businesses they have access to via company membership
 
 CREATE POLICY "gigs_company_access" ON public.gigs
 FOR SELECT USING (
-  auth.uid() = created_by::uuid
-  OR business_id IN (
-    SELECT business_id FROM public.user_accessible_businesses
+  auth.uid()::text = created_by::text
+  OR business_id::text IN (
+    SELECT business_id::text FROM public.user_accessible_businesses
   )
 );
 
 CREATE POLICY "gig_invoices_company_access" ON public.gig_invoices
 FOR SELECT USING (
-  auth.uid() = chef_id::uuid
-  OR business_id IN (
-    SELECT business_id FROM public.user_accessible_businesses
+  auth.uid()::text = chef_id::text
+  OR business_id::text IN (
+    SELECT business_id::text FROM public.user_accessible_businesses
   )
 );
 
 CREATE POLICY "gig_applications_company_access" ON public.gig_applications
 FOR SELECT USING (
-  auth.uid() = chef_id::uuid
-  OR gig_id IN (
-    SELECT g.id FROM public.gigs g
-    WHERE g.business_id IN (
-      SELECT business_id FROM public.user_accessible_businesses
+  auth.uid()::text = chef_id::text
+  OR gig_id::text IN (
+    SELECT g.id::text FROM public.gigs g
+    WHERE g.business_id::text IN (
+      SELECT business_id::text FROM public.user_accessible_businesses
     )
   )
 );
@@ -361,13 +363,13 @@ FOR SELECT USING (true);
 
 -- Only owner can insert/update/delete their profile
 CREATE POLICY "chef_profiles_insert" ON public.chef_profiles
-FOR INSERT WITH CHECK (auth.uid() = id::uuid);
+FOR INSERT WITH CHECK (auth.uid()::text = id::text);
 
 CREATE POLICY "chef_profiles_update" ON public.chef_profiles
-FOR UPDATE USING (auth.uid() = id::uuid);
+FOR UPDATE USING (auth.uid()::text = id::text);
 
 CREATE POLICY "chef_profiles_delete" ON public.chef_profiles
-FOR DELETE USING (auth.uid() = id::uuid);
+FOR DELETE USING (auth.uid()::text = id::text);
 
 -- --- business_profiles ---
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.business_profiles;
@@ -385,13 +387,13 @@ FOR SELECT USING (true);
 
 -- Only owner can insert/update/delete their profile
 CREATE POLICY "business_profiles_insert" ON public.business_profiles
-FOR INSERT WITH CHECK (auth.uid() = id::uuid);
+FOR INSERT WITH CHECK (auth.uid()::text = id::text);
 
 CREATE POLICY "business_profiles_update" ON public.business_profiles
-FOR UPDATE USING (auth.uid() = id::uuid);
+FOR UPDATE USING (auth.uid()::text = id::text);
 
 CREATE POLICY "business_profiles_delete" ON public.business_profiles
-FOR DELETE USING (auth.uid() = id::uuid);
+FOR DELETE USING (auth.uid()::text = id::text);
 
 -- --- chef_documents ---
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.chef_documents;
@@ -405,16 +407,16 @@ DROP POLICY IF EXISTS "chef_documents_delete" ON public.chef_documents;
 
 -- Only document owner can access their documents
 CREATE POLICY "chef_documents_select" ON public.chef_documents
-FOR SELECT USING (auth.uid() = chef_id::uuid);
+FOR SELECT USING (auth.uid()::text = chef_id::text);
 
 CREATE POLICY "chef_documents_insert" ON public.chef_documents
-FOR INSERT WITH CHECK (auth.uid() = chef_id::uuid);
+FOR INSERT WITH CHECK (auth.uid()::text = chef_id::text);
 
 CREATE POLICY "chef_documents_update" ON public.chef_documents
-FOR UPDATE USING (auth.uid() = chef_id::uuid);
+FOR UPDATE USING (auth.uid()::text = chef_id::text);
 
 CREATE POLICY "chef_documents_delete" ON public.chef_documents
-FOR DELETE USING (auth.uid() = chef_id::uuid);
+FOR DELETE USING (auth.uid()::text = chef_id::text);
 
 -- --- contact_messages ---
 DROP POLICY IF EXISTS "Enable insert for all users" ON public.contact_messages;
@@ -439,26 +441,26 @@ DROP POLICY IF EXISTS "gig_applications_delete" ON public.gig_applications;
 -- Chef sees their own applications, gig creator sees applications for their gigs
 CREATE POLICY "gig_applications_select" ON public.gig_applications
 FOR SELECT USING (
-  auth.uid() = chef_id::uuid
-  OR auth.uid() IN (
-    SELECT created_by FROM public.gigs WHERE id = gig_id
+  auth.uid()::text = chef_id::text
+  OR auth.uid()::text IN (
+    SELECT created_by::text FROM public.gigs WHERE id = gig_id
   )
 );
 
 CREATE POLICY "gig_applications_insert" ON public.gig_applications
-FOR INSERT WITH CHECK (auth.uid() = chef_id::uuid);
+FOR INSERT WITH CHECK (auth.uid()::text = chef_id::text);
 
 -- Chef can update their app, gig creator can accept/reject
 CREATE POLICY "gig_applications_update" ON public.gig_applications
 FOR UPDATE USING (
-  auth.uid() = chef_id::uuid
-  OR auth.uid() IN (
-    SELECT created_by FROM public.gigs WHERE id = gig_id
+  auth.uid()::text = chef_id::text
+  OR auth.uid()::text IN (
+    SELECT created_by::text FROM public.gigs WHERE id = gig_id
   )
 );
 
 CREATE POLICY "gig_applications_delete" ON public.gig_applications
-FOR DELETE USING (auth.uid() = chef_id::uuid);
+FOR DELETE USING (auth.uid()::text = chef_id::text);
 
 -- --- gigs ---
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.gigs;
@@ -476,13 +478,13 @@ FOR SELECT USING (true);
 
 -- Only creator can manage their gigs
 CREATE POLICY "gigs_insert" ON public.gigs
-FOR INSERT WITH CHECK (auth.uid() = created_by::uuid);
+FOR INSERT WITH CHECK (auth.uid()::text = created_by::text);
 
 CREATE POLICY "gigs_update" ON public.gigs
-FOR UPDATE USING (auth.uid() = created_by::uuid);
+FOR UPDATE USING (auth.uid()::text = created_by::text);
 
 CREATE POLICY "gigs_delete" ON public.gigs
-FOR DELETE USING (auth.uid() = created_by::uuid);
+FOR DELETE USING (auth.uid()::text = created_by::text);
 
 -- ============================================================
 -- MANUAL STEPS REQUIRED IN SUPABASE DASHBOARD:
