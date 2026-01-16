@@ -61,6 +61,22 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Investor Interests table
+export const investorInterests = pgTable("investor_interests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  postcode: text("postcode").notNull(),
+  country: text("country").default("UK"),
+  investmentInterest: text("investment_interest").notNull(), // e.g., "5k-10k", "10k-25k", etc.
+  investorType: text("investor_type"), // e.g., "Angel", "VC", "Family Office"
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Chef Profiles table (Supabase integration)
 export const chefProfiles = pgTable("chef_profiles", {
   id: text("id").primaryKey(), // UUID from Supabase auth
@@ -632,4 +648,13 @@ export type UpdateBusinessProfile = z.infer<typeof updateBusinessProfileSchema>;
 export type UpdateGig = z.infer<typeof updateGigSchema>;
 export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
 export type ChefPaymentMethod = z.infer<typeof chefPaymentMethodSchema>;
+
+// Investor Interests schemas and types
+export const insertInvestorInterestSchema = createInsertSchema(investorInterests).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertInvestorInterest = z.infer<typeof insertInvestorInterestSchema>;
+export type InvestorInterest = typeof investorInterests.$inferSelect;
 

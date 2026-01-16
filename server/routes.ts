@@ -15,6 +15,7 @@ import {
   insertReviewSchema,
   insertNotificationSchema,
   insertNotificationPreferencesSchema,
+  insertInvestorInterestSchema,
   updateChefProfileSchema,
   updateBusinessProfileSchema,
   updateGigSchema,
@@ -287,7 +288,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-
+  // Investor interest form submission
+  apiRouter.post("/investor-interest", contactRateLimit, async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertInvestorInterestSchema.parse(req.body);
+      const investorInterest = await storage.createInvestorInterest(validatedData);
+      
+      res.status(201).json({
+        message: "Thank you for registering your interest. We will be in touch soon.",
+        data: investorInterest
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details
+        });
+      }
+      console.error("Error saving investor interest:", error);
+      res.status(500).json({ message: "Failed to save investor interest" });
+    }
+  });
   
   // Profile Management Endpoints
   

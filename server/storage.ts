@@ -59,6 +59,9 @@ import {
   venueCheckinTokens,
   type VenueCheckinToken,
   type InsertVenueCheckinToken,
+  investorInterests,
+  type InvestorInterest,
+  type InsertInvestorInterest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, not, sql, or } from "drizzle-orm";
@@ -90,6 +93,9 @@ export interface IStorage {
   // Contact message methods
   getContactMessage(id: number): Promise<ContactMessage | undefined>;
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  
+  // Investor interest methods
+  createInvestorInterest(interest: InsertInvestorInterest): Promise<InvestorInterest>;
   
   // Chef Profiles methods (Supabase)
   getChefProfile(id: string): Promise<ChefProfile | undefined>;
@@ -399,6 +405,12 @@ export class DBStorage implements IStorage {
   
   async createContactMessage(insertContactMessage: InsertContactMessage): Promise<ContactMessage> {
     const result = await db.insert(contactMessages).values(insertContactMessage).returning();
+    return result[0];
+  }
+  
+  // Investor interest methods
+  async createInvestorInterest(insertInvestorInterest: InsertInvestorInterest): Promise<InvestorInterest> {
+    const result = await db.insert(investorInterests).values(insertInvestorInterest).returning();
     return result[0];
   }
   

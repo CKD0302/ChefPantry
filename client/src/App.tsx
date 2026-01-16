@@ -49,6 +49,9 @@ import ChefTime from "@/pages/ChefTime";
 import VenueTimesheets from "@/pages/VenueTimesheets";
 import VenueStaff from "@/pages/VenueStaff";
 
+// Investor Pages
+import InvestorInterest from "@/pages/InvestorInterest";
+
 // Wrapper components for route parameters
 
 function Router() {
@@ -96,6 +99,9 @@ function Router() {
       
       {/* Time Tracking Routes */}
       <Route path="/chef/time" component={ChefTime} />
+      
+      {/* Investor Routes */}
+      <Route path="/investor-interest" component={InvestorInterest} />
       
       <Route component={NotFound} />
     </Switch>
