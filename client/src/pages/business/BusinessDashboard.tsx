@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Calendar, Settings, ArrowLeft, MapPin, Globe, Instagram, Linkedin, Clock } from "lucide-react";
+import { Building2, Users, Calendar, Settings, ArrowLeft, MapPin, Globe, Instagram, Linkedin, Clock, RefreshCw, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -15,7 +15,7 @@ export default function BusinessDashboard() {
   const { user } = useAuth();
 
   // Fetch business details
-  const { data: business, isLoading: loadingBusiness, error: businessError } = useQuery({
+  const { data: business, isLoading: loadingBusiness, error: businessError, refetch: refetchBusiness } = useQuery({
     queryKey: ["business-profile", businessId],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/profiles/business/${businessId}`);
@@ -25,17 +25,21 @@ export default function BusinessDashboard() {
       return response.json();
     },
     enabled: !!businessId && !!user,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   // Verify user has access to this business
-  const { data: accessibleBusinesses, isLoading: loadingAccess } = useQuery({
+  const { data: accessibleBusinesses, isLoading: loadingAccess, error: accessError, refetch: refetchAccess } = useQuery({
     queryKey: ["accessible-businesses", user?.id],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/company/accessible-businesses?userId=${user?.id}`);
+      const response = await apiRequest("GET", `/api/company/accessible-businesses`);
       if (!response.ok) throw new Error("Failed to fetch accessible businesses");
       return response.json();
     },
     enabled: !!user?.id,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   if (loadingBusiness || loadingAccess) {
@@ -49,6 +53,35 @@ export default function BusinessDashboard() {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-48 bg-neutral-200 rounded"></div>
               ))}
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Handle access loading error - show retry option instead of access denied
+  if (accessError) {
+    return (
+      <div>
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-neutral-800 mb-2">Unable to Load</h1>
+            <p className="text-neutral-600 mb-6">
+              We couldn't verify your access to this business. Please try again.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => refetchAccess()} variant="default">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+              <Button onClick={() => navigate("/dashboard")} variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
             </div>
           </div>
         </div>
@@ -84,7 +117,36 @@ export default function BusinessDashboard() {
     );
   }
 
-  if (businessError || !business?.data) {
+  // Handle business profile loading error
+  if (businessError) {
+    return (
+      <div>
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-neutral-800 mb-2">Unable to Load Business</h1>
+            <p className="text-neutral-600 mb-6">
+              We couldn't load the business profile. Please try again.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => refetchBusiness()} variant="default">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+              <Button onClick={() => navigate("/dashboard")} variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!business?.data) {
     return (
       <div>
         <Navbar />
