@@ -173,55 +173,13 @@ export default function BusinessInvoices() {
   const handleDownloadInvoice = (invoice: InvoiceData) => {
     console.log('Download invoice clicked for:', invoice.id);
     
-    if (isLoadingProfile) {
-      toast({
-        title: "Loading",
-        description: "Please wait while we load your business profile...",
-      });
-      return;
-    }
-
-    if (profileError) {
-      toast({
-        title: "Profile Error",
-        description: "Unable to load business profile. Please refresh the page and try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!businessProfile) {
-      // Try to use invoice business data as fallback
-      const fallbackBusinessData = {
-        businessName: invoice.business?.name || 'Business',
-        location: 'Location not specified',
-        description: ''
-      };
-      
-      try {
-        console.log('Using fallback business data for PDF generation');
-        downloadInvoicePDF(invoice, fallbackBusinessData);
-        
-        toast({
-          title: "Invoice Downloaded",
-          description: "Your invoice PDF has been downloaded successfully.",
-        });
-      } catch (error) {
-        console.error("Error downloading invoice with fallback data:", error);
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to download invoice. Please try again.",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
-
     try {
+      // Use business profile if available, otherwise use invoice data as fallback
+      // This allows Company members (who don't have their own business profile) to download PDFs
       const businessData = {
-        businessName: businessProfile.businessName || invoice.business?.name || 'Business',
-        location: businessProfile.location || 'Location not specified',
-        description: businessProfile.description || ''
+        businessName: businessProfile?.businessName || invoice.business?.name || 'Business',
+        location: businessProfile?.location || invoice.gig?.location || 'Location not specified',
+        description: businessProfile?.description || ''
       };
 
       console.log('Generating PDF with business data:', businessData);
