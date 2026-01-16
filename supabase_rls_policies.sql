@@ -272,10 +272,19 @@ FOR DELETE USING (
 -- ============================================================
 -- PHASE 6: FIX SECURITY DEFINER VIEW
 -- Replace SECURITY DEFINER with SECURITY INVOKER (default)
+-- 
+-- NOTE: Must drop dependent policies first, then recreate them
 -- ============================================================
 
+-- Step 1: Drop policies that depend on the view
+DROP POLICY IF EXISTS "gigs_company_access" ON public.gigs;
+DROP POLICY IF EXISTS "gig_invoices_company_access" ON public.gig_invoices;
+DROP POLICY IF EXISTS "gig_applications_company_access" ON public.gig_applications;
+
+-- Step 2: Drop the view (now safe since dependencies are removed)
 DROP VIEW IF EXISTS public.user_accessible_businesses;
 
+-- Step 3: Recreate the view as SECURITY INVOKER (default)
 CREATE VIEW public.user_accessible_businesses AS
 SELECT 
   bp.id as business_id,
@@ -296,6 +305,36 @@ FROM public.business_profiles bp
 INNER JOIN public.business_company_links bcl ON bp.id = bcl.business_id
 INNER JOIN public.company_members cm ON bcl.company_id = cm.company_id
 WHERE cm.user_id = auth.uid()::text;
+
+-- Step 4: Recreate the dependent policies that allow company members to access related data
+-- These policies allow users to access gigs/invoices/applications for businesses they have access to via company membership
+
+CREATE POLICY "gigs_company_access" ON public.gigs
+FOR SELECT USING (
+  auth.uid()::text = created_by
+  OR business_id IN (
+    SELECT business_id FROM public.user_accessible_businesses
+  )
+);
+
+CREATE POLICY "gig_invoices_company_access" ON public.gig_invoices
+FOR SELECT USING (
+  auth.uid()::text = chef_id
+  OR business_id IN (
+    SELECT business_id FROM public.user_accessible_businesses
+  )
+);
+
+CREATE POLICY "gig_applications_company_access" ON public.gig_applications
+FOR SELECT USING (
+  auth.uid()::text = chef_id
+  OR gig_id IN (
+    SELECT g.id FROM public.gigs g
+    WHERE g.business_id IN (
+      SELECT business_id FROM public.user_accessible_businesses
+    )
+  )
+);
 
 -- ============================================================
 -- PHASE 7: TIGHTEN OVERLY PERMISSIVE POLICIES (WARNINGS)
