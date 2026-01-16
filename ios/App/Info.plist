@@ -49,5 +49,8 @@
     <array>
         <string>applinks:thechefpantry.co</string>
     </array>
+    <!-- Camera Permission for QR Code Scanning -->
+    <key>NSCameraUsageDescription</key>
+    <string>Chef Pantry needs camera access to scan QR codes for clocking in and out at venues.</string>
 </dict>
 </plist>

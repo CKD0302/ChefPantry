@@ -119,6 +119,47 @@ Chef Pantry is a full-stack web application connecting freelance chefs with hosp
 - `server/`: Express backend with routes and database logic
 - `shared/`: Common schemas and types
 - `migrations/`: Database migration files
+- `ios/`: Native iOS project (Capacitor)
+- `android/`: Native Android project (Capacitor)
+- `scripts/`: Build and deployment scripts
+
+## Mobile App Architecture
+
+### Native App Support
+Chef Pantry supports native iOS and Android apps via Capacitor, wrapping the React web app.
+
+- **Build Tool**: Capacitor 7 for hybrid mobile apps
+- **App ID**: `co.thechefpantry.app`
+- **Web Assets**: Shared from `dist/public` build output
+- **QR Scanning**: html5-qrcode library (works in WebView)
+
+### Platform Detection
+Use `client/src/lib/platform.ts` for platform-specific code:
+```typescript
+import { usePlatform, isNative } from '@/lib/platform';
+// Hook: const { isNative, isIOS, isAndroid } = usePlatform();
+// Function: if (isNative()) { /* native-only code */ }
+```
+
+### Mobile Build Commands
+```bash
+# Build web + sync to native
+./scripts/build-mobile.sh
+
+# Open in Xcode (macOS only)
+npx cap open ios
+
+# Open in Android Studio
+npx cap open android
+
+# Sync after code changes
+npx cap sync
+```
+
+### App Store Requirements
+- iOS: Camera permission configured in `ios/App/Info.plist`
+- Android: Camera permission in `android/app/src/main/AndroidManifest.xml`
+- See `MOBILE_APP_GUIDE.md` for full submission checklist
 
 ## User Preferences
 
@@ -135,6 +176,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- January 16, 2026. **MOBILE APP SUPPORT**: Added native iOS and Android app support using Capacitor 7. Configured capacitor.config.ts to build from Vite output. Added platform detection utility (client/src/lib/platform.ts) with usePlatform hook. Configured iOS camera permissions in Info.plist and Android camera permissions in AndroidManifest.xml. Created build-mobile.sh script and comprehensive MOBILE_APP_GUIDE.md for App Store/Play Store submission. The html5-qrcode library works seamlessly in both web and native WebView contexts.
 - December 14, 2025. **PERMANENT QR CODES**: Upgraded QR clock-in system from time-limited tokens to permanent venue QR codes. Each venue now has a single permanent QR code that chefs can scan to toggle their clock status - clocking in if not working, or clocking out if already clocked in at that venue. Simplified the Venue Timesheets QR modal and updated the Chef Time scanner to handle both clock in and clock out actions from a single scan.
 - December 14, 2025. **QR CODE CLOCK-IN FEATURE**: Added QR code-based clock-in functionality. Venues can generate QR codes from their Timesheets page. Chefs can scan these QR codes using their phone camera from the Time page to instantly clock in. Added venue_checkin_tokens table for secure token storage, API endpoints for QR generation/validation, react-qr-code for display, and @yudiel/react-qr-scanner for camera scanning.
 - December 14, 2025. **TIME TRACKING PHASE 2 (EARNINGS & INVOICING)**: Added hourly rate field to chef profiles and pay frequency field to business profiles. Shift displays now show calculated earnings (hours worked minus breaks × hourly rate). Added "Create Invoice" button on approved shifts in ChefTime.tsx, allowing chefs to create invoices directly from their approved timesheets with pre-filled shift data.
