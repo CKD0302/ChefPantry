@@ -60,11 +60,19 @@ export default function Navbar() {
                 <a href="#contact" className="text-neutral-800 hover:text-primary font-medium">
                   Contact
                 </a>
+                <Link href="/investor-interest" className="text-neutral-800 hover:text-primary font-medium">
+                  Invest
+                </Link>
               </>
             ) : (
-              <Link href="/" className="text-neutral-800 hover:text-primary font-medium">
-                Home
-              </Link>
+              <>
+                <Link href="/" className="text-neutral-800 hover:text-primary font-medium">
+                  Home
+                </Link>
+                <Link href="/investor-interest" className="text-neutral-800 hover:text-primary font-medium">
+                  Invest
+                </Link>
+              </>
             )}
             
             {/* Auth Buttons */}
@@ -194,14 +202,28 @@ export default function Navbar() {
                     >
                       Contact
                     </a>
+                    <a 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={() => handleNavigation("/investor-interest")}
+                    >
+                      Invest
+                    </a>
                   </>
                 ) : (
-                  <a 
-                    className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
-                    onClick={() => handleNavigation("/")}
-                  >
-                    Home
-                  </a>
+                  <>
+                    <a 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={() => handleNavigation("/")}
+                    >
+                      Home
+                    </a>
+                    <a 
+                      className="block px-3 py-2 text-neutral-800 hover:text-primary font-medium"
+                      onClick={() => handleNavigation("/investor-interest")}
+                    >
+                      Invest
+                    </a>
+                  </>
                 )}
                 
                 {/* Sign Out at the bottom */}
