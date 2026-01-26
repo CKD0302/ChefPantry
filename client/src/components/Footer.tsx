@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { UtensilsIcon } from "@/lib/icons";
 import { Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 
@@ -33,9 +34,9 @@ export default function Footer() {
   ];
   
   const legalLinks = [
-    { label: "Terms of Service", href: "#" },
-    { label: "Privacy Policy", href: "#" },
-    { label: "Cookies", href: "#" }
+    { label: "Terms of Service", href: "/terms-of-service" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Cookies", href: "/cookies" }
   ];
   
   return (
@@ -108,13 +109,13 @@ export default function Footer() {
           <p className="text-neutral-400">© {currentYear} Chef Pantry. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             {legalLinks.map((link, index) => (
-              <a 
+              <Link 
                 href={link.href} 
                 key={index}
                 className="text-neutral-400 hover:text-primary transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>

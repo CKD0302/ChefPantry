@@ -52,6 +52,9 @@ import VenueStaff from "@/pages/VenueStaff";
 // Investor Pages
 import InvestorInterest from "@/pages/InvestorInterest";
 
+// Legal Pages
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+
 // Wrapper components for route parameters
 
 function Router() {
@@ -102,6 +105,9 @@ function Router() {
       
       {/* Investor Routes */}
       <Route path="/investor-interest" component={InvestorInterest} />
+      
+      {/* Legal Routes */}
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       
       <Route component={NotFound} />
     </Switch>

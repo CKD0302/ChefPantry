@@ -1,0 +1,163 @@
+You are working on the Chef Pantry marketing site hosted at thechefpantry.co.
+
+Goal:
+- Create a dedicated "Privacy Policy" page and wire the existing footer "Privacy Policy" link to this new page.
+
+Context:
+- Chef Pantry is a platform connecting freelance chefs with hospitality businesses in the UK.
+- The site already has footer links: "Terms of Service", "Privacy Policy", "Cookies".
+- Implement this in a way that matches the existing tech stack and routing (React Router, Next.js, plain HTML, etc.).
+- The new page must be responsive and follow the current typography and layout style.
+
+Tasks:
+
+1. Inspect the project to understand:
+   - How pages/routes are defined.
+   - How the footer navigation is implemented.
+
+2. Create a new page/route for the Privacy Policy:
+   - Route path should be: `/privacy-policy`
+   - The page title (in the browser tab) should be: "Privacy Policy | Chef Pantry".
+   - Use the content below as the body of the page.
+   - Structure it with headings, subheadings and paragraphs that match the existing design system (e.g. use existing heading and text components if available).
+
+----- PRIVACY POLICY CONTENT START -----
+
+Privacy Policy
+Last updated: [INSERT DATE]
+
+1. Who we are
+
+Chef Pantry ("we", "us", "our") is a platform that connects culinary professionals with hospitality businesses looking for freelance or flexible chef talent.
+
+We are the data controller for the personal data we collect through our website, web application and related services.
+
+If you have any questions about this policy or how we handle your data, you can contact us at:
+Email: [INSERT CONTACT EMAIL]
+Country: United Kingdom
+
+2. What this policy covers
+
+This Privacy Policy explains how we collect, use, store and share your personal data when you:
+- Visit thechefpantry.co or any subdomains
+- Create an account as a chef or a business
+- Use the Chef Pantry platform to find work, post jobs, or manage bookings
+- Communicate with us by email, contact forms or social media
+
+3. The data we collect
+
+We may collect and process the following types of data:
+
+3.1 Information you provide to us directly
+- Account details: name, email address, password, profile photo.
+- Profile information (chefs): skills, experience, qualifications, availability, location (city/region), rates and other details you choose to include.
+- Business information (clients): business name, contact name, role, business contact details, venue information.
+- Communication data: messages you send via contact forms or direct emails, feedback you provide, support queries.
+- Application and booking data: information related to jobs you apply for or post, and any relevant details you provide.
+
+3.2 Information we collect automatically
+When you visit our website or app, we may automatically collect:
+- Usage data: pages viewed, buttons clicked, referral URLs, time spent on the site.
+- Device and technical data: IP address, browser type, operating system, device type.
+- Cookie data: information stored in cookies and similar technologies (see Cookies section).
+
+3.3 Information from third parties
+We may receive information about you from:
+- Authentication providers or single sign-on services (if used).
+- Payment providers or invoicing tools (if integrated in future).
+- Analytics and error monitoring tools that help us understand usage and stability.
+
+4. How we use your data
+
+We use your personal data for the following purposes:
+
+4.1 To operate and provide the Chef Pantry service
+- Creating and managing user accounts.
+- Allowing chefs to build profiles that businesses can view.
+- Allowing businesses to post roles, view chef profiles and manage bookings.
+- Sending necessary service emails, such as account verification, security alerts or important platform updates.
+
+4.2 To improve and secure our platform
+- Monitoring performance, usage patterns and stability.
+- Detecting, preventing and addressing technical issues or misuse.
+- Developing new features and improving user experience.
+
+4.3 To communicate with you
+- Responding to your messages, questions and support requests.
+- Sending information about changes to our terms, policies or services.
+- With your consent, sending optional updates or news about Chef Pantry.
+
+4.4 Legal and compliance
+- Complying with legal obligations and regulatory requirements.
+- Establishing, exercising or defending legal claims.
+
+5. Legal bases for processing (UK and EU users)
+
+If you are in the UK or EU, we rely on the following legal bases under UK GDPR / GDPR:
+- Contract: where processing is necessary to provide our services (for example, creating an account, connecting chefs with businesses).
+- Legitimate interests: to operate, secure and improve the platform, prevent abuse and understand how users interact with it, where these interests are not overridden by your rights.
+- Consent: for optional uses such as certain cookies or marketing communications (where applicable). You can withdraw consent at any time.
+- Legal obligation: where we need to retain or share data to comply with legal or regulatory requirements.
+
+6. How long we keep your data
+
+We keep your personal data only for as long as it is needed for the purposes described in this policy, including:
+- For as long as you have an active account.
+- For a reasonable period afterwards, where we have a legitimate need (for example, to keep records for legal, accounting or fraud-prevention purposes).
+
+We will either anonymise or securely delete data when it is no longer required.
+
+7. Sharing your data
+
+We do not sell your personal data.
+
+We may share your data with:
+- Service providers and processors who help us run our platform (for example: hosting providers, email service providers, analytics tools, error monitoring, or authentication services). These providers only process your data on our instructions and under appropriate data protection agreements.
+- Other users of the platform, to the extent necessary to provide the service:
+  - Chefs: your profile and information you choose to share may be visible to registered businesses.
+  - Businesses: certain business details may be shown to chefs where needed for job applications or bookings.
+- Professional advisers (such as lawyers or accountants), where necessary.
+- Authorities or regulators, if required by law or to protect our rights or the rights of others.
+
+If we undergo a business change, such as a merger, acquisition or asset sale, your data may be transferred as part of that transaction, subject to the same protections.
+
+8. International transfers
+
+Our service providers may be located in other countries. Where personal data is transferred outside the UK or EU, we will take appropriate steps to ensure that an equivalent level of protection is in place, such as using standard contractual clauses approved by regulators.
+
+9. Cookies and similar technologies
+
+We may use cookies and similar technologies to:
+- Keep you logged in and remember your preferences.
+- Understand how visitors interact with our site and improve performance.
+- Support security and fraud prevention.
+
+You can usually control cookies through your browser settings. Some cookies are essential for the site to function and cannot be disabled without affecting basic functionality.
+
+If we provide a separate Cookie Policy, that document will give more detail about the cookies we use.
+
+10. Your rights (UK and EU users)
+
+If you are in the UK or EU, you have the following rights over your personal data:
+- Access: to request a copy of the personal data we hold about you.
+- Rectification: to ask us to correct inaccurate or incomplete data.
+- Erasure: to request deletion of your data in certain circumstances.
+- Restriction: to ask us to limit how we use your data in certain cases.
+- Objection: to object to processing based on our legitimate interests.
+- Data portability: to request a copy of your data in a usable format and, where feasible, to have it transferred to another service.
+
+To exercise any of these rights, contact us using the details above. We may need to verify your identity before responding.
+
+You also have the right to lodge a complaint with your local data protection authority. In the UK, this is the Information Commissioner’s Office (ICO).
+
+11. Children
+
+Chef Pantry is not intended for children under 18, and we do not knowingly collect personal data from children. If you believe a child has provided us with personal data, please contact us so we can delete it.
+
+12. Links to other websites
+
+Our platform may contain links to third-party websites or services. We are not responsible for the privacy practices of those third parties. We encourage you to read the privacy policies of any site you visit.
+
+13. Changes to this policy
+
+We may update this Privacy Policy from time to time to reflect changes to our services, legal requirements or how we process data. When we make material changes, we will update the "Last updated" date at the top of t
