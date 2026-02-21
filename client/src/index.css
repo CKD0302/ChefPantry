@@ -80,6 +80,18 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-poppins font-bold;
   }
+
+  input[type="date"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: left;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
 }
 
 @layer components {

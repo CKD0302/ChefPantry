@@ -218,7 +218,7 @@ export default function CreateGig() {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-12 mt-16">
+      <main className="flex-grow container mx-auto px-3 sm:px-4 py-8 sm:py-12 mt-16">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold mb-2">Post a New Gig</h1>
           <p className="text-neutral-600 mb-8">
@@ -226,13 +226,13 @@ export default function CreateGig() {
           </p>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="p-4 sm:p-6">
               <CardTitle>Gig Details</CardTitle>
               <CardDescription>
                 Fill out the form below with the details of your gig
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
@@ -252,7 +252,7 @@ export default function CreateGig() {
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
                       name="startDate"
@@ -260,7 +260,7 @@ export default function CreateGig() {
                         <FormItem>
                           <FormLabel>Start Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" className="text-left" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -274,7 +274,7 @@ export default function CreateGig() {
                         <FormItem>
                           <FormLabel>End Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" className="text-left" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -288,7 +288,7 @@ export default function CreateGig() {
                         <FormItem>
                           <FormLabel>Start Time</FormLabel>
                           <FormControl>
-                            <Input type="time" {...field} />
+                            <Input type="time" className="text-left" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -302,7 +302,7 @@ export default function CreateGig() {
                         <FormItem>
                           <FormLabel>End Time</FormLabel>
                           <FormControl>
-                            <Input type="time" {...field} />
+                            <Input type="time" className="text-left" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
