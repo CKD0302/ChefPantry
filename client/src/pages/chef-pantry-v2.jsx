@@ -1,27 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/utils/supabaseClient";
 
-// ─── Google Fonts ─────────────────────────────────────────────────────────────
-const FONT_LINK = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap');`;
-
-// ─── Design Tokens ────────────────────────────────────────────────────────────
+// ─── Design Tokens (aligned with Chef Pantry site palette) ───────────────────
 const C = {
-  bg: "#F7F6F2",
+  bg: "#F5F5F5",
   card: "#FFFFFF",
-  primary: "#1C3829",
-  primaryMid: "#2D5A3D",
-  gold: "#C9973A",
-  goldLight: "#F5E6C8",
-  text: "#1A1A18",
-  muted: "#7A8880",
-  border: "#E4E2DA",
-  danger: "#B83232",
-  dangerLight: "#FBF0F0",
-  warn: "#C07A1A",
-  warnLight: "#FDF3E0",
-  success: "#1E6640",
-  successLight: "#EBF5EE",
-  overlay: "rgba(20,30,24,0.55)",
+  primary: "#FF6633",
+  primaryMid: "#E85A2D",
+  secondary: "#006680",
+  secondaryMid: "#007A99",
+  gold: "#FF6633",
+  goldLight: "#FFF0EB",
+  text: "#1A1A1A",
+  muted: "#737373",
+  border: "#E5E5E5",
+  dark: "#1A1A2E",
+  danger: "#DC2626",
+  dangerLight: "#FEF2F2",
+  warn: "#D97706",
+  warnLight: "#FFFBEB",
+  success: "#16A34A",
+  successLight: "#F0FDF4",
+  overlay: "rgba(0,0,0,0.5)",
 };
 
 const CURRENCIES = [
@@ -65,11 +65,11 @@ const gpBg = (val, target) => val >= target ? C.successLight : val >= target - 1
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 const T = ({ children, size = 14, weight = 400, color = C.text, style = {} }) => (
-  <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: size, fontWeight: weight, color, ...style }}>{children}</span>
+  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: size, fontWeight: weight, color, ...style }}>{children}</span>
 );
 
 const Label = ({ children }) => (
-  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: 1.4, color: C.muted, textTransform: "uppercase", marginBottom: 6 }}>
+  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: 1.4, color: C.muted, textTransform: "uppercase", marginBottom: 6 }}>
     {children}
   </div>
 );
@@ -84,25 +84,25 @@ const Input = ({ prefix, suffix, value, onChange, placeholder, type = "number", 
   <div style={{ position: "relative", marginBottom: 10 }}>
     {prefix && <span style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 14, pointerEvents: "none", zIndex: 1 }}>{prefix}</span>}
     <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-      style={{ width: "100%", boxSizing: "border-box", padding: `11px ${suffix ? "38px" : "13px"} 11px ${prefix ? "30px" : "13px"}`, border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 15, color: C.text, background: C.bg, fontFamily: "'Outfit', sans-serif", outline: "none", ...style }} />
+      style={{ width: "100%", boxSizing: "border-box", padding: `11px ${suffix ? "38px" : "13px"} 11px ${prefix ? "30px" : "13px"}`, border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 15, color: C.text, background: C.bg, fontFamily: "'Inter', sans-serif", outline: "none", ...style }} />
     {suffix && <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 13, pointerEvents: "none" }}>{suffix}</span>}
   </div>
 );
 
 const Select = ({ children, value, onChange }) => (
-  <select value={value} onChange={onChange} style={{ width: "100%", padding: "11px 13px", marginBottom: 10, border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 14, color: C.text, background: C.bg, fontFamily: "'Outfit', sans-serif", outline: "none", cursor: "pointer" }}>
+  <select value={value} onChange={onChange} style={{ width: "100%", padding: "11px 13px", marginBottom: 10, border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 14, color: C.text, background: C.bg, fontFamily: "'Inter', sans-serif", outline: "none", cursor: "pointer" }}>
     {children}
   </select>
 );
 
 const Seg = ({ options, value, onChange, compact }) => (
-  <div style={{ display: "flex", background: "#ECEAE3", borderRadius: 12, padding: 4, marginBottom: 12 }}>
+  <div style={{ display: "flex", background: C.border, borderRadius: 12, padding: 4, marginBottom: 12 }}>
     {options.map(([v, l]) => (
       <button key={v} onClick={() => onChange(v)} style={{
         flex: 1, padding: compact ? "7px 4px" : "9px 4px", borderRadius: 9, border: "none",
         background: value === v ? C.card : "transparent",
         color: value === v ? C.primary : C.muted,
-        fontFamily: "'Outfit', sans-serif", fontSize: compact ? 12 : 13, fontWeight: value === v ? 600 : 400,
+        fontFamily: "'Inter', sans-serif", fontSize: compact ? 12 : 13, fontWeight: value === v ? 600 : 400,
         cursor: "pointer", transition: "all 0.15s ease",
         boxShadow: value === v ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
       }}>{l}</button>
@@ -116,14 +116,14 @@ const Btn = ({ children, onClick, variant = "primary", disabled, full, small, st
     ghost: { background: "transparent", color: C.muted, border: `1.5px solid ${C.border}` },
     gold: { background: C.gold, color: "#fff", border: "none" },
     danger: { background: C.dangerLight, color: C.danger, border: `1px solid ${C.danger}30` },
-    ai: { background: `linear-gradient(135deg, #1C3829, #2D5A3D)`, color: "#fff", border: "none" },
+    ai: { background: `linear-gradient(135deg, ${C.secondary}, ${C.secondaryMid})`, color: "#fff", border: "none" },
   };
   return (
     <button onClick={onClick} disabled={disabled} style={{
       ...(variants[variant] || variants.primary),
       width: full ? "100%" : "auto",
       padding: small ? "8px 14px" : "12px 20px",
-      borderRadius: 12, fontFamily: "'Outfit', sans-serif",
+      borderRadius: 12, fontFamily: "'Inter', sans-serif",
       fontSize: small ? 12 : 14, fontWeight: 600, cursor: disabled ? "default" : "pointer",
       opacity: disabled ? 0.6 : 1, transition: "opacity 0.15s",
       ...style,
@@ -143,7 +143,7 @@ const GPResult = ({ costPerUnit, sellingPrice, gpVal, target, sym, meta }) => {
       {meta && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
           {meta.map(([k, v]) => (
-            <div key={k} style={{ background: C.card, borderRadius: 8, padding: "5px 10px", fontSize: 12, fontFamily: "'Outfit', sans-serif" }}>
+            <div key={k} style={{ background: C.card, borderRadius: 8, padding: "5px 10px", fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
               <span style={{ color: C.muted }}>{k}: </span><strong style={{ color: C.text }}>{v}</strong>
             </div>
           ))}
@@ -151,15 +151,15 @@ const GPResult = ({ costPerUnit, sellingPrice, gpVal, target, sym, meta }) => {
       )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
         <div style={{ background: C.card, borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 3, fontFamily: "'Outfit', sans-serif" }}>UNIT COST</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.danger, fontFamily: "'Outfit', sans-serif" }}>{sym}{fmt(costPerUnit)}</div>
+          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>UNIT COST</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: C.danger, fontFamily: "'Inter', sans-serif" }}>{sym}{fmt(costPerUnit)}</div>
         </div>
         <div style={{ background: C.card, borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 3, fontFamily: "'Outfit', sans-serif" }}>GROSS PROFIT</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: col, fontFamily: "'Outfit', sans-serif" }}>{fmt(gpVal, 1)}%</div>
+          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>GROSS PROFIT</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: col, fontFamily: "'Inter', sans-serif" }}>{fmt(gpVal, 1)}%</div>
         </div>
       </div>
-      <div style={{ background: "#E8E4DC", borderRadius: 6, height: 8, position: "relative", overflow: "hidden", marginBottom: 6 }}>
+      <div style={{ background: "#E5E5E5", borderRadius: 6, height: 8, position: "relative", overflow: "hidden", marginBottom: 6 }}>
         <div style={{ width: `${Math.min(Math.max(gpVal, 0), 100)}%`, height: "100%", background: col, borderRadius: 6, transition: "width 0.5s cubic-bezier(.34,1.56,.64,1)" }} />
         <div style={{ position: "absolute", top: 0, left: `${target}%`, width: 2, height: "100%", background: C.primary, opacity: 0.5 }} />
       </div>
@@ -169,8 +169,8 @@ const GPResult = ({ costPerUnit, sellingPrice, gpVal, target, sym, meta }) => {
       </div>
       {gpVal < target && sell > 0 && (
         <div style={{ background: C.warnLight, border: `1px solid ${C.gold}50`, borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 10, color: C.warn, fontWeight: 700, letterSpacing: 1, marginBottom: 4, fontFamily: "'Outfit', sans-serif" }}>TO HIT {target}% TARGET</div>
-          <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 700, color: C.warn }}>
+          <div style={{ fontSize: 10, color: C.warn, fontWeight: 700, letterSpacing: 1, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>TO HIT {target}% TARGET</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: C.warn }}>
             Charge {sym}{fmt(suggested)}
             <span style={{ fontSize: 13, fontWeight: 400, color: C.gold, marginLeft: 8 }}>+{sym}{fmt(suggested - sell)} more</span>
           </div>
@@ -196,7 +196,7 @@ const AISuggestions = ({ dish, target, sym, aiData, loadingAI, onFetch }) => {
           <div key={i} style={{ background: C.bg, borderRadius: 12, padding: "12px 14px", marginBottom: 8, borderLeft: `3px solid ${impCol}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <T size={13} weight={600}>{s.tip}</T>
-              <span style={{ fontSize: 10, fontWeight: 700, color: impCol, background: `${impCol}18`, padding: "2px 9px", borderRadius: 20, fontFamily: "'Outfit', sans-serif" }}>{s.impact}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: impCol, background: `${impCol}18`, padding: "2px 9px", borderRadius: 20, fontFamily: "'Inter', sans-serif" }}>{s.impact}</span>
             </div>
             <T size={12} color={C.muted} style={{ lineHeight: "1.5", display: "block" }}>{s.detail}</T>
           </div>
@@ -259,17 +259,17 @@ function KitchenMode({ sym, target }) {
     <div>
       {/* Menu Health Dashboard */}
       {dishes.length > 0 && (
-        <Card style={{ background: C.primary, border: "none", marginBottom: 16 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: "rgba(255,255,255,0.7)", marginBottom: 14, fontWeight: 600 }}>Menu Health</div>
+        <Card style={{ background: C.dark, border: "none", marginBottom: 16 }}>
+          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 16, color: "rgba(255,255,255,0.7)", marginBottom: 14, fontWeight: 600 }}>Menu Health</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
             {[
-              ["AVG GP", avgGP != null ? `${fmt(avgGP, 1)}%` : "–", avgGP >= target ? "#95D5B2" : "#F9A8A8"],
-              ["ON TARGET", `${onTarget.length}/${dishes.length}`, "#95D5B2"],
-              ["DISHES", dishes.length, "#C9D5E2"],
+              ["AVG GP", avgGP != null ? `${fmt(avgGP, 1)}%` : "–", avgGP >= target ? C.successLight : C.dangerLight],
+              ["ON TARGET", `${onTarget.length}/${dishes.length}`, C.successLight],
+              ["DISHES", dishes.length, C.border],
             ].map(([lbl, val, col]) => (
               <div key={lbl} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 10px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 22, fontWeight: 700, color: col }}>{val}</div>
-                <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 1, marginTop: 2 }}>{lbl}</div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: col }}>{val}</div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 1, marginTop: 2 }}>{lbl}</div>
               </div>
             ))}
           </div>
@@ -279,7 +279,7 @@ function KitchenMode({ sym, target }) {
               {below.sort((a, b) => dishGP(a) - dishGP(b)).slice(0, 2).map(d => (
                 <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
                   <T size={13} color="rgba(255,255,255,0.85)">{d.name}</T>
-                  <T size={13} color="#F9A8A8" weight={700}>{fmt(dishGP(d), 1)}%</T>
+                  <T size={13} color={C.dangerLight} weight={700}>{fmt(dishGP(d), 1)}%</T>
                 </div>
               ))}
             </div>
@@ -301,14 +301,14 @@ function KitchenMode({ sym, target }) {
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <T size={15} weight={600}>{dish.name}</T>
-                  <span style={{ fontSize: 10, background: C.bg, color: C.muted, padding: "2px 8px", borderRadius: 20, fontFamily: "'Outfit', sans-serif" }}>{dish.category}</span>
+                  <span style={{ fontSize: 10, background: C.bg, color: C.muted, padding: "2px 8px", borderRadius: 20, fontFamily: "'Inter', sans-serif" }}>{dish.category}</span>
                 </div>
                 <T size={12} color={C.muted} style={{ display: "block", marginTop: 2 }}>{sym}{fmt(cost)} cost · {sym}{fmt(sell)} sell</T>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 22, fontWeight: 700, color: col, lineHeight: 1 }}>{fmt(gpVal, 1)}%</div>
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, color: C.muted, marginTop: 2 }}>GP</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, color: col, lineHeight: 1 }}>{fmt(gpVal, 1)}%</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: C.muted, marginTop: 2 }}>GP</div>
                 </div>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: col }} />
               </div>
@@ -317,18 +317,18 @@ function KitchenMode({ sym, target }) {
             {isOpen && (
               <div style={{ padding: "0 20px 20px", borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
                 {dish.ingredients.filter(i => i.name).map((ing, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13, fontFamily: "'Outfit', sans-serif" }}>
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
                     <span style={{ color: C.text }}>{ing.name}</span>
                     <span style={{ color: C.muted }}>{sym}{fmt(parseFloat(ing.cost) || 0)}</span>
                   </div>
                 ))}
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 14px", fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 14px", fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600 }}>
                   <span>Total food cost</span><span style={{ color: C.danger }}>{sym}{fmt(cost)}</span>
                 </div>
                 <GPResult costPerUnit={cost} sellingPrice={dish.sellingPrice} gpVal={gpVal} target={target} sym={sym} />
                 <AISuggestions dish={dish} target={target} sym={sym} aiData={aiData[dish.id]} loadingAI={loadingAI === dish.id} onFetch={() => fetchAI(dish)} />
                 <button onClick={() => setDishes(p => p.filter(d => d.id !== dish.id))}
-                  style={{ background: "none", border: "none", color: C.danger, cursor: "pointer", fontSize: 12, padding: "10px 0 0", fontFamily: "'Outfit', sans-serif" }}>
+                  style={{ background: "none", border: "none", color: C.danger, cursor: "pointer", fontSize: 12, padding: "10px 0 0", fontFamily: "'Inter', sans-serif" }}>
                   Remove dish
                 </button>
               </div>
@@ -358,12 +358,12 @@ function KitchenMode({ sym, target }) {
             <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
               <input type="text" placeholder="Ingredient" value={ing.name}
                 onChange={e => setForm(f => ({ ...f, ingredients: f.ingredients.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x) }))}
-                style={{ flex: 2, padding: "10px 12px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none", background: C.bg, color: C.text }} />
+                style={{ flex: 2, padding: "10px 12px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", background: C.bg, color: C.text }} />
               <div style={{ flex: 1, position: "relative" }}>
                 <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 13, pointerEvents: "none" }}>{sym}</span>
                 <input type="number" placeholder="0.00" value={ing.cost}
                   onChange={e => setForm(f => ({ ...f, ingredients: f.ingredients.map((x, idx) => idx === i ? { ...x, cost: e.target.value } : x) }))}
-                  style={{ width: "100%", boxSizing: "border-box", padding: "10px 8px 10px 22px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none", background: C.bg, color: C.text }} />
+                  style={{ width: "100%", boxSizing: "border-box", padding: "10px 8px 10px 22px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", background: C.bg, color: C.text }} />
               </div>
               {form.ingredients.length > 1 && (
                 <button onClick={() => setForm(f => ({ ...f, ingredients: f.ingredients.filter((_, idx) => idx !== i) }))}
@@ -372,7 +372,7 @@ function KitchenMode({ sym, target }) {
             </div>
           ))}
           <button onClick={() => setForm(f => ({ ...f, ingredients: [...f.ingredients, { name: "", cost: "" }] }))}
-            style={{ background: "none", border: `1.5px dashed ${C.border}`, borderRadius: 8, color: C.muted, cursor: "pointer", padding: "7px 14px", fontSize: 12, marginBottom: 14, fontFamily: "'Outfit', sans-serif" }}>
+            style={{ background: "none", border: `1.5px dashed ${C.border}`, borderRadius: 8, color: C.muted, cursor: "pointer", padding: "7px 14px", fontSize: 12, marginBottom: 14, fontFamily: "'Inter', sans-serif" }}>
             + Add ingredient
           </button>
           <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
@@ -402,7 +402,7 @@ function KitchenMode({ sym, target }) {
         </Card>
       ) : (
         <button onClick={() => setShowForm(true)}
-          style={{ width: "100%", padding: 18, border: `2px dashed ${C.border}`, borderRadius: 18, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 15, fontFamily: "'Outfit', sans-serif" }}>
+          style={{ width: "100%", padding: 18, border: `2px dashed ${C.border}`, borderRadius: 18, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 15, fontFamily: "'Inter', sans-serif" }}>
           + Add New Dish
         </button>
       )}
@@ -486,7 +486,7 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
 
   return (
     <div>
-      <Card style={{ background: C.primary, border: "none", padding: "16px 18px" }}>
+      <Card style={{ background: C.secondary, border: "none", padding: "16px 18px" }}>
         <T size={13} weight={600} color="rgba(255,255,255,0.6)" style={{ display: "block", marginBottom: 4, letterSpacing: 0.5 }}>JUST ASK</T>
         <T size={14} color="rgba(255,255,255,0.85)" style={{ display: "block", lineHeight: "1.5" }}>Type any pricing or margin question in plain English and get an instant answer.</T>
       </Card>
@@ -497,7 +497,7 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
           {starters.map((s, i) => (
             <button key={i} onClick={() => setInput(s)} style={{
               background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 14px",
-              textAlign: "left", cursor: "pointer", fontFamily: "'Outfit', sans-serif", fontSize: 13, color: C.muted,
+              textAlign: "left", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.muted,
               lineHeight: 1.4,
             }}>↗ {s}</button>
           ))}
@@ -509,13 +509,13 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
         {messages.map((m, i) => (
           <div key={i} style={{ marginBottom: 12, display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
             <div style={{
-              maxWidth: "88%", background: m.role === "user" ? C.primary : C.card,
+              maxWidth: "88%", background: m.role === "user" ? C.secondary : C.card,
               color: m.role === "user" ? "#fff" : C.text,
               borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "4px 18px 18px 18px",
               padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
               border: m.role === "user" ? "none" : `1px solid ${C.border}`,
             }}>
-              <p style={{ margin: 0, fontFamily: "'Outfit', sans-serif", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.content}</p>
+              <p style={{ margin: 0, fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.content}</p>
             </div>
           </div>
         ))}
@@ -539,10 +539,10 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
           value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
           placeholder="Ask about any margin or price..."
-          style={{ flex: 1, padding: "13px 16px", border: `1.5px solid ${C.border}`, borderRadius: 14, fontSize: 14, fontFamily: "'Outfit', sans-serif", background: C.card, color: C.text, outline: "none" }}
+          style={{ flex: 1, padding: "13px 16px", border: `1.5px solid ${C.border}`, borderRadius: 14, fontSize: 14, fontFamily: "'Inter', sans-serif", background: C.card, color: C.text, outline: "none" }}
         />
         <button onClick={send} disabled={loading || !input.trim()} style={{
-          background: C.primary, border: "none", borderRadius: 14, padding: "0 20px",
+          background: C.secondary, border: "none", borderRadius: 14, padding: "0 20px",
           color: "#fff", fontSize: 20, cursor: "pointer", opacity: loading || !input.trim() ? 0.5 : 1,
         }}>↑</button>
       </div>
@@ -793,9 +793,9 @@ function Settings({ currency, setCurrency, onClose }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 20 }}>
           {CURRENCIES.map(cur => (
             <button key={cur.code} onClick={() => setCurrency(cur)} style={{
-              padding: "10px 4px", borderRadius: 12, cursor: "pointer", fontFamily: "'Outfit', sans-serif",
+              padding: "10px 4px", borderRadius: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif",
               border: `1.5px solid ${currency.code === cur.code ? C.primary : C.border}`,
-              background: currency.code === cur.code ? "#EBF5EE" : C.bg,
+              background: currency.code === cur.code ? C.goldLight : C.bg,
               color: currency.code === cur.code ? C.primary : C.text,
               fontWeight: currency.code === cur.code ? 700 : 400,
             }}>
@@ -826,10 +826,10 @@ export default function ChefPantryV2() {
 
   // Mode Picker
   if (!mode) return (
-    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: C.bg, fontFamily: "'Outfit', sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 24px" }}>
-      <style>{FONT_LINK}</style>
+    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: C.bg, fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 24px" }}>
+      
       <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: C.primary, lineHeight: 1.1, marginBottom: 8 }}>The Chef Pantry</div>
+        <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 32, fontWeight: 700, color: C.primary, lineHeight: 1.1, marginBottom: 8 }}>The Chef Pantry</div>
         <T size={14} color={C.muted}>Who's using this right now?</T>
       </div>
 
@@ -840,12 +840,12 @@ export default function ChefPantryV2() {
         <button key={m.id} onClick={() => setMode(m.id)} style={{
           width: "100%", background: C.card, border: `2px solid ${C.border}`, borderRadius: 20,
           padding: "22px 24px", marginBottom: 14, cursor: "pointer", textAlign: "left",
-          fontFamily: "'Outfit', sans-serif", transition: "all 0.15s ease",
+          fontFamily: "'Inter', sans-serif", transition: "all 0.15s ease",
         }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.background = "#F0F7F3"; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.background = C.goldLight; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>{m.icon}</div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.primary, marginBottom: 4 }}>{m.title} Mode</div>
+          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 4 }}>{m.title} Mode</div>
           <T size={14} color={C.muted} style={{ display: "block", lineHeight: 1.5, marginBottom: 8 }}>{m.subtitle}</T>
           <T size={12} color={C.gold} weight={600}>{m.detail}</T>
         </button>
@@ -856,11 +856,10 @@ export default function ChefPantryV2() {
   );
 
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", background: C.bg, minHeight: "100vh", fontFamily: "'Outfit', sans-serif", position: "relative" }}>
+    <div style={{ maxWidth: 480, margin: "0 auto", background: C.bg, minHeight: "100vh", fontFamily: "'Inter', sans-serif", position: "relative" }}>
       <style>{`
-        ${FONT_LINK}
         @keyframes pulse { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
-        input:focus,select:focus{border-color:${C.primaryMid} !important; box-shadow:0 0 0 3px ${C.primaryMid}15;}
+        input:focus,select:focus{border-color:${C.primary} !important; box-shadow:0 0 0 3px ${C.primary}20;}
         button:active{opacity:0.75;}
         input[type=range]{height:4px; accent-color:${C.gold};}
         ::-webkit-scrollbar{width:0;}
@@ -870,12 +869,12 @@ export default function ChefPantryV2() {
       <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "14px 20px", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={() => setMode(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontFamily: "'Outfit', sans-serif", fontSize: 12, color: C.muted }}>
+            <button onClick={() => setMode(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.muted }}>
               ← Switch
             </button>
             <div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: C.primary, lineHeight: 1 }}>The Chef Pantry</div>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, color: C.muted, letterSpacing: 0.8 }}>{mode === "kitchen" ? "👨‍🍳 KITCHEN MODE" : "🍺 BAR MODE"}</div>
+              <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 17, fontWeight: 700, color: C.primary, lineHeight: 1 }}>The Chef Pantry</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: C.muted, letterSpacing: 0.8 }}>{mode === "kitchen" ? "👨‍🍳 KITCHEN MODE" : "🍺 BAR MODE"}</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -887,7 +886,7 @@ export default function ChefPantryV2() {
         <div style={{ background: C.bg, borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 12 }}>
           <T size={10} weight={700} color={C.muted} style={{ letterSpacing: 1.2, flexShrink: 0 }}>GP TARGET</T>
           <input type="range" min={40} max={85} value={target} onChange={e => setTarget(Number(e.target.value))} style={{ flex: 1, cursor: "pointer" }} />
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.gold, minWidth: 46, textAlign: "right" }}>{target}%</div>
+          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 20, fontWeight: 700, color: C.gold, minWidth: 46, textAlign: "right" }}>{target}%</div>
         </div>
       </div>
 
