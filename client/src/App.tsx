@@ -33,6 +33,7 @@ import ViewGig from "@/pages/gigs/View";
 import MyApplications from "@/pages/gigs/MyApplications";
 import GigApplications from "@/pages/gigs/applications/GigApplications";
 import Reviews from "@/pages/Reviews";
+import Tools from "@/pages/Tools";
 
 // Company Management Pages
 import CreateCompany from "@/pages/company/CreateCompany";
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/gigs/my-applications" component={MyApplications} />
       <Route path="/gigs/applications/:gigId" component={GigApplications} />
       <Route path="/reviews" component={Reviews} />
+      <Route path="/tools" component={Tools} />
       
       {/* Company Management Routes */}
       <Route path="/company/create" component={CreateCompany} />

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, Mail } from "lucide-react";
+import { CheckCircle, Calendar, MapPin, PoundSterling, Clock, Bell, ExternalLink, Building2, Users, Settings, Mail, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -549,12 +549,20 @@ export default function Dashboard() {
                     >
                       Payments
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => navigate("/reviews")}
                       className="w-full"
                     >
                       Reviews
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/tools")}
+                      className="flex items-center justify-center gap-2 w-full"
+                    >
+                      <Calculator className="h-4 w-4 text-amber-600" />
+                      Tools
                     </Button>
                   </div>
                 </div>
@@ -697,7 +705,7 @@ export default function Dashboard() {
                       <Users className="h-4 w-4 text-indigo-600" />
                       Manage Staff
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => navigate(`/business/${user.id}/timesheets`)}
                       className="flex items-center justify-center gap-2 w-full"
@@ -705,6 +713,14 @@ export default function Dashboard() {
                     >
                       <Clock className="h-4 w-4 text-cyan-600" />
                       Timesheets
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/tools")}
+                      className="flex items-center justify-center gap-2 w-full"
+                    >
+                      <Calculator className="h-4 w-4 text-amber-600" />
+                      Tools
                     </Button>
                   </div>
                 </div>
