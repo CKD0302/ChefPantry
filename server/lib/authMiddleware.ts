@@ -65,6 +65,42 @@ export async function authenticateUser(
 }
 
 /**
+ * Middleware to require admin role.
+ * Must be used after authenticateUser middleware.
+ * Re-verifies the user's role server-side via Supabase admin API.
+ */
+export async function requireAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Authentication required.' });
+      return;
+    }
+
+    // Re-fetch user from Supabase to get authoritative role (don't trust JWT claim alone)
+    const { data: { user }, error } = await supabaseService.auth.admin.getUserById(req.user.id);
+
+    if (error || !user) {
+      res.status(403).json({ message: 'Access denied.' });
+      return;
+    }
+
+    if (user.user_metadata?.role !== 'admin') {
+      res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin authorization error:', error);
+    res.status(500).json({ message: 'Authorization service error.' });
+  }
+}
+
+/**
  * Middleware to verify notification ownership
  * Must be used after authenticateUser middleware
  */

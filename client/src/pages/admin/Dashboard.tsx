@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { supabase } from "@/utils/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from "@/components/ui/tabs";
 import {
   Card,
@@ -58,156 +58,98 @@ interface UserData {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [pendingChefs, setPendingChefs] = useState<ChefApplication[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
   const { toast } = useToast();
 
-  // Check if user is an admin
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        navigate("/auth/signin");
-        return;
-      }
+    if (!user) {
+      navigate("/auth/signin");
+      return;
+    }
 
-      try {
-        const { data } = await supabase.auth.getUser();
-        const userRole = data?.user?.user_metadata?.role;
-        
-        if (userRole === "admin") {
-          setIsAdmin(true);
-          fetchPendingChefs();
-          fetchUsers();
-        } else {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to access the admin dashboard",
-            variant: "destructive",
-          });
-          navigate("/");
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        navigate("/");
-      } finally {
+    // Attempt to load admin data — API will return 403 if not admin
+    Promise.all([fetchPendingChefs(), fetchUsers()])
+      .then(() => setIsLoading(false))
+      .catch(() => {
+        setAccessDenied(true);
         setIsLoading(false);
-      }
-    };
+      });
+  }, [user, navigate]);
 
-    checkAdminStatus();
-  }, [user, navigate, toast]);
-
-  // Fetch all chef profiles
+  // Fetch all chef profiles via admin API
   const fetchPendingChefs = async () => {
     try {
-      const { data, error } = await supabase
-        .from("chef_profiles")
-        .select("*");
-
-      if (error) throw error;
-      
-      setPendingChefs(data || []);
-    } catch (error) {
-      console.error("Error fetching chefs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load chef profiles",
-        variant: "destructive",
-      });
+      const res = await apiRequest("GET", "/api/admin/chefs");
+      const json = await res.json();
+      setPendingChefs(json.data || []);
+    } catch (error: any) {
+      if (error.message?.startsWith("403")) {
+        setAccessDenied(true);
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin dashboard",
+          variant: "destructive",
+        });
+        navigate("/");
+      }
+      throw error;
     }
   };
 
-  // Fetch all users
+  // Fetch all users via admin API
   const fetchUsers = async () => {
     try {
-      // In a real application, this should be a secure admin-only API endpoint
-      // For demo purposes, we're directly using Supabase, but in production
-      // this should be a server-side API call with proper authorization
-      const { data, error } = await supabase.auth.admin.listUsers();
+      const res = await apiRequest("GET", "/api/admin/users");
+      const json = await res.json();
 
-      if (error) throw error;
-      
-      const formattedUsers = data.users.map((user: any) => ({
+      const formattedUsers = (json.data || []).map((user: any) => ({
         id: user.id,
         email: user.email,
-        role: user.user_metadata?.role || "user",
-        suspended: user.user_metadata?.suspended || false,
-        createdAt: new Date(user.created_at).toLocaleDateString(),
+        role: user.role || "user",
+        suspended: user.suspended || false,
+        createdAt: new Date(user.createdAt).toLocaleDateString(),
       }));
-      
+
       setUsers(formattedUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load users",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      if (error.message?.startsWith("403")) {
+        setAccessDenied(true);
+      }
+      throw error;
     }
   };
 
   // Send welcome message to chef (replacing approval process)
   const approveChef = async (id: string) => {
-    try {
-      // In a real application, we would send a welcome email or notification here
-      // For now, we'll just show a toast message
-      
-      toast({
-        title: "Success",
-        description: "Welcome message sent to chef",
-      });
-      
-      // Refresh the list to keep UI in sync
-      fetchPendingChefs();
-    } catch (error) {
-      console.error("Error sending welcome message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send welcome message",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Success",
+      description: "Welcome message sent to chef",
+    });
+    fetchPendingChefs();
   };
 
   // Send feedback message to chef (replacing rejection process)
   const rejectChef = async (id: string) => {
-    try {
-      // In a real application, we would send a feedback email or notification
-      // For now, we'll just show a toast message
-      toast({
-        title: "Success",
-        description: "Feedback message sent to chef",
-      });
-      
-      // Refresh the list to keep UI in sync
-      fetchPendingChefs();
-    } catch (error) {
-      console.error("Error sending feedback:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send feedback",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Success",
+      description: "Feedback message sent to chef",
+    });
+    fetchPendingChefs();
   };
 
-  // Suspend/Unsuspend user
+  // Suspend/Unsuspend user via admin API
   const toggleUserSuspension = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase.auth.admin.updateUserById(id, {
-        user_metadata: { suspended: !currentStatus }
-      });
+      await apiRequest("PUT", `/api/admin/users/${id}/suspend`);
 
-      if (error) throw error;
-      
       toast({
         title: "Success",
         description: `User ${currentStatus ? "unsuspended" : "suspended"} successfully`,
       });
-      
-      // Refresh the list
+
       fetchUsers();
     } catch (error) {
       console.error("Error toggling user suspension:", error);
@@ -232,14 +174,14 @@ export default function AdminDashboard() {
   }
 
   // Show access denied if not admin
-  if (!isAdmin) {
+  if (accessDenied) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-red-500">Access Denied</h2>
           <p className="text-gray-500">You don't have permission to access this page</p>
-          <Button 
-            onClick={() => navigate("/")} 
+          <Button
+            onClick={() => navigate("/")}
             className="mt-4"
           >
             Return to Home
@@ -264,7 +206,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="reviews">Review Moderation</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="chefs">
             <Card>
               <CardHeader>
@@ -302,26 +244,26 @@ export default function AdminDashboard() {
                             {(chef.experienceYears || chef.experience_years || 0)} years
                           </TableCell>
                           <TableCell>
-                            {Array.isArray(chef.skills) 
-                              ? chef.skills.slice(0, 3).join(", ") 
+                            {Array.isArray(chef.skills)
+                              ? chef.skills.slice(0, 3).join(", ")
                               : ''}
                           </TableCell>
                           <TableCell>
-                            {(chef.createdAt || chef.created_at) 
-                              ? new Date(chef.createdAt || chef.created_at).toLocaleDateString() 
+                            {(chef.createdAt || chef.created_at)
+                              ? new Date(chef.createdAt || chef.created_at!).toLocaleDateString()
                               : new Date().toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right space-x-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => approveChef(chef.id)}
                               className="bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200"
                             >
                               Send Welcome
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => rejectChef(chef.id)}
                               className="bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 border-amber-200"
@@ -337,7 +279,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="users">
             <Card>
               <CardHeader>
@@ -385,11 +327,11 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>{user.createdAt}</TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => toggleUserSuspension(user.id, user.suspended)}
-                              className={user.suspended 
+                              className={user.suspended
                                 ? "bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 border-green-200"
                                 : "bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200"
                               }
@@ -405,7 +347,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="reviews">
             <Card>
               <CardHeader>

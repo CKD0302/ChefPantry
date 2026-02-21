@@ -33,7 +33,7 @@ import { sendEmail, sendEmailWithPreferences, tplInvoiceSubmitted, tplInvoicePai
 import { supabaseService } from "./lib/supabaseService";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { authenticateUser, verifyNotificationOwnership, type AuthenticatedRequest } from "./lib/authMiddleware";
+import { authenticateUser, requireAdmin, verifyNotificationOwnership, type AuthenticatedRequest } from "./lib/authMiddleware";
 import { notificationIdParamSchema, notificationQuerySchema } from "./lib/notificationValidation";
 import { authRateLimit, profileRateLimit, contactRateLimit, generalRateLimit } from "./lib/rateLimiter";
 
@@ -457,9 +457,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Accept chef disclaimer
-  apiRouter.post("/profiles/chef/:id/accept-disclaimer", async (req: Request, res: Response) => {
+  apiRouter.post("/profiles/chef/:id/accept-disclaimer", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+
+      if (req.user!.id !== id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       
       // Simply return success - no need to create placeholder profile
       // The disclaimer acceptance is implicit by the user actively choosing to create their profile
@@ -474,9 +478,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Accept business disclaimer
-  apiRouter.post("/profiles/business/:id/accept-disclaimer", async (req: Request, res: Response) => {
+  apiRouter.post("/profiles/business/:id/accept-disclaimer", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+
+      if (req.user!.id !== id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       
       // Simply return success - no need to create placeholder profile
       // The disclaimer acceptance is implicit by the user actively choosing to create their profile
@@ -736,14 +744,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get all gigs for a business
-  apiRouter.get("/gigs/mine", async (req: Request, res: Response) => {
+  apiRouter.get("/gigs/mine", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { businessId } = req.query;
-      
+
       if (!businessId || typeof businessId !== 'string') {
         return res.status(400).json({ message: "Business ID is required" });
       }
-      
+
+      // Verify user owns or has company access to this business
+      const accessibleBusinesses = await storage.getUserAccessibleBusinesses(req.user!.id);
+      const hasAccess = req.user!.id === businessId || accessibleBusinesses.some(b => b.businessId === businessId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const gigs = await storage.getGigsByBusinessId(businessId);
       
       res.status(200).json({
@@ -1077,12 +1092,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get applications for a gig (for businesses)
-  apiRouter.get("/gigs/:id/applications", async (req: Request, res: Response) => {
+  apiRouter.get("/gigs/:id/applications", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
-      
+
+      // Verify user owns the gig or has company access to its business
+      const gig = await storage.getGig(id);
+      if (!gig) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      const accessibleBusinesses = await storage.getUserAccessibleBusinesses(req.user!.id);
+      const hasAccess = gig.createdBy === req.user!.id || accessibleBusinesses.some(b => b.businessId === gig.createdBy);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const applications = await storage.getGigApplicationsByGigId(id);
-      
+
       res.status(200).json({
         data: applications
       });
@@ -1093,14 +1119,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get chef's applications (for chefs)
-  apiRouter.get("/applications/mine", async (req: Request, res: Response) => {
+  apiRouter.get("/applications/mine", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.query;
-      
+
       if (!chefId || typeof chefId !== 'string') {
         return res.status(400).json({ message: "Chef ID is required" });
       }
-      
+
+      if (req.user!.id !== chefId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const applications = await storage.getGigApplicationsByChefId(chefId);
       
       res.status(200).json({
@@ -1490,14 +1520,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get accepted applications that need confirmation (for chefs)
-  apiRouter.get("/applications/accepted", async (req: Request, res: Response) => {
+  apiRouter.get("/applications/accepted", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.query;
-      
+
       if (!chefId || typeof chefId !== 'string') {
         return res.status(400).json({ message: "Chef ID is required" });
       }
-      
+
+      if (req.user!.id !== chefId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const acceptedApplications = await storage.getAcceptedApplicationsByChefId(chefId);
       
       res.status(200).json({
@@ -1510,14 +1544,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get confirmed bookings (for chefs)
-  apiRouter.get("/bookings/confirmed", async (req: Request, res: Response) => {
+  apiRouter.get("/bookings/confirmed", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.query;
-      
+
       if (!chefId || typeof chefId !== 'string') {
         return res.status(400).json({ message: "Chef ID is required" });
       }
-      
+
+      if (req.user!.id !== chefId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const confirmedBookings = await storage.getConfirmedBookingsByChefId(chefId);
       
       res.status(200).json({
@@ -1900,14 +1938,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check if invoice exists for a gig and chef
-  apiRouter.get("/invoices/check", async (req: Request, res: Response) => {
+  apiRouter.get("/invoices/check", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { gigId, chefId } = req.query;
-      
+
       if (!gigId || !chefId || typeof gigId !== 'string' || typeof chefId !== 'string') {
         return res.status(400).json({ message: "Gig ID and Chef ID are required" });
       }
-      
+
+      // Verify user is the chef or owns the business for this gig
+      if (req.user!.id !== chefId) {
+        const gig = gigId ? await storage.getGig(gigId) : null;
+        if (!gig || gig.createdBy !== req.user!.id) {
+          const accessibleBusinesses = await storage.getUserAccessibleBusinesses(req.user!.id);
+          const hasAccess = gig && accessibleBusinesses.some(b => b.businessId === gig.createdBy);
+          if (!hasAccess) {
+            return res.status(403).json({ message: "Access denied" });
+          }
+        }
+      }
+
       const existingInvoice = await storage.getGigInvoiceByGigAndChef(gigId, chefId);
       
       res.status(200).json({
@@ -1921,14 +1971,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get invoices for a chef
-  apiRouter.get("/invoices/chef/:chefId", async (req: Request, res: Response) => {
+  apiRouter.get("/invoices/chef/:chefId", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { chefId } = req.params;
-      
+
       if (!chefId) {
         return res.status(400).json({ message: "Chef ID is required" });
       }
-      
+
+      if (req.user!.id !== chefId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const invoices = await storage.getGigInvoicesByChef(chefId);
       
       res.status(200).json(invoices);
@@ -1939,14 +1993,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get invoices for a business
-  apiRouter.get("/invoices/business/:businessId", async (req: Request, res: Response) => {
+  apiRouter.get("/invoices/business/:businessId", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { businessId } = req.params;
-      
+
       if (!businessId) {
         return res.status(400).json({ message: "Business ID is required" });
       }
-      
+
+      // Verify user owns or has company access to this business
+      const accessibleBusinesses = await storage.getUserAccessibleBusinesses(req.user!.id);
+      const hasAccess = req.user!.id === businessId || accessibleBusinesses.some(b => b.businessId === businessId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const invoices = await storage.getGigInvoicesByBusiness(businessId);
       
       res.status(200).json(invoices);
@@ -1978,13 +2039,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.put("/invoices/:invoiceId/mark-paid", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { invoiceId } = req.params;
-      
+
       if (!invoiceId) {
         return res.status(400).json({ message: "Invoice ID is required" });
       }
-      
+
+      // Fetch invoice first to verify authorization before modifying
+      const invoice = await storage.getGigInvoice(invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+
+      // Verify user owns or has company access to the business
+      const accessibleBusinesses = await storage.getUserAccessibleBusinesses(req.user!.id);
+      const hasAccess = req.user!.id === invoice.businessId || accessibleBusinesses.some(b => b.businessId === invoice.businessId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const updatedInvoice = await storage.updateInvoiceStatus(invoiceId, "paid");
-      
+
       if (!updatedInvoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
@@ -2243,9 +2317,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get pending reviews for a user
-  apiRouter.get("/reviews/pending/:userId", async (req: Request, res: Response) => {
+  apiRouter.get("/reviews/pending/:userId", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { userId } = req.params;
+
+      if (req.user!.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       const pendingReviews = await storage.getPendingReviewsForUser(userId);
       res.status(200).json(pendingReviews);
     } catch (error) {
@@ -2299,34 +2378,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test email route (optional - for verification)
-  apiRouter.get("/_test-email", async (req: Request, res: Response) => {
+  // Admin: list all users
+  apiRouter.get("/admin/users", authenticateUser, requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { to } = req.query;
-      
-      if (!to || typeof to !== 'string') {
-        return res.status(400).json({ message: "Email address 'to' parameter is required" });
+      const { data, error } = await supabaseService.auth.admin.listUsers();
+
+      if (error) {
+        console.error("Error listing users:", error);
+        return res.status(500).json({ message: "Failed to fetch users" });
       }
-      
-      await sendEmail(
-        to,
-        "Test Email from Chef Pantry",
-        `
-        <div style="font-family:Arial,sans-serif;line-height:1.5">
-          <h2>Hello from Chef Pantry!</h2>
-          <p>This is a test email to verify that our Resend integration is working correctly.</p>
-          <p>If you're seeing this, email notifications are set up properly.</p>
-          <p>— Chef Pantry Team</p>
-        </div>`
-      );
-      
-      res.status(200).json({ 
-        message: "Test email sent successfully",
-        to: to
-      });
+
+      const users = data.users.map((user: any) => ({
+        id: user.id,
+        email: user.email,
+        role: user.user_metadata?.role || "user",
+        suspended: user.user_metadata?.suspended || false,
+        createdAt: user.created_at,
+      }));
+
+      res.status(200).json({ data: users });
     } catch (error) {
-      console.error("Error sending test email:", error);
-      res.status(500).json({ message: "Failed to send test email" });
+      console.error("Error in admin users endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: toggle user suspension
+  apiRouter.put("/admin/users/:id/suspend", authenticateUser, requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // Fetch current user state
+      const { data: { user }, error: fetchError } = await supabaseService.auth.admin.getUserById(id);
+      if (fetchError || !user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const currentSuspended = user.user_metadata?.suspended || false;
+      const { error } = await supabaseService.auth.admin.updateUserById(id, {
+        user_metadata: { ...user.user_metadata, suspended: !currentSuspended }
+      });
+
+      if (error) {
+        console.error("Error updating user:", error);
+        return res.status(500).json({ message: "Failed to update user" });
+      }
+
+      res.status(200).json({ message: `User ${currentSuspended ? "unsuspended" : "suspended"} successfully` });
+    } catch (error) {
+      console.error("Error in admin suspend endpoint:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Admin: list all chef profiles
+  apiRouter.get("/admin/chefs", authenticateUser, requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const chefs = await storage.getAllChefProfiles();
+      res.status(200).json({ data: chefs });
+    } catch (error) {
+      console.error("Error in admin chefs endpoint:", error);
+      res.status(500).json({ message: "Failed to fetch chef profiles" });
     }
   });
 

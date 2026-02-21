@@ -98,6 +98,7 @@ export interface IStorage {
   createInvestorInterest(interest: InsertInvestorInterest): Promise<InvestorInterest>;
   
   // Chef Profiles methods (Supabase)
+  getAllChefProfiles(): Promise<ChefProfile[]>;
   getChefProfile(id: string): Promise<ChefProfile | undefined>;
   createChefProfile(profile: InsertChefProfile): Promise<ChefProfile>;
   updateChefProfile(id: string, profile: Partial<InsertChefProfile>): Promise<ChefProfile | undefined>;
@@ -415,6 +416,10 @@ export class DBStorage implements IStorage {
   }
   
   // Chef Profiles methods (Supabase)
+  async getAllChefProfiles(): Promise<ChefProfile[]> {
+    return await db.select().from(chefProfiles);
+  }
+
   async getChefProfile(id: string): Promise<ChefProfile | undefined> {
     const result = await db.select().from(chefProfiles).where(eq(chefProfiles.id, id));
     return result[0];
