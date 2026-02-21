@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/utils/supabaseClient";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 const FONT_LINK = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap');`;
@@ -240,9 +241,12 @@ function KitchenMode({ sym, target }) {
     const gpPct = dishGP(dish);
     const prompt = `You are a hospitality cost expert. Dish: "${dish.name}" (${dish.category}). Ingredients: ${dish.ingredients.filter(i => i.name).map(i => `${i.name} ${sym}${i.cost}`).join(", ")}. Total cost: ${sym}${cost.toFixed(2)}, Selling: ${sym}${dish.sellingPrice}, GP: ${gpPct.toFixed(1)}%, Target: ${target}%. Give 3 specific, actionable suggestions to improve GP. Respond ONLY with a JSON array: [{"tip":"max 5 words","detail":"1-2 sentences","impact":"High|Medium|Low"}]`;
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 800, messages: [{ role: "user", content: prompt }] }),
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+      const res = await fetch("/api/ai/chat", {
+        method: "POST", headers,
+        body: JSON.stringify({ max_tokens: 800, messages: [{ role: "user", content: prompt }] }),
       });
       const d = await res.json();
       const txt = d.content.map(c => c.text || "").join("");
@@ -453,11 +457,14 @@ When answering questions about margins and pricing:
 Format your response in plain conversational English. Use numbers clearly. Keep it under 120 words unless the question genuinely requires more.`;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
       const history = messages.filter(m => m.role !== "system").map(m => ({ role: m.role, content: m.content }));
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch("/api/ai/chat", {
+        method: "POST", headers,
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 500,
+          max_tokens: 500,
           system: systemPrompt,
           messages: [...history, { role: "user", content: userMsg }],
         }),

@@ -2442,6 +2442,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Chat endpoint - proxies requests to Anthropic API securely
+  apiRouter.post("/ai/chat", authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { messages, system, max_tokens } = req.body;
+
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ message: "messages array is required" });
+      }
+
+      if (messages.length > 50) {
+        return res.status(400).json({ message: "Too many messages in conversation" });
+      }
+
+      const clampedMaxTokens = Math.min(Math.max(max_tokens || 800, 100), 2000);
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "AI service is not configured. Please add your ANTHROPIC_API_KEY." });
+      }
+
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: clampedMaxTokens,
+          ...(system ? { system } : {}),
+          messages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Anthropic API error:", response.status, errorText);
+        return res.status(502).json({ message: "AI service is temporarily unavailable. Please try again." });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("AI chat error:", error);
+      res.status(500).json({ message: "Failed to get AI response" });
+    }
+  });
+
   // Mount company routes
   apiRouter.use("/company", companyRoutes);
   
