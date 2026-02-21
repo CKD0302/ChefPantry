@@ -414,7 +414,7 @@ function KitchenMode({ sym, target }) {
 // BAR MODE — AI Quick Ask + Calculators + Reference
 // ─────────────────────────────────────────────────────────────────────────────
 function BarMode({ sym, target }) {
-  const [barTab, setBarTab] = useState("ask");
+  const [barTab, setBarTab] = useState("calc");
 
   return (
     <div>
