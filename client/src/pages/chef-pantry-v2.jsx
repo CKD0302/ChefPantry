@@ -75,35 +75,35 @@ const Label = ({ children }) => (
 );
 
 const Card = ({ children, style = {} }) => (
-  <div style={{ background: C.card, borderRadius: 18, padding: "18px 20px", marginBottom: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: `1px solid ${C.border}`, ...style }}>
+  <div style={{ background: C.card, borderRadius: 16, padding: "16px 14px", marginBottom: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: `1px solid ${C.border}`, ...style }}>
     {children}
   </div>
 );
 
 const Input = ({ prefix, suffix, value, onChange, placeholder, type = "number", style = {} }) => (
-  <div style={{ position: "relative", marginBottom: 10 }}>
-    {prefix && <span style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 14, pointerEvents: "none", zIndex: 1 }}>{prefix}</span>}
+  <div style={{ position: "relative", marginBottom: 8 }}>
+    {prefix && <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 14, pointerEvents: "none", zIndex: 1 }}>{prefix}</span>}
     <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-      style={{ width: "100%", boxSizing: "border-box", padding: `11px ${suffix ? "38px" : "13px"} 11px ${prefix ? "30px" : "13px"}`, border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 15, color: C.text, background: C.bg, fontFamily: "'Inter', sans-serif", outline: "none", ...style }} />
-    {suffix && <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 13, pointerEvents: "none" }}>{suffix}</span>}
+      style={{ width: "100%", boxSizing: "border-box", padding: `12px ${suffix ? "36px" : "12px"} 12px ${prefix ? "28px" : "12px"}`, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 16, color: C.text, background: C.bg, fontFamily: "'Inter', sans-serif", outline: "none", WebkitAppearance: "none", ...style }} />
+    {suffix && <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 13, pointerEvents: "none" }}>{suffix}</span>}
   </div>
 );
 
 const Select = ({ children, value, onChange }) => (
-  <select value={value} onChange={onChange} style={{ width: "100%", padding: "11px 13px", marginBottom: 10, border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 14, color: C.text, background: C.bg, fontFamily: "'Inter', sans-serif", outline: "none", cursor: "pointer" }}>
+  <select value={value} onChange={onChange} style={{ width: "100%", padding: "12px 12px", marginBottom: 8, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 16, color: C.text, background: C.bg, fontFamily: "'Inter', sans-serif", outline: "none", cursor: "pointer", WebkitAppearance: "none", appearance: "none" }}>
     {children}
   </select>
 );
 
 const Seg = ({ options, value, onChange, compact }) => (
-  <div style={{ display: "flex", background: C.border, borderRadius: 12, padding: 4, marginBottom: 12 }}>
+  <div style={{ display: "flex", background: C.border, borderRadius: 10, padding: 3, marginBottom: 10, gap: 2 }}>
     {options.map(([v, l]) => (
       <button key={v} onClick={() => onChange(v)} style={{
-        flex: 1, padding: compact ? "7px 4px" : "9px 4px", borderRadius: 9, border: "none",
+        flex: 1, padding: compact ? "8px 2px" : "10px 2px", borderRadius: 8, border: "none",
         background: value === v ? C.card : "transparent",
         color: value === v ? C.primary : C.muted,
-        fontFamily: "'Inter', sans-serif", fontSize: compact ? 12 : 13, fontWeight: value === v ? 600 : 400,
-        cursor: "pointer", transition: "all 0.15s ease",
+        fontFamily: "'Inter', sans-serif", fontSize: compact ? 11 : 12, fontWeight: value === v ? 600 : 400,
+        cursor: "pointer", transition: "all 0.15s ease", whiteSpace: "nowrap", minWidth: 0,
         boxShadow: value === v ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
       }}>{l}</button>
     ))}
@@ -122,10 +122,11 @@ const Btn = ({ children, onClick, variant = "primary", disabled, full, small, st
     <button onClick={onClick} disabled={disabled} style={{
       ...(variants[variant] || variants.primary),
       width: full ? "100%" : "auto",
-      padding: small ? "8px 14px" : "12px 20px",
-      borderRadius: 12, fontFamily: "'Inter', sans-serif",
-      fontSize: small ? 12 : 14, fontWeight: 600, cursor: disabled ? "default" : "pointer",
+      padding: small ? "10px 14px" : "14px 20px",
+      borderRadius: 10, fontFamily: "'Inter', sans-serif",
+      fontSize: small ? 13 : 14, fontWeight: 600, cursor: disabled ? "default" : "pointer",
       opacity: disabled ? 0.6 : 1, transition: "opacity 0.15s",
+      minHeight: 44,
       ...style,
     }}>{children}</button>
   );
@@ -139,24 +140,24 @@ const GPResult = ({ costPerUnit, sellingPrice, gpVal, target, sym, meta }) => {
   const suggested = toHit(costPerUnit, target);
 
   return (
-    <div style={{ background: C.bg, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
+    <div style={{ background: C.bg, borderRadius: 12, padding: 12, border: `1px solid ${C.border}` }}>
       {meta && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
           {meta.map(([k, v]) => (
-            <div key={k} style={{ background: C.card, borderRadius: 8, padding: "5px 10px", fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
+            <div key={k} style={{ background: C.card, borderRadius: 6, padding: "4px 8px", fontSize: 11, fontFamily: "'Inter', sans-serif" }}>
               <span style={{ color: C.muted }}>{k}: </span><strong style={{ color: C.text }}>{v}</strong>
             </div>
           ))}
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-        <div style={{ background: C.card, borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>UNIT COST</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.danger, fontFamily: "'Inter', sans-serif" }}>{sym}{fmt(costPerUnit)}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+        <div style={{ background: C.card, borderRadius: 10, padding: "10px 12px" }}>
+          <div style={{ fontSize: 9, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 2, fontFamily: "'Inter', sans-serif" }}>UNIT COST</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.danger, fontFamily: "'Inter', sans-serif" }}>{sym}{fmt(costPerUnit)}</div>
         </div>
-        <div style={{ background: C.card, borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>GROSS PROFIT</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: col, fontFamily: "'Inter', sans-serif" }}>{fmt(gpVal, 1)}%</div>
+        <div style={{ background: C.card, borderRadius: 10, padding: "10px 12px" }}>
+          <div style={{ fontSize: 9, color: C.muted, fontWeight: 600, letterSpacing: 1, marginBottom: 2, fontFamily: "'Inter', sans-serif" }}>GROSS PROFIT</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: col, fontFamily: "'Inter', sans-serif" }}>{fmt(gpVal, 1)}%</div>
         </div>
       </div>
       <div style={{ background: "#E5E5E5", borderRadius: 6, height: 8, position: "relative", overflow: "hidden", marginBottom: 6 }}>
@@ -168,11 +169,11 @@ const GPResult = ({ costPerUnit, sellingPrice, gpVal, target, sym, meta }) => {
         <T size={11} color={C.muted}>Target: {target}%</T>
       </div>
       {gpVal < target && sell > 0 && (
-        <div style={{ background: C.warnLight, border: `1px solid ${C.gold}50`, borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 10, color: C.warn, fontWeight: 700, letterSpacing: 1, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>TO HIT {target}% TARGET</div>
-          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: C.warn }}>
+        <div style={{ background: C.warnLight, border: `1px solid ${C.gold}50`, borderRadius: 10, padding: "10px 12px" }}>
+          <div style={{ fontSize: 9, color: C.warn, fontWeight: 700, letterSpacing: 1, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>TO HIT {target}% TARGET</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: C.warn }}>
             Charge {sym}{fmt(suggested)}
-            <span style={{ fontSize: 13, fontWeight: 400, color: C.gold, marginLeft: 8 }}>+{sym}{fmt(suggested - sell)} more</span>
+            <span style={{ fontSize: 12, fontWeight: 400, color: C.gold, marginLeft: 6 }}>+{sym}{fmt(suggested - sell)} more</span>
           </div>
         </div>
       )}
@@ -297,11 +298,11 @@ function KitchenMode({ sym, target }) {
         return (
           <Card key={dish.id} style={{ padding: "0" }}>
             <div onClick={() => setExpanded(isOpen ? null : dish.id)}
-              style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }}>
+              style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 14px" }}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <T size={15} weight={600}>{dish.name}</T>
-                  <span style={{ fontSize: 10, background: C.bg, color: C.muted, padding: "2px 8px", borderRadius: 20, fontFamily: "'Inter', sans-serif" }}>{dish.category}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <T size={14} weight={600}>{dish.name}</T>
+                  <span style={{ fontSize: 10, background: C.bg, color: C.muted, padding: "2px 6px", borderRadius: 20, fontFamily: "'Inter', sans-serif" }}>{dish.category}</span>
                 </div>
                 <T size={12} color={C.muted} style={{ display: "block", marginTop: 2 }}>{sym}{fmt(cost)} cost · {sym}{fmt(sell)} sell</T>
               </div>
@@ -315,7 +316,7 @@ function KitchenMode({ sym, target }) {
             </div>
 
             {isOpen && (
-              <div style={{ padding: "0 20px 20px", borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
+              <div style={{ padding: "0 14px 14px", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
                 {dish.ingredients.filter(i => i.name).map((ing, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
                     <span style={{ color: C.text }}>{ing.name}</span>
@@ -341,33 +342,29 @@ function KitchenMode({ sym, target }) {
       {showForm ? (
         <Card>
           <T size={16} weight={700} style={{ display: "block", marginBottom: 16 }}>New Dish</T>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 4 }}>
-            <div>
-              <Label>Dish Name</Label>
-              <Input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Pan-Seared Salmon" />
-            </div>
-            <div>
-              <Label>Category</Label>
-              <Select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                {["Starter", "Main", "Dessert", "Side", "Snack"].map(c => <option key={c}>{c}</option>)}
-              </Select>
-            </div>
+          <div style={{ marginBottom: 4 }}>
+            <Label>Dish Name</Label>
+            <Input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Pan-Seared Salmon" />
+            <Label>Category</Label>
+            <Select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              {["Starter", "Main", "Dessert", "Side", "Snack"].map(c => <option key={c}>{c}</option>)}
+            </Select>
           </div>
           <Label>Ingredients & Costs</Label>
           {form.ingredients.map((ing, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
               <input type="text" placeholder="Ingredient" value={ing.name}
                 onChange={e => setForm(f => ({ ...f, ingredients: f.ingredients.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x) }))}
-                style={{ flex: 2, padding: "10px 12px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", background: C.bg, color: C.text }} />
-              <div style={{ flex: 1, position: "relative" }}>
-                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 13, pointerEvents: "none" }}>{sym}</span>
+                style={{ flex: 2, minWidth: 0, padding: "10px 10px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 16, fontFamily: "'Inter', sans-serif", outline: "none", background: C.bg, color: C.text, boxSizing: "border-box" }} />
+              <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+                <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: C.muted, fontSize: 13, pointerEvents: "none" }}>{sym}</span>
                 <input type="number" placeholder="0.00" value={ing.cost}
                   onChange={e => setForm(f => ({ ...f, ingredients: f.ingredients.map((x, idx) => idx === i ? { ...x, cost: e.target.value } : x) }))}
-                  style={{ width: "100%", boxSizing: "border-box", padding: "10px 8px 10px 22px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", background: C.bg, color: C.text }} />
+                  style={{ width: "100%", boxSizing: "border-box", padding: "10px 6px 10px 20px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 16, fontFamily: "'Inter', sans-serif", outline: "none", background: C.bg, color: C.text }} />
               </div>
               {form.ingredients.length > 1 && (
                 <button onClick={() => setForm(f => ({ ...f, ingredients: f.ingredients.filter((_, idx) => idx !== i) }))}
-                  style={{ background: C.dangerLight, border: "none", borderRadius: 10, color: C.danger, cursor: "pointer", padding: "0 10px", fontSize: 18 }}>×</button>
+                  style={{ background: C.dangerLight, border: "none", borderRadius: 8, color: C.danger, cursor: "pointer", padding: "0 8px", fontSize: 18, minHeight: 40, flexShrink: 0 }}>×</button>
               )}
             </div>
           ))}
@@ -486,9 +483,9 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
 
   return (
     <div>
-      <Card style={{ background: C.secondary, border: "none", padding: "16px 18px" }}>
-        <T size={13} weight={600} color="rgba(255,255,255,0.6)" style={{ display: "block", marginBottom: 4, letterSpacing: 0.5 }}>JUST ASK</T>
-        <T size={14} color="rgba(255,255,255,0.85)" style={{ display: "block", lineHeight: "1.5" }}>Type any pricing or margin question in plain English and get an instant answer.</T>
+      <Card style={{ background: C.secondary, border: "none", padding: "12px 14px" }}>
+        <T size={12} weight={600} color="rgba(255,255,255,0.6)" style={{ display: "block", marginBottom: 3, letterSpacing: 0.5 }}>JUST ASK</T>
+        <T size={13} color="rgba(255,255,255,0.85)" style={{ display: "block", lineHeight: "1.5" }}>Type any pricing or margin question and get an instant answer.</T>
       </Card>
 
       {/* Starter prompts */}
@@ -507,15 +504,15 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
       {/* Messages */}
       <div style={{ minHeight: 80, marginBottom: 12 }}>
         {messages.map((m, i) => (
-          <div key={i} style={{ marginBottom: 12, display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+          <div key={i} style={{ marginBottom: 10, display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
             <div style={{
-              maxWidth: "88%", background: m.role === "user" ? C.secondary : C.card,
+              maxWidth: "85%", background: m.role === "user" ? C.secondary : C.card,
               color: m.role === "user" ? "#fff" : C.text,
-              borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "4px 18px 18px 18px",
-              padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+              borderRadius: m.role === "user" ? "16px 16px 4px 16px" : "4px 16px 16px 16px",
+              padding: "10px 14px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
               border: m.role === "user" ? "none" : `1px solid ${C.border}`,
             }}>
-              <p style={{ margin: 0, fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line" }}>{m.content}</p>
+              <p style={{ margin: 0, fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{m.content}</p>
             </div>
           </div>
         ))}
@@ -534,16 +531,17 @@ Format your response in plain conversational English. Use numbers clearly. Keep 
       </div>
 
       {/* Input */}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 6 }}>
         <input
           value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
           placeholder="Ask about any margin or price..."
-          style={{ flex: 1, padding: "13px 16px", border: `1.5px solid ${C.border}`, borderRadius: 14, fontSize: 14, fontFamily: "'Inter', sans-serif", background: C.card, color: C.text, outline: "none" }}
+          style={{ flex: 1, minWidth: 0, padding: "12px 14px", border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 16, fontFamily: "'Inter', sans-serif", background: C.card, color: C.text, outline: "none" }}
         />
         <button onClick={send} disabled={loading || !input.trim()} style={{
-          background: C.secondary, border: "none", borderRadius: 14, padding: "0 20px",
-          color: "#fff", fontSize: 20, cursor: "pointer", opacity: loading || !input.trim() ? 0.5 : 1,
+          background: C.secondary, border: "none", borderRadius: 12, padding: "0 16px",
+          color: "#fff", fontSize: 18, cursor: "pointer", opacity: loading || !input.trim() ? 0.5 : 1,
+          minHeight: 44, minWidth: 44, flexShrink: 0,
         }}>↑</button>
       </div>
     </div>
@@ -784,27 +782,28 @@ function Settings({ currency, setCurrency, onClose }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: C.overlay, zIndex: 300, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: C.card, borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: 24, maxHeight: "70vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <T size={18} weight={700}>Settings</T>
-          <button onClick={onClose} style={{ background: C.bg, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 16, color: C.muted }}>✕</button>
+      <div style={{ background: C.card, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "20px 16px env(safe-area-inset-bottom, 16px)", maxHeight: "70dvh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <T size={17} weight={700}>Settings</T>
+          <button onClick={onClose} style={{ background: C.bg, border: "none", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 16, color: C.muted, minHeight: 40 }}>✕</button>
         </div>
         <Label>Currency</Label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 16 }}>
           {CURRENCIES.map(cur => (
             <button key={cur.code} onClick={() => setCurrency(cur)} style={{
-              padding: "10px 4px", borderRadius: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              padding: "10px 2px", borderRadius: 10, cursor: "pointer", fontFamily: "'Inter', sans-serif",
               border: `1.5px solid ${currency.code === cur.code ? C.primary : C.border}`,
               background: currency.code === cur.code ? C.goldLight : C.bg,
               color: currency.code === cur.code ? C.primary : C.text,
               fontWeight: currency.code === cur.code ? 700 : 400,
+              minHeight: 44,
             }}>
               <div style={{ fontSize: 16 }}>{cur.symbol}</div>
               <div style={{ fontSize: 10, marginTop: 2 }}>{cur.code}</div>
             </button>
           ))}
         </div>
-        <div style={{ background: C.bg, borderRadius: 12, padding: 14 }}>
+        <div style={{ background: C.bg, borderRadius: 10, padding: 12 }}>
           <T size={13} weight={600} style={{ display: "block", marginBottom: 2 }}>The Chef Pantry</T>
           <T size={12} color={C.muted}>Hospitality Calculators · v2</T>
         </div>
@@ -826,11 +825,11 @@ export default function ChefPantryV2() {
 
   // Mode Picker
   if (!mode) return (
-    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: C.bg, fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 24px" }}>
+    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", background: C.bg, fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 16px", boxSizing: "border-box" }}>
       
-      <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 32, fontWeight: 700, color: C.primary, lineHeight: 1.1, marginBottom: 8 }}>The Chef Pantry</div>
-        <T size={14} color={C.muted}>Who's using this right now?</T>
+      <div style={{ textAlign: "center", marginBottom: 36 }}>
+        <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 28, fontWeight: 700, color: C.primary, lineHeight: 1.1, marginBottom: 6 }}>The Chef Pantry</div>
+        <T size={13} color={C.muted}>Who's using this right now?</T>
       </div>
 
       {[
@@ -838,60 +837,62 @@ export default function ChefPantryV2() {
         { id: "bar", icon: "🍺", title: "Bar", subtitle: "Quick GP checks, conversational AI, pour calculations", detail: "Best for: Cash & carry, writing a menu, on-the-spot checks" },
       ].map(m => (
         <button key={m.id} onClick={() => setMode(m.id)} style={{
-          width: "100%", background: C.card, border: `2px solid ${C.border}`, borderRadius: 20,
-          padding: "22px 24px", marginBottom: 14, cursor: "pointer", textAlign: "left",
+          width: "100%", background: C.card, border: `2px solid ${C.border}`, borderRadius: 16,
+          padding: "18px 16px", marginBottom: 12, cursor: "pointer", textAlign: "left",
           fontFamily: "'Inter', sans-serif", transition: "all 0.15s ease",
         }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.background = C.goldLight; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>{m.icon}</div>
-          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 4 }}>{m.title} Mode</div>
-          <T size={14} color={C.muted} style={{ display: "block", lineHeight: 1.5, marginBottom: 8 }}>{m.subtitle}</T>
-          <T size={12} color={C.gold} weight={600}>{m.detail}</T>
+          <div style={{ fontSize: 30, marginBottom: 6 }}>{m.icon}</div>
+          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 3 }}>{m.title} Mode</div>
+          <T size={13} color={C.muted} style={{ display: "block", lineHeight: 1.5, marginBottom: 6 }}>{m.subtitle}</T>
+          <T size={11} color={C.gold} weight={600}>{m.detail}</T>
         </button>
       ))}
 
-      <T size={12} color={C.muted} style={{ display: "block", textAlign: "center", marginTop: 8 }}>You can switch modes anytime from the header</T>
+      <T size={11} color={C.muted} style={{ display: "block", textAlign: "center", marginTop: 6 }}>You can switch modes anytime from the header</T>
     </div>
   );
 
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", background: C.bg, minHeight: "100vh", fontFamily: "'Inter', sans-serif", position: "relative" }}>
+    <div style={{ maxWidth: 480, margin: "0 auto", background: C.bg, minHeight: "100dvh", fontFamily: "'Inter', sans-serif", position: "relative", overflowX: "hidden" }}>
       <style>{`
         @keyframes pulse { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
         input:focus,select:focus{border-color:${C.primary} !important; box-shadow:0 0 0 3px ${C.primary}20;}
         button:active{opacity:0.75;}
         input[type=range]{height:4px; accent-color:${C.gold};}
         ::-webkit-scrollbar{width:0;}
+        * { -webkit-tap-highlight-color: transparent; }
+        input, select, textarea { font-size: 16px !important; }
       `}</style>
 
       {/* Header */}
-      <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "14px 20px", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={() => setMode(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.muted }}>
+      <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "10px 12px", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <button onClick={() => setMode(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.muted, flexShrink: 0, minHeight: 36 }}>
               ← Switch
             </button>
-            <div>
-              <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 17, fontWeight: 700, color: C.primary, lineHeight: 1 }}>The Chef Pantry</div>
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: C.muted, letterSpacing: 0.8 }}>{mode === "kitchen" ? "👨‍🍳 KITCHEN MODE" : "🍺 BAR MODE"}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 15, fontWeight: 700, color: C.primary, lineHeight: 1 }}>The Chef Pantry</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: C.muted, letterSpacing: 0.8 }}>{mode === "kitchen" ? "👨‍🍳 KITCHEN" : "🍺 BAR"}</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ background: C.bg, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.primary, fontWeight: 600 }}>{currency.code}</div>
-            <button onClick={() => setShowSettings(true)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "7px 10px", cursor: "pointer", fontSize: 16 }}>⚙️</button>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+            <div style={{ background: C.bg, borderRadius: 8, padding: "4px 8px", fontSize: 11, color: C.primary, fontWeight: 600 }}>{currency.code}</div>
+            <button onClick={() => setShowSettings(true)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", fontSize: 14, minHeight: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
           </div>
         </div>
         {/* GP Target */}
-        <div style={{ background: C.bg, borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-          <T size={10} weight={700} color={C.muted} style={{ letterSpacing: 1.2, flexShrink: 0 }}>GP TARGET</T>
+        <div style={{ background: C.bg, borderRadius: 8, padding: "6px 10px", display: "flex", alignItems: "center", gap: 8 }}>
+          <T size={9} weight={700} color={C.muted} style={{ letterSpacing: 1, flexShrink: 0 }}>GP TARGET</T>
           <input type="range" min={40} max={85} value={target} onChange={e => setTarget(Number(e.target.value))} style={{ flex: 1, cursor: "pointer" }} />
-          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 20, fontWeight: 700, color: C.gold, minWidth: 46, textAlign: "right" }}>{target}%</div>
+          <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: 18, fontWeight: 700, color: C.gold, minWidth: 42, textAlign: "right" }}>{target}%</div>
         </div>
       </div>
 
       {/* Content */}
-      <div style={{ padding: "16px 16px 40px" }}>
+      <div style={{ padding: "12px 12px 32px" }}>
         {mode === "kitchen" && <KitchenMode sym={sym} target={target} />}
         {mode === "bar" && <BarMode sym={sym} target={target} />}
       </div>
