@@ -31,6 +31,14 @@ if (process.env.NODE_ENV === 'development') {
   console.log('[DNS] NODE_OPTIONS:', process.env.NODE_OPTIONS);
 }
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";

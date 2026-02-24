@@ -11,8 +11,12 @@ if (!connectionString) {
   process.exit(1);
 }
 
-// Create a postgres connection
-const client = postgres(connectionString, { max: 1 });
+// Create a postgres connection with proper pool size and timeout
+const client = postgres(connectionString, {
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 30,
+});
 
 // Create drizzle instance with our schema
 export const db = drizzle(client, { schema });
